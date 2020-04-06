@@ -22,6 +22,11 @@ Start a detached docker container named "memtrace".
 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes memorytrace bash -c "while true; do sleep 10;done"
 ```
 
+**NOTE:** If you are running on Windows, run the following instead:
+```
+MSYS_NO_PATHCONV=1 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes memorytrace bash -c "while true; do sleep 10;done"
+```
+
 Connect to the container.
 ```
 docker exec -it memtrace bash
@@ -33,6 +38,7 @@ docker exec -it memtrace bash
 First install the memorytrace extension.
 ```
 cd memorytrace
+jlpm install
 jupyter labextension install . --no-build
 ```
 
