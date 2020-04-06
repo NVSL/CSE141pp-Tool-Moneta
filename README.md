@@ -7,9 +7,9 @@ See https://github.com/NVSL/CSE141pp-Explorer/blob/master/README.md
 
 First clone the repository.
 ```
-git clone https://github.com/NVSL/CSE141pp-Explorer
+git clone https://github.com/NVSL/CSE141pp-Tool-MemoryTrace
 
-cd CSE141pp-Explorer
+cd CSE141pp-Tool-MemoryTrace
 ```
 
 Build the Docker image and name it "memorytrace".
