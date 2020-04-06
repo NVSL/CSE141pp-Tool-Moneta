@@ -38,7 +38,7 @@ docker exec -it memtrace bash
 First install the memorytrace extension.
 ```
 cd memorytrace
-jlpm install
+jlpm
 jupyter labextension install . --no-build
 ```
 
