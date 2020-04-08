@@ -1,0 +1,213 @@
+/*
+ * Copyright 2002-2019 Intel Corporation.
+ * 
+ * This software is provided to you as Sample Source Code as defined in the accompanying
+ * End User License Agreement for the Intel(R) Software Development Products ("Agreement")
+ * section 1.L.
+ * 
+ * This software and the related documents are provided as is, with no express or implied
+ * warranties, other than those that are expressly stated in the License.
+ */
+
+//
+// This tool counts the number of times a routine is executed and 
+// the number of instructions executed in a routine
+//
+
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <string.h>
+#include "pin.H"
+using std::ofstream;
+using std::string;
+using std::hex;
+using std::setw;
+using std::cerr;
+using std::dec;
+using std::endl;
+
+ofstream outFile;
+
+// Holds instruction count for a single procedure
+typedef struct RtnCount
+{
+    string _name;
+    string _image;
+    ADDRINT _address;
+    RTN _rtn;
+    UINT64 _rtnCount;
+    UINT64 _icount;
+    struct RtnCount * _next;
+} RTN_COUNT;
+
+// Linked list of instruction counts for each routine
+RTN_COUNT * RtnList = 0;
+
+// This function is called before every instruction is executed
+VOID docount(UINT64 * counter)
+{
+    (*counter)++;
+}
+
+VOID function_print(VOID *ip) {
+	outFile << "fp - ip: " << ip << endl;
+}
+
+VOID RecordMemRead(VOID * ip, VOID * addr)
+{
+	outFile << ip << ": R " << addr << endl;
+}
+
+// Print a memory write record
+VOID RecordMemWrite(VOID * ip, VOID * addr)
+{
+	outFile << ip << ": W " << addr << endl;
+}
+    
+const char * StripPath(const char * path)
+{
+    const char * file = strrchr(path,'/');
+    if (file)
+        return file+1;
+    else
+        return path;
+}
+
+// Pin calls this function every time a new rtn is executed
+VOID Routine(RTN rtn, VOID *v)
+{
+    
+    // Allocate a counter for this routine
+    RTN_COUNT * rc = new RTN_COUNT;
+
+    // The RTN goes away when the image is unloaded, so save it now
+    // because we need it in the fini
+    rc->_name = RTN_Name(rtn);
+    rc->_image = StripPath(IMG_Name(SEC_Img(RTN_Sec(rtn))).c_str());
+    rc->_address = RTN_Address(rtn);
+    rc->_icount = 0;
+    rc->_rtnCount = 0;
+
+    // Add to list of routines
+    rc->_next = RtnList;
+    RtnList = rc;
+            
+    RTN_Open(rtn);
+            
+    // Insert a call at the entry point of a routine to increment the call count
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)docount, IARG_PTR, &(rc->_rtnCount), IARG_END);
+    
+    // For each instruction of the routine
+    for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
+    {
+        // Insert a call to docount to increment the instruction counter for this rtn
+        INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_PTR, &(rc->_icount), IARG_END);
+
+	if (rc->_name == "main") {
+		// Insert a call to print main stuff
+		INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)function_print, IARG_INST_PTR, IARG_END);
+
+
+		UINT32 memOperands = INS_MemoryOperandCount(ins);
+
+		// Iterate over each memory operand of the instruction.
+		for (UINT32 memOp = 0; memOp < memOperands; memOp++)
+		{
+			if (INS_MemoryOperandIsRead(ins, memOp))
+			{
+				 INS_InsertPredicatedCall(
+					ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
+					IARG_INST_PTR,
+					IARG_MEMORYOP_EA, memOp,
+					IARG_END);
+			}
+			// Note that in some architectures a single memory operand can be 
+			// both read and written (for instance incl (%eax) on IA-32)
+			// In that case we instrument it once for read and once for write.
+			if (INS_MemoryOperandIsWritten(ins, memOp))
+			{
+				INS_InsertPredicatedCall(
+					ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
+					IARG_INST_PTR,
+					IARG_MEMORYOP_EA, memOp,
+					IARG_END);
+			}
+		}
+
+
+	}
+    }
+
+    
+    RTN_Close(rtn);
+}
+
+
+KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
+    "o", "proccount.out", "specify output file name");
+
+KNOB<string> KnobFindFunction(KNOB_MODE_WRITEONCE, "pintool",
+    "f", "main", "specify function name");
+
+// This function is called when the application exits
+// It prints the name and count for each procedure
+VOID Fini(INT32 code, VOID *v)
+{
+    outFile << setw(23) << "Procedure" << " "
+          << setw(15) << "Image" << " "
+          << setw(18) << "Address" << " "
+          << setw(12) << "Calls" << " "
+          << setw(12) << "Instructions" << endl;
+
+    for (RTN_COUNT * rc = RtnList; rc; rc = rc->_next)
+    {
+        if (rc->_icount > 0)
+            outFile << setw(23) << rc->_name << " "
+                  << setw(15) << rc->_image << " "
+                  << setw(18) << hex << rc->_address << dec <<" "
+                  << setw(12) << rc->_rtnCount << " "
+                  << setw(12) << rc->_icount << endl;
+    }
+
+}
+
+/* ===================================================================== */
+/* Print Help Message                                                    */
+/* ===================================================================== */
+
+INT32 Usage()
+{
+    cerr << "This Pintool counts the number of times a routine is executed" << endl;
+    cerr << "and the number of instructions executed in a routine" << endl;
+    cerr << endl << KNOB_BASE::StringKnobSummary() << endl;
+    return -1;
+}
+
+/* ===================================================================== */
+/* Main                                                                  */
+/* ===================================================================== */
+
+int main(int argc, char * argv[])
+{
+    // Initialize symbol table code, needed for rtn instrumentation
+    PIN_InitSymbols();
+
+
+    // Initialize pin
+    if (PIN_Init(argc, argv)) return Usage();
+
+    outFile.open(KnobOutputFile.Value().c_str());
+    std::cerr << KnobFindFunction.Value().c_str() << std::endl;
+
+    // Register Routine to be called to instrument rtn
+    RTN_AddInstrumentFunction(Routine, 0);
+
+    // Register Fini to be called when the application exits
+    PIN_AddFiniFunction(Fini, 0);
+    
+    // Start the program, never returns
+    PIN_StartProgram();
+    
+    return 0;
+}
