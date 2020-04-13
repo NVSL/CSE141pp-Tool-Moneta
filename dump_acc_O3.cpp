@@ -24,10 +24,6 @@ static string fun_name;
 static VOID* start_addr = 0;
 static VOID* end_addr = 0;
 static long int record = 0;
-static VOID* dump_fun_addr = 0;
-
-static VOID* inst_start_addr = 0;
-static VOID* inst_end_addr = 0;
 
 //const unsigned long long BUF_SIZE = 8ULL*1024ULL*1024ULL;
 //static char * buffer1 = new char[BUF_SIZE/2];
@@ -82,89 +78,45 @@ const char * StripPath(const char * path)
 	else return path;
 }
 
-
-VOID Routine(RTN rtn, VOID *v)
+// Is called for every instruction and instruments reads and writes
+VOID Instruction(INS ins, VOID *v)
 {
-	//cerr << RTN_Name(rtn) << "\n";
-	if (RTN_Name(rtn) == "main") {
-		cerr << "Found main\n";
-	}
-	if (RTN_Name(rtn) == "DUMP_ACCESS") {
-		cerr << "Found Dump";
-	}
-	else
-	{
-		RTN_Open(rtn);
-		for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-		{
-			if (INS_IsDirectCall(ins)) {
-				if ((VOID*)INS_DirectControlFlowTargetAddress(ins) == dump_fun_addr) // Calls to dump_access
-				{
-					if (inst_start_addr == 0)
-					{
-						inst_start_addr = (VOID*)INS_Address(ins);
-					} 
-					else
-					{
-						inst_end_addr = (VOID*)INS_Address(ins);
-					}
-				}
-			}
-		}
-		for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-		{
-			if ((VOID*)INS_Address(ins) > inst_start_addr && (VOID*)INS_Address(ins) < inst_end_addr) // In between the dumps
-			{
-				UINT32 memOperands = INS_MemoryOperandCount(ins);
-				for (UINT32 memOp = 0; memOp < memOperands; memOp++)
-				{
-					if (INS_MemoryOperandIsRead(ins, memOp))
-					{
-						 INS_InsertPredicatedCall(
-							ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
-							IARG_INST_PTR,
-							IARG_MEMORYOP_EA, memOp,
-							IARG_END);
-					}
-					// Note that in some architectures a single memory operand can be 
-					// both read and written (for instance incl (%eax) on IA-32)
-					// In that case we instrument it once for read and once for write.
-					if (INS_MemoryOperandIsWritten(ins, memOp))
-					{
-						INS_InsertPredicatedCall(
-							ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
-							IARG_INST_PTR,
-							IARG_MEMORYOP_EA, memOp,
-							IARG_END);
-					}
-				}
-			}
-		}
-		RTN_Close(rtn);
-	}
+    // Instruments memory accesses using a predicated call, i.e.
+    // the instrumentation is called iff the instruction will actually be executed.
+    //
+    // On the IA-32 and Intel(R) 64 architectures conditional moves and REP 
+    // prefixed instructions appear as predicated instructions in Pin.
+    UINT32 memOperands = INS_MemoryOperandCount(ins);
+    // Iterate over each memory operand of the instruction.
+    for (UINT32 memOp = 0; memOp < memOperands; memOp++)
+    {
+        if (INS_MemoryOperandIsRead(ins, memOp))
+        {
+            INS_InsertPredicatedCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
+                IARG_INST_PTR,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_END);
+        }
+        // Note that in some architectures a single memory operand can be 
+        // both read and written (for instance incl (%eax) on IA-32)
+        // In that case we instrument it once for read and once for write.
+        if (INS_MemoryOperandIsWritten(ins, memOp))
+        {
+            INS_InsertPredicatedCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
+                IARG_INST_PTR,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_END);
+        }
+    }
 }
 
-VOID dump_vars(ADDRINT begin, ADDRINT end, ADDRINT stop_start)
-{
-	start_addr = (VOID*)begin;
-	end_addr = (VOID*)end;
-	record = stop_start;
-	cerr <<  "DUMP_ACCESS called " << begin << ", " << end << ", " << stop_start << ", " << start_addr << ", " << end_addr << ", " << record << "\n";
-/*
-	if(stop_start==1) {
-		cerr << "Add instrumentation" << endl;
-		RTN_AddInstrumentFunction(Routine, 0);
-	} else {
-		cerr << "Remove instrumentation" << endl;
-		PIN_RemoveInstrumentation();
-	}
-*/
-}
+VOID dump_vars(ADDRINT begin, ADDRINT end, ADDRINT stop_start);
 VOID FindDump(IMG img, VOID *v)
 {
 	RTN rtn = RTN_FindByName(img, "DUMP_ACCESS");
 	if(RTN_Valid(rtn)){
-		dump_fun_addr = (VOID*)RTN_Address(rtn);
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_vars,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
@@ -175,13 +127,33 @@ VOID FindDump(IMG img, VOID *v)
 	}
 }
 
+VOID dump_vars(ADDRINT begin, ADDRINT end, ADDRINT stop_start)
+{
+	PIN_LockClient();
+	start_addr = (VOID*)begin;
+	end_addr = (VOID*)end;
+	record = stop_start;
+	cerr <<  "DUMP_ACCESS called " << begin << ", " << end << ", " << stop_start << ", " << start_addr << ", " << end_addr << ", " << record << "\n";
+	if(stop_start==1) {
+		cerr << "Add instrumentation" << endl;
+		INS_AddInstrumentFunction(Instruction, 0);
+	} else {
+		cerr << "Remove instrumentation" << endl;
+		PIN_RemoveInstrumentation();
+		IMG_AddInstrumentFunction(FindDump, 0);
+	}
+	PIN_UnlockClient();
+}
+
 VOID Fini(INT32 code, VOID *v)
 {
 	if (debug) {
 		cerr << "Closing..." << endl;
 	}
 	cerr << "Closing...\n";;
+	mem_file.flush();
 	mem_file.close();
+	inst_file.flush();
 	inst_file.close();
 }
 
@@ -216,7 +188,6 @@ int main(int argc, char *argv[])
 	// Add instrumentation
 	//IMG_AddInstrumentFunction(Image, 0);
 	IMG_AddInstrumentFunction(FindDump, 0);
-	RTN_AddInstrumentFunction(Routine, 0);
 	PIN_AddFiniFunction(Fini, 0);
 
 	// RTN_AddInstrumentFunction(Routine, 0);
