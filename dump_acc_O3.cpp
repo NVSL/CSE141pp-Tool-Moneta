@@ -23,7 +23,7 @@ static string fun_name;
 
 static VOID* start_addr = 0;
 static VOID* end_addr = 0;
-static long int record = 0;
+static bool record = false;
 
 //const unsigned long long BUF_SIZE = 8ULL*1024ULL*1024ULL;
 //static char * buffer1 = new char[BUF_SIZE/2];
@@ -49,7 +49,7 @@ VOID dump_check(VOID *ip)
 	inst_file << ip << "\n";
 }
 */
-VOID RecordMemRead(VOID * ip, VOID * addr)
+VOID RecordMemRead(VOID * addr)
 {
 	//mem_file << ip << ": R " << addr << endl;
 	//if (record && (start_addr <= addr && addr <= end_addr)) {
@@ -60,7 +60,7 @@ VOID RecordMemRead(VOID * ip, VOID * addr)
 }
 
 // Print a memory write record
-VOID RecordMemWrite(VOID * ip, VOID * addr)
+VOID RecordMemWrite(VOID * addr)
 {
 	if (start_addr <= addr && addr <= end_addr) {
 		mem_file << "W " << addr << "\n";
@@ -81,6 +81,9 @@ const char * StripPath(const char * path)
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
+	// Don't add instrumentation if not inside a DUMP_ACCESS block
+	if(!record) return;
+
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
     //
@@ -94,8 +97,8 @@ VOID Instruction(INS ins, VOID *v)
         {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
-                IARG_INST_PTR,
-                IARG_MEMORYOP_EA, memOp,
+                IARG_MEMORYOP_EA,
+                memOp,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -105,16 +108,20 @@ VOID Instruction(INS ins, VOID *v)
         {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
-                IARG_INST_PTR,
-                IARG_MEMORYOP_EA, memOp,
+                IARG_MEMORYOP_EA,
+                memOp,
                 IARG_END);
         }
     }
 }
 
 VOID dump_vars(ADDRINT begin, ADDRINT end, ADDRINT stop_start);
+
+
+// Find the DUMP_ACCESS routine in the current image and insert a call
 VOID FindDump(IMG img, VOID *v)
 {
+	cerr << "Find Dump\n";
 	RTN rtn = RTN_FindByName(img, "DUMP_ACCESS");
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
@@ -127,22 +134,16 @@ VOID FindDump(IMG img, VOID *v)
 	}
 }
 
+// Add/remove the instrumentation whenever DUMP_ACCESS is called
 VOID dump_vars(ADDRINT begin, ADDRINT end, ADDRINT stop_start)
 {
-	PIN_LockClient();
 	start_addr = (VOID*)begin;
 	end_addr = (VOID*)end;
-	record = stop_start;
+	record = stop_start != 0;
 	cerr <<  "DUMP_ACCESS called " << begin << ", " << end << ", " << stop_start << ", " << start_addr << ", " << end_addr << ", " << record << "\n";
-	if(stop_start==1) {
-		cerr << "Add instrumentation" << endl;
-		INS_AddInstrumentFunction(Instruction, 0);
-	} else {
-		cerr << "Remove instrumentation" << endl;
-		PIN_RemoveInstrumentation();
-		IMG_AddInstrumentFunction(FindDump, 0);
-	}
-	PIN_UnlockClient();
+
+	// Redo instrumentation
+	PIN_RemoveInstrumentation();
 }
 
 VOID Fini(INT32 code, VOID *v)
@@ -156,7 +157,6 @@ VOID Fini(INT32 code, VOID *v)
 	inst_file.flush();
 	inst_file.close();
 }
-
 
 INT32 Usage()
 {
@@ -188,6 +188,7 @@ int main(int argc, char *argv[])
 	// Add instrumentation
 	//IMG_AddInstrumentFunction(Image, 0);
 	IMG_AddInstrumentFunction(FindDump, 0);
+		INS_AddInstrumentFunction(Instruction, 0);
 	PIN_AddFiniFunction(Fini, 0);
 
 	// RTN_AddInstrumentFunction(Routine, 0);
@@ -197,30 +198,3 @@ int main(int argc, char *argv[])
 	
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
