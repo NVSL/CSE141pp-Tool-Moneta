@@ -82,7 +82,7 @@ VOID dump_end_called() {
 }
 
 VOID dump_check(VOID *ip) {
-  if (analysis_dump_on) {
+  if (DEBUG && analysis_dump_on) {
     inst_file << ip << "\n";
   }
 }
