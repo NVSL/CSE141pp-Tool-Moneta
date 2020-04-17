@@ -1,0 +1,15 @@
+Note: the #include in hdf5_pin.h must be updated to point to where H5Cpp.h is in your files
+
+In each directory:
+   compile: $h5c++ hdf5_pin.cpp test.cpp
+   run: $./a.out
+   view ouput file: $h5dump pin_out.h5 | more
+ 
+
+Test1 contains the version in which a single dataset is created, then extended by size of one memaccess for each memaccess
+
+Test2 contains the version in which a new dataset is created and written for each memaccess
+
+Test3 contains the version in which a large dataset is initially created and each memaccess writes to the dataset
+
+Test4 *in progress* buffered version in which a dataset is created then extended by a determined number of memaccess, instead of one at a time
