@@ -12,4 +12,6 @@ Test2 contains the version in which a new dataset is created and written for eac
 
 Test3 contains the version in which a large dataset is initially created and each memaccess writes to the dataset
 
-Test4 *in progress* buffered version in which a dataset is created then extended by a determined number of memaccess, instead of one at a time
+Test4 buffered version in which a dataset is created then extended by a determined number of memaccess, instead of one at a time
+
+Test 5: buffered output by every 200,000 accesses + compound datatypes (isWrite takes one byte and addr is unsigned long long)
