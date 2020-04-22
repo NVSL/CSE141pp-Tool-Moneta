@@ -10,8 +10,8 @@ extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP_TAG(const char
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START(int* begin, int* end) {}
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP() {}
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS(int* begin, int* end, int stop_start){}
-#define START(x,y) DUMP_ACCESS(x,y,1); DUMP_ACCESS_START(x,y); DUMP_ACCESS_START_TAG("a",x,y);
-#define STOP(x,y) DUMP_ACCESS(x,y,0); DUMP_ACCESS_STOP(); DUMP_ACCESS_STOP_TAG("a");
+#define START(w,x,y) DUMP_ACCESS((int*)x,(int*)y,1); DUMP_ACCESS_START((int*)x,(int*)y); DUMP_ACCESS_START_TAG(w,(int*)x,(int*)y);
+#define STOP(w,x,y) DUMP_ACCESS((int*)x,(int*)y,0); DUMP_ACCESS_STOP(); DUMP_ACCESS_STOP_TAG(w);
 
 vector<int> arr (SIZE, 0);
 void dosom(int iters) {
@@ -23,8 +23,8 @@ void dosom(int iters) {
 int main(int argc, char *argv[]) {
 	vector<int> c (SIZE, 0);
 
-	START(&c[0], &c[SIZE-1]);
-	STOP(&c[0], &c[SIZE-1]);
+	START("0", &c[0], &c[SIZE-1]);
+	STOP("0", &c[0], &c[SIZE-1]);
 
 	// Memory accesses will not be logged
 	for (volatile int i = 0; i < c.size(); i++) {
@@ -32,8 +32,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Start dumping accesses for "c"
-	START(&c[0], &c[SIZE-1]);
+	START("c",&c[0], &c[SIZE-1]);
 	
+	// A bunch of useless ranges
+	START("1",1,2);
+	START("2",2,3);
+	START("3",3,4);
+	START("4",4,5);
+	START("5",5,6);
+
 	// Unrelated memory accesses will not be logged
 	dosom(1);
 	
@@ -43,7 +50,12 @@ int main(int argc, char *argv[]) {
 	}
 	
 	// Stop dumping accesses	
-	STOP(&c[0], &c[SIZE-1]);
+	STOP("c", &c[0], &c[SIZE-1]);
+	STOP("1",1,2);
+	STOP("2",2,3);
+	STOP("3",3,4);
+	STOP("4",4,5);
+	STOP("5",5,6);
 
 	// Large number of accesses outside DUMP_ACCESS section, will not be instrumented
 	dosom(NUM_ITER);
