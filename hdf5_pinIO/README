@@ -17,3 +17,5 @@ Test4 buffered version in which a dataset is created then extended by a determin
 Test 5: buffered output by every 200,000 accesses + compound datatypes (isWrite takes one byte and addr is unsigned long long)
 
 Test 8: buffered version with separate datasets for ADDRESS, WRITE (0 for read and 1 for a write), and TAG. This is easiest so far for reading the pin_out.h5 file with Python.
+
+Test9: convert CSV to H5 file, more info in test9 dir README
