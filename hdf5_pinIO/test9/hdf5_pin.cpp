@@ -21,8 +21,6 @@
 
 #include "hdf5_pin.h"
 
-
-
 #define DATASETNAME "MemAccesses"
 #define RANK 1 //num dimensions of dataset
 #define NX 200000 // num rows of each datachunk
@@ -176,34 +174,26 @@ extern void convert(const char* csvFileName, const char* h5FileName){
 	createFile(h5FileName);
 
 	std::ifstream fin(csvFileName);
-	//fin.open(csvFileName, ios::in);
-	std::cout<<fin.is_open();
-	std::vector<std::string> row;
+	
 	std::string line, word, temp;
 
-	//std::getline(fin,line);
-	
 	int tag;
 	char rw;
 	unsigned long long addr;
+	
 	while(std::getline(fin, line)){
 		
-		row.clear();
-
-		//std::getline(fin, line);
-		//if(line =="") continue;
-		//std::cout<<line<<'\n';
 		std::stringstream s(line);
+		
+        std::getline(s, word, ',');
+        tag = std::stoi(word);
+        
+        std::getline(s, word, ',');
+        rw = std::stoi(word);
 
-		while(std::getline(s, word, ',')){
-		//std::cout<<word<<'\n';
-			row.push_back(word);
-		}
-		//these assignments can change depending on order of data in csv file
-		tag = std::stoi(row[0]);
-		rw = std::stoi(row[1]);
-		addr = std::stoull(row[2]);
-
+        std::getline(s, word, ',');
+        addr = std::stoull(word);
+        
 		writeData(addr, rw, tag);
 	}
 
