@@ -66,6 +66,7 @@ extern "C" void writeData(unsigned long long addr, char isWrite, int tag){
 	writes[numAccess] = isWrite;
     tags[numAccess] = tag;
 	
+   // std::cout<<writes[numAccess]<<std::endl;
 	numAccess++;
 	
 	if(numAccess < NX){
@@ -95,7 +96,8 @@ extern "C" void writeData(unsigned long long addr, char isWrite, int tag){
 
     // write the new data as the appropriate size in the correct spot in the file
 	status = H5Dwrite(dataset, dtype, dataspace, filespace, H5P_DEFAULT, addrs);
-	status = H5Dwrite(bool_dataset, H5T_NATIVE_CHAR, dataspace, b_filespace, H5P_DEFAULT, writes);
+	status = H5Dwrite(bool_dataset, H5T_C_S1, dataspace, b_filespace, H5P_DEFAULT, writes);
+    //status = H5Dwrite(bool_dataset, H5T_NATIVE_CHAR, dataspace, b_filespace, H5P_DEFAULT, writes);
     status = H5Dwrite(tag_dataset, H5T_NATIVE_INT, dataspace, t_filespace, H5P_DEFAULT, tags);
 
 
@@ -134,7 +136,9 @@ extern "C" void flushData(){
 	
 	// write the new data as the appropriate size in the correct spot in the file
 	status = H5Dwrite(dataset, dtype, dataspace, filespace, H5P_DEFAULT, addrs);
-	status = H5Dwrite(bool_dataset, H5T_NATIVE_CHAR, dataspace, b_filespace, H5P_DEFAULT, writes);
+	//status = H5Dwrite(bool_dataset, H5T_NATIVE_CHAR, dataspace, b_filespace, H5P_DEFAULT, writes);
+    status = H5Dwrite(bool_dataset, H5T_C_S1, dataspace, b_filespace, H5P_DEFAULT, writes);
+
     status = H5Dwrite(tag_dataset, H5T_NATIVE_INT, dataspace, t_filespace, H5P_DEFAULT, tags);
 
 
@@ -153,7 +157,8 @@ extern "C" void createFile(const char* h5FileName){
 	status = H5Pset_chunk(cparms, RANK, chunk_dims);
 	
 	dataset = H5Dcreate2(file, "ADDRESS", dtype, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
-	bool_dataset = H5Dcreate2(file, "WRITE", H5T_NATIVE_CHAR, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
+	//bool_dataset = H5Dcreate2(file, "WRITE", H5T_NATIVE_CHAR, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
+    bool_dataset = H5Dcreate2(file, "WRITE", H5T_C_S1, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
     tag_dataset = H5Dcreate2(file, "tag", H5T_NATIVE_INT, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
 	
 }
@@ -187,13 +192,16 @@ extern void convert(const char* csvFileName, const char* h5FileName){
 		
         std::getline(s, word, ',');
         tag = std::stoi(word);
-        
+        //        std::cout<<word<<std::endl;
+
         std::getline(s, word, ',');
-        rw = std::stoi(word);
+        rw = word[0];
+      //  std::cout<<rw<<std::endl;
 
         std::getline(s, word, ',');
         addr = std::stoull(word);
-        
+          //      std::cout<<word<<std::endl;
+
 		writeData(addr, rw, tag);
 	}
 
