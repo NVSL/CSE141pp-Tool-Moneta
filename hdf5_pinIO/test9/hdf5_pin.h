@@ -42,7 +42,7 @@ extern "C" void writeData(unsigned long long addr, char isWrite, int tag);
 extern "C" void flushData();
 	
 
-extern "C" void createFile(const char* h5FileName);
+extern "C" int createFile(const char* h5FileName);
 
 extern "C" void closeFile();
 

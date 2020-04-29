@@ -144,10 +144,16 @@ extern "C" void flushData(){
 
 
 }
-extern "C" void createFile(const char* h5FileName){
+extern "C" int createFile(const char* h5FileName){
 	
 	// create .h5 file, pre-existing file is overwritten w/H5ACC_TRUNC flag
 	file = H5Fcreate (h5FileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);	
+	
+	if(file<0){
+		return -1;
+	}
+	
+	
 	dtype = H5T_NATIVE_LLONG;
 	
 	dataspace = H5Screate_simple(RANK, dims, maxdims); // create the dataspace
@@ -160,7 +166,8 @@ extern "C" void createFile(const char* h5FileName){
 	//bool_dataset = H5Dcreate2(file, "WRITE", H5T_NATIVE_CHAR, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
     bool_dataset = H5Dcreate2(file, "WRITE", H5T_C_S1, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
     tag_dataset = H5Dcreate2(file, "tag", H5T_NATIVE_INT, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
-	
+
+	return 0;    
 }
 
 extern "C" void closeFile(){
@@ -176,32 +183,44 @@ extern "C" void closeFile(){
 }
 extern void convert(const char* csvFileName, const char* h5FileName){
 	
-	createFile(h5FileName);
+	int h5fileStatus = createFile(h5FileName);
+	
+	if(h5fileStatus < 0){
+		std::cout<<"Unable to open H5 file: "<<h5FileName<<"\nAborting program...\n";
+		return;
+	}
 
 	std::ifstream fin(csvFileName);
 	
+	if(!fin.is_open()){
+		std::cout<<"Unable to open CSV file: "<<csvFileName<<"\nAborting program...\n";
+		return;
+	}
+		
 	std::string line, word, temp;
 
 	int tag;
 	char rw;
 	unsigned long long addr;
-	
+	int i = 0;
 	while(std::getline(fin, line)){
 		
 		std::stringstream s(line);
 		
         std::getline(s, word, ',');
         tag = std::stoi(word);
-        //        std::cout<<word<<std::endl;
+       //        std::cout<<word<<std::endl;
 
         std::getline(s, word, ',');
         rw = word[0];
       //  std::cout<<rw<<std::endl;
 
         std::getline(s, word, ',');
-        addr = std::stoull(word);
-          //      std::cout<<word<<std::endl;
-
+        addr = std::stoull(word, NULL, 16);
+       /* if(i<20){
+                std::cout<<std::hex<<addr<<std::endl;
+                i++;
+        } */
 		writeData(addr, rw, tag);
 	}
 

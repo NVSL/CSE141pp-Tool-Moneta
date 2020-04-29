@@ -3,9 +3,9 @@
 //#include <iostream>
 //#define NUM_ACCESSES 1000000 //one thosand 
 
-int main(void){
+int main(int argc, char** argv){
 
-	convert("file.txt", "H5.h5");
+	convert( argv[1], argv[2]);
 	/*
 	createFile(); // would be called from pintool file main
 
