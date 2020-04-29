@@ -2,10 +2,7 @@ Test 9: convert from CSV to H5 file. Choose source csv and destination h5 file n
 
 right now, the setup is 
 CSV: tag,R/W,address
-H5: Addr  R/W  tag
-
-Have not split R/W into RH, RM, WH, WM yet
-R/W is size of one byte, so although CSV values in file.txt test file go up to 1000000, the H5 output only goes up 64
+H5: Addr  R/W/X/S  tag
 
 compile with $h5c++ test.cpp hdf5_pin.cpp
 
