@@ -22,6 +22,7 @@ void dosom(int iters) {
 
 int main(int argc, char *argv[]) {
 	vector<int> c (SIZE, 0);
+	vector<int> d (100, 0);
 
 	START(&c[0], &c[SIZE-1]);
 	STOP(&c[0], &c[SIZE-1]);
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
 
 	// Start dumping accesses for "c"
 	START(&c[0], &c[SIZE-1]);
+	DUMP_ACCESS_START_TAG("d", &d[0], &d[99]);
 	
 	// Unrelated memory accesses will not be logged
 	dosom(1);
@@ -43,11 +45,13 @@ int main(int argc, char *argv[]) {
 			for (volatile int i = k*100000; i < (k+1)*100000; i++) {
 				c[i]++;
 			}
+			d[10*k+j]++;
 		}
 	}
 	
 	// Stop dumping accesses	
 	STOP(&c[0], &c[SIZE-1]);
+	DUMP_ACCESS_STOP_TAG("d");
 
 	// Large number of accesses outside DUMP_ACCESS section, will not be instrumented
 	dosom(NUM_ITER);

@@ -54,6 +54,7 @@ static int analysis_num_dump_calls = 0;
 static bool analysis_dump_on = false;
 
 static UINT64 max_lines = DEFAULT_MAX_LINES;
+static UINT64 cache_size = L1_CACHE_SIZE;
 static UINT64 curr_lines = 0;
 
 // Increment id every time DUMP_ACCESS is called
@@ -113,7 +114,13 @@ static char * buffer3 = new char[BUF_SIZE];
 // - Set maximum line limit
 
 KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "functiontrace.out", "specify trace file name");
+    "o", "functiontrace", "specify trace file name");
+
+KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
+    "m", "0", "specify max lines of output");
+
+KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
+    "c", "0", "specify size of L1 cache");
 
 // TODO make a config option?
 VOID set_max_output_called(UINT64 new_max_lines) {
@@ -204,7 +211,7 @@ bool add_to_simulated_cache2(VOID* addr) {
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
     is_hit = true;
   } else { // Not in cache, move to front
-    if (accesses.size() >= L1_CACHE_SIZE) { // Evict
+    if (accesses.size() >= cache_size) { // Evict
       accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
       inorder_acc.pop_back();
     }
@@ -241,6 +248,7 @@ VOID RecordMemRead(VOID * addr) {
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * addr) {
+  bool is_hit = add_to_simulated_cache2(addr);
   // Every tag
   for (auto& x : active_ranges) {
     // Every range for tag
@@ -249,7 +257,11 @@ VOID RecordMemWrite(VOID * addr) {
     ADDRINT start_addr = range.first;
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
-      write_to_memfile(id, 'W', addr);
+     if (is_hit) { // hit
+       write_to_memfile(id, 'W', addr);
+     } else { // miss
+       write_to_memfile(id, 'X', addr);
+     }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";
       }
@@ -381,6 +393,19 @@ int main(int argc, char *argv[]) {
   // Output file names
   string out_file_name = KnobOutputFile.Value().c_str();
   out_file_name+="_mem.out";
+  UINT64 in_output_limit = KnobMaxOutput.Value();
+  UINT64 in_cache_size = KnobCacheSize.Value();
+  cerr << in_output_limit << ", " << in_cache_size << "\n";
+  if (in_output_limit <= 0) {
+    max_lines = DEFAULT_MAX_LINES;
+  } else {
+    max_lines = in_output_limit;
+  }
+  if (in_cache_size <= 0) {
+    cache_size = L1_CACHE_SIZE;
+  } else {
+    cache_size = in_cache_size;
+  }
 
   // Open files
   if(BUFFERED) {
