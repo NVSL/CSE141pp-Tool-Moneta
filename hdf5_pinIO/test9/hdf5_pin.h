@@ -47,3 +47,13 @@ extern "C" int createFile(const char* h5FileName);
 extern "C" void closeFile();
 
 extern "C" void convert( const char* csvFileName, const char* h5FileName);
+
+
+
+extern "C" void access_writeData(unsigned long long access);
+
+extern "C" void access_flushData();
+
+extern "C" int access_createFile(const char* h5FileName);
+
+extern "C" void access_convert( const char* csvFileName, const char* h5FileName);

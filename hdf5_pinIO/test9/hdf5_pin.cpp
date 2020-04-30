@@ -154,7 +154,7 @@ extern "C" int createFile(const char* h5FileName){
 	}
 	
 	
-	dtype = H5T_NATIVE_LLONG;
+	dtype = H5T_NATIVE_ULLONG;
 	
 	hsize_t init_dims[RANK] = {1}; // dataset dimensions for creation	
 	dataspace = H5Screate_simple(RANK, init_dims, maxdims); // create the dataspace
@@ -210,18 +210,12 @@ extern void convert(const char* csvFileName, const char* h5FileName){
 		
         std::getline(s, word, ',');
         tag = std::stoi(word);
-       //        std::cout<<word<<std::endl;
 
         std::getline(s, word, ',');
         rw = word[0];
-      //  std::cout<<rw<<std::endl;
 
         std::getline(s, word, ',');
         addr = std::stoull(word, NULL, 16);
-       /* if(i<20){
-                std::cout<<std::hex<<addr<<std::endl;
-                i++;
-        } */
 		writeData(addr, rw, tag);
 	}
 
@@ -232,4 +226,138 @@ extern void convert(const char* csvFileName, const char* h5FileName){
 
 }
 
-//int main(int argc, char *argv[]){}
+extern "C" int access_createFile(const char* h5FileName){
+	
+	// create .h5 file, pre-existing file is overwritten w/H5ACC_TRUNC flag
+	file = H5Fcreate (h5FileName, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);	
+	
+	if(file<0){
+		return -1;
+	}
+	
+	
+	dtype = H5T_NATIVE_ULLONG;
+	
+	hsize_t init_dims[RANK] = {1}; // dataset dimensions for creation	
+	dataspace = H5Screate_simple(RANK, init_dims, maxdims); // create the dataspace
+	
+	cparms = H5Pcreate(H5P_DATASET_CREATE);
+	
+	status = H5Pset_chunk(cparms, RANK, chunk_dims);
+	
+	dataset = H5Dcreate2(file, "ACCESS", dtype, dataspace,H5P_DEFAULT, cparms, H5P_DEFAULT);
+
+	return 0;    
+}
+
+extern "C" void access_writeData(unsigned long long access){
+	
+
+	addrs[numAccess] = access;
+	
+	numAccess++;
+	
+	if(numAccess < NX){
+		return;
+	}
+	
+	numAccess = 0;	
+
+	// extend the size of the dataset for each memAccess
+	status = H5Dextend(dataset, size);
+
+	
+	// create filespace the size of the data to be written, in the correct poistion
+	filespace = H5Dget_space(dataset);
+
+	status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, NULL, dims, NULL);
+
+	
+	// create dataspace the size of data to be written
+	dataspace = H5Screate_simple(RANK, dims, NULL); // create the dataspace
+
+    // write the new data as the appropriate size in the correct spot in the file
+	status = H5Dwrite(dataset, dtype, dataspace, filespace, H5P_DEFAULT, addrs);
+
+	size[0]+= NX;
+	offset[0]+=NX;
+
+	
+}
+
+extern "C" void access_flushData(){
+	if(numAccess == 0){
+		return;
+	}
+	
+	dims[0]=numAccess;
+	size[0] -= (NX-numAccess);
+	status = H5Dextend(dataset, size);
+
+	
+	// create filespace the size of the data to be written, in the correct poistion
+	filespace = H5Dget_space(dataset);
+	status = H5Sselect_hyperslab(filespace, H5S_SELECT_SET, offset, NULL, dims, NULL);
+    
+	
+	// create dataspace the size of data to be written
+	dataspace = H5Screate_simple(RANK, dims, NULL); // create the dataspace
+	
+	// write the new data as the appropriate size in the correct spot in the file
+	status = H5Dwrite(dataset, dtype, dataspace, filespace, H5P_DEFAULT, addrs);
+}
+
+extern void access_convert(const char* csvFileName, const char* h5FileName){
+	
+	int h5fileStatus = access_createFile(h5FileName);
+	
+	if(h5fileStatus < 0){
+		std::cout<<"Unable to open H5 file: "<<h5FileName<<"\nAborting program...\n";
+		return;
+	}
+
+	std::ifstream fin(csvFileName);
+	
+	if(!fin.is_open()){
+		std::cout<<"Unable to open CSV file: "<<csvFileName<<"\nAborting program...\n";
+		return;
+	}
+		
+	std::string line, word, temp;
+
+	unsigned long long access;
+	int i = 0;
+	while(std::getline(fin, line)){
+		
+	/*
+	std::stringstream s(line);
+		
+        std::getline(s, word, ',');
+        tag = std::stoi(word);
+
+        std::getline(s, word, ',');
+        rw = word[0];
+
+        std::getline(s, word, ',');
+        addr = std::stoull(word, NULL, 16);
+	*/	
+	
+        access = std::stoull(line, NULL, 16);
+	
+	
+	access_writeData(access);
+	
+	
+	}
+
+	access_flushData();
+
+	// Close H5 file
+	H5Dclose(dataset);
+	H5Sclose(dataspace);
+	H5Sclose(filespace);
+	H5Fclose (file);
+
+	fin.close();
+
+}
