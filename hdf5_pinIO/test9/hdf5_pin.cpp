@@ -156,7 +156,8 @@ extern "C" int createFile(const char* h5FileName){
 	
 	dtype = H5T_NATIVE_LLONG;
 	
-	dataspace = H5Screate_simple(RANK, dims, maxdims); // create the dataspace
+	hsize_t init_dims[RANK] = {1}; // dataset dimensions for creation	
+	dataspace = H5Screate_simple(RANK, init_dims, maxdims); // create the dataspace
 	
 	cparms = H5Pcreate(H5P_DATASET_CREATE);
 	
