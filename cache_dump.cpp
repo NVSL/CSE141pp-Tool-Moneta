@@ -68,8 +68,16 @@ static int curr_id = 0;
 // id_to_tag is output to out_file
 typedef pair<ADDRINT, ADDRINT> AddressRange; 
 pintool::unordered_map<int, AddressRange> active_ranges;
+pintool::unordered_map<int, ADDRINT> range_offsets;
+pintool::unordered_map<ADDRINT, ADDRINT> stack_map;
 pintool::unordered_map<string, int> tag_to_id;
 pintool::unordered_map<int, string> id_to_tag;
+
+static ADDRINT free_block = 0;
+static ADDRINT free_stack_start = ULLONG_MAX - ULLONG_MAX%DEFAULT_CACHE_LINE - DEFAULT_CACHE_LINE;
+static ADDRINT free_stack = free_stack_start;
+
+static ADDRINT max_range = 0;
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 //pintool::unordered_set<VOID*> uniq_addr;
@@ -155,15 +163,25 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     tag_to_id[str_tag] = id;
     id_to_tag[id] = str_tag;
 
+
+    range_offsets[id] = begin - free_block;
+    free_block+= end-begin;
+    free_block+= cache_line - free_block%cache_line; // Move to next cache_line for each new tag
+
+    //ADDRINT new_end = end - range_offsets[id];
+    //max_range = std::max(max_range, new_end - new_end%cache_line + cache_line);
+    max_range = std::max(max_range, free_block);
+
   } else { // Reuse tag
     if (DEBUG) {
       cerr << "Dump begin called - Old tag\n";
     }
 
     // Throw exception if redefining tag
+    // BUG - id is not defined here
     assert(active_ranges.find(id) == active_ranges.end());
 
-    id = tag_to_id[str_tag];
+    id = tag_to_id[str_tag]; // Move this up?
   }
   active_ranges[id] = AddressRange(begin, end);
   analysis_num_dump_calls++;
@@ -194,8 +212,8 @@ VOID dump_end_called(VOID * tag) {
 }
 
 // Write id,op,addr to file
-inline VOID write_to_memfile(int id, char op, VOID* addr){
-  out_file << id << ',' << op << ',' << addr << '\n';
+inline VOID write_to_memfile(int id, int op, VOID* addr){
+  out_file << id << ',' << op << ',' << (ADDRINT)addr << '\n';
   curr_lines++;
   // If reached file size limit, exit
   if(curr_lines >= max_lines) {
@@ -231,7 +249,7 @@ bool add_to_simulated_cache2(VOID* addr) {
 
 // Print a memory read record
 VOID RecordMemRead(VOID * addr) {
-  bool is_hit = add_to_simulated_cache2(addr);
+  bool recorded = false;
   // Every tag
   for (auto& x : active_ranges) {
     // Every range for tag
@@ -240,22 +258,35 @@ VOID RecordMemRead(VOID * addr) {
     ADDRINT start_addr = range.first;
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
+     recorded = true;
+     ADDRINT offset = range_offsets[id];
+     addr = (VOID *)((ADDRINT)addr - offset); // Apply transformation
+     bool is_hit = add_to_simulated_cache2(addr);
      if (is_hit) { // hit
-       write_to_memfile(id, 'R', addr);
+       write_to_memfile(id, 32, addr); // R -> 32 // Higher numbers for hits // Higher numbers of reads
      } else { // miss
-       write_to_memfile(id, 'S', addr);
+       write_to_memfile(id, 8, addr); // S -> 8
      }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";
       }
-      if(RECORD_ONCE) return; // Record just once
+      if(RECORD_ONCE) break; // Record just once
     }
+  }
+  if (!recorded) { // Outside ranges
+    ADDRINT addr_int = (ADDRINT)addr; // Condense to opposite side of space
+    addr_int = addr_int - addr_int%cache_line;
+    if (stack_map.find(addr_int) == stack_map.end()) {
+      stack_map[addr_int] = free_stack;
+      free_stack-=cache_line;
+    }
+    add_to_simulated_cache2((VOID *)stack_map[addr_int]); // Add transformed address to cache
   }
 }
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * addr) {
-  bool is_hit = add_to_simulated_cache2(addr);
+  bool recorded = false;
   // Every tag
   for (auto& x : active_ranges) {
     // Every range for tag
@@ -264,16 +295,29 @@ VOID RecordMemWrite(VOID * addr) {
     ADDRINT start_addr = range.first;
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
+     recorded = true;
+     ADDRINT offset = range_offsets[id];
+     addr = (VOID *)((ADDRINT)addr - offset); // Transform
+     bool is_hit = add_to_simulated_cache2(addr);
      if (is_hit) { // hit
-       write_to_memfile(id, 'W', addr);
+       write_to_memfile(id, 16, addr); // W -> 16
      } else { // miss
-       write_to_memfile(id, 'X', addr);
+       write_to_memfile(id, 4, addr); // X -> 4
      }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";
       }
-      if(RECORD_ONCE) return; // Record just once
+      if(RECORD_ONCE) break; // Record just once
     }
+  }
+  if (!recorded) { // Outside ranges
+    ADDRINT addr_int = (ADDRINT)addr; // Condense to opposite side of space
+    addr_int = addr_int - addr_int%cache_line;
+    if (stack_map.find(addr_int) == stack_map.end()) {
+      stack_map[addr_int] = free_stack;
+      free_stack-=cache_line;
+    }
+    add_to_simulated_cache2((VOID *)stack_map[addr_int]); // Add transformed address to cache
   }
 }
 
@@ -298,9 +342,14 @@ VOID Fini(INT32 code, VOID *v) {
   accesses_file.open("cache_accesses.out");
   //std::cerr << cache_accesses.size() << " " << uniq_addr.size() << "\n";
   std::cerr << accesses.size() << " " << inorder_acc.size() << "\n";
+  //accesses_file << "Accesses" << "\n"; // For vaex read from csv
   //for(VOID* x : cache_accesses) {
   for(VOID* x : inorder_acc) {
-    accesses_file << x << "\n";
+    ADDRINT addr_int = (ADDRINT)x;
+    if (addr_int >= max_range) { // outside ranges - stack, untracked data structures
+      addr_int  = max_range + (free_stack_start - addr_int); // Move transformed stack to right on top of tracked ranges
+    }
+    accesses_file << addr_int << "\n";
   }
 
   // Close files
@@ -419,6 +468,8 @@ int main(int argc, char *argv[]) {
     cache_line = DEFAULT_CACHE_LINE;
   } else {
     cache_line = in_cache_line;
+    free_stack_start = ULLONG_MAX - ULLONG_MAX%cache_line - cache_line;
+    free_stack = free_stack_start; // Actual free space for stack
   }
 
   // Open files
@@ -428,6 +479,7 @@ int main(int argc, char *argv[]) {
     accesses_file.rdbuf()->pubsetbuf(buffer3, BUF_SIZE);
   }
   out_file.open(out_file_name.c_str());
+  //out_file << "TAG,ACCESS,ADDRESS\n"; // For vaex read from csv
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
