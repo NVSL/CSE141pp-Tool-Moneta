@@ -26,6 +26,8 @@
 #define RECORD_ONCE 0
 
 #define L1_CACHE_SIZE 256 * 1024
+#define L1_CACHE_ENTRIES 4096
+#define DEFAULT_CACHE_LINE 64
 
 using std::ofstream;
 using std::string;
@@ -54,7 +56,8 @@ static int analysis_num_dump_calls = 0;
 static bool analysis_dump_on = false;
 
 static UINT64 max_lines = DEFAULT_MAX_LINES;
-static UINT64 cache_size = L1_CACHE_SIZE;
+static UINT64 cache_size = L1_CACHE_ENTRIES;
+static UINT64 cache_line = DEFAULT_CACHE_LINE;
 static UINT64 curr_lines = 0;
 
 // Increment id every time DUMP_ACCESS is called
@@ -120,7 +123,10 @@ KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "m", "0", "specify max lines of output");
 
 KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
-    "c", "0", "specify size of L1 cache");
+    "c", "0", "specify entires in L1 cache");
+
+KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
+    "l", "0", "specify size of cache line for L1 cache");
 
 // TODO make a config option?
 VOID set_max_output_called(UINT64 new_max_lines) {
@@ -206,6 +212,7 @@ inline VOID write_to_memfile(int id, char op, VOID* addr){
 bool add_to_simulated_cache2(VOID* addr) {
   //if (accesses.size() >= L1_CACHE_SIZE) return;
   bool is_hit = false;
+  addr = (VOID *)((ADDRINT)addr - ((ADDRINT)addr)%cache_line); // Cache line modulus
   auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
   if (iter != accesses.end()) { // In cache, move to front
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
@@ -395,16 +402,23 @@ int main(int argc, char *argv[]) {
   out_file_name+="_mem.out";
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
-  cerr << in_output_limit << ", " << in_cache_size << "\n";
+  UINT64 in_cache_line = KnobCacheLineSize.Value();
+  cerr << in_output_limit << ", " << in_cache_size << ", " << in_cache_line << "\n";
   if (in_output_limit <= 0) {
     max_lines = DEFAULT_MAX_LINES;
   } else {
     max_lines = in_output_limit;
   }
   if (in_cache_size <= 0) {
-    cache_size = L1_CACHE_SIZE;
+    cache_size = L1_CACHE_ENTRIES;
   } else {
     cache_size = in_cache_size;
+  }
+
+  if (in_cache_line <= 0) {
+    cache_line = DEFAULT_CACHE_LINE;
+  } else {
+    cache_line = in_cache_line;
   }
 
   // Open files
