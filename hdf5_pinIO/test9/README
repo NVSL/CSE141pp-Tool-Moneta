@@ -13,7 +13,7 @@ Output H5 file format:
 
 
 compile coverter for cache_dump:
-	$h5c++ -o convert test.cpp hdf5_pin.cpp
+	$h5c++ -o convert convertMain.cpp hdf5_pin.cpp
 to run:
 $ ./convert csvFileName H5FileName
 
