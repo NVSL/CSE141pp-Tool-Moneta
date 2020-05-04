@@ -85,14 +85,14 @@ static ADDRINT max_range = 0;
 
 
 struct cache_hash {
-	inline std::size_t operator()(const std::pair<VOID*, std::list<VOID*>::iterator> & k) const {
+	inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
 		return (uint64_t)k.first;
 	}
 };
 
 struct cache_equal {
 public:
-	inline bool operator()(const std::pair<VOID*, std::list<VOID*>::iterator> & k1, const std::pair<VOID*, std::list<VOID*>::iterator> & k2) const {
+	inline bool operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
  
 		if (k1.first == k2.first)
 			return true;
@@ -102,15 +102,15 @@ public:
 
 
 /*struct cache_compare {
-    inline bool operator() (const std::pair<VOID*, std::list<VOID*>::iterator> & k1, const std::pair<VOID*, std::list<VOID*>::iterator> & k2) const {
+    inline bool operator() (const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
         return k1.first < k2.first;
     }
 };*/
 
 
-std::tr1::unordered_set<std::pair<VOID*, std::list<VOID*>::iterator>, cache_hash, cache_equal> accesses;
-//std::set<std::pair<VOID*, std::list<VOID*>::iterator>, cache_compare> accesses;
-std::list<VOID*> inorder_acc;
+std::tr1::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
+//std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses;
+std::list<ADDRINT> inorder_acc;
 
 // Increase the file write buffer to speed up i/o
 const unsigned long long BUF_SIZE = 4ULL * 8ULL* 1024ULL * 1024ULL;
@@ -168,8 +168,6 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     free_block+= end-begin;
     free_block+= cache_line - free_block%cache_line; // Move to next cache_line for each new tag
 
-    //ADDRINT new_end = end - range_offsets[id];
-    //max_range = std::max(max_range, new_end - new_end%cache_line + cache_line);
     max_range = std::max(max_range, free_block);
 
   } else { // Reuse tag
@@ -212,8 +210,8 @@ VOID dump_end_called(VOID * tag) {
 }
 
 // Write id,op,addr to file
-inline VOID write_to_memfile(int id, int op, VOID* addr){
-  out_file << id << ',' << op << ',' << (ADDRINT)addr << '\n';
+inline VOID write_to_memfile(int id, int op, ADDRINT addr){
+  out_file << id << ',' << op << ',' << addr << '\n';
   curr_lines++;
   // If reached file size limit, exit
   if(curr_lines >= max_lines) {
@@ -227,10 +225,10 @@ inline VOID write_to_memfile(int id, int op, VOID* addr){
   cache_accesses.push_back(addr);
 }*/
 
-bool add_to_simulated_cache2(VOID* addr) {
+bool add_to_simulated_cache2(ADDRINT addr) {
   //if (accesses.size() >= L1_CACHE_SIZE) return;
   bool is_hit = false;
-  addr = (VOID *)((ADDRINT)addr - ((ADDRINT)addr)%cache_line); // Cache line modulus
+  addr -= addr%cache_line; // Cache line modulus
   auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
   if (iter != accesses.end()) { // In cache, move to front
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
@@ -248,7 +246,7 @@ bool add_to_simulated_cache2(VOID* addr) {
 }
 
 // Print a memory read record
-VOID RecordMemRead(VOID * addr) {
+VOID RecordMemRead(ADDRINT addr) {
   bool recorded = false;
   // Every tag
   for (auto& x : active_ranges) {
@@ -257,10 +255,9 @@ VOID RecordMemRead(VOID * addr) {
     AddressRange range = x.second;
     ADDRINT start_addr = range.first;
     ADDRINT end_addr   = range.second;
-    if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
+    if (start_addr <= addr && addr <= end_addr) {
      recorded = true;
-     ADDRINT offset = range_offsets[id];
-     addr = (VOID *)((ADDRINT)addr - offset); // Apply transformation
+     addr -= range_offsets[id]; // Apply transformation
      bool is_hit = add_to_simulated_cache2(addr);
      if (is_hit) { // hit
        write_to_memfile(id, 32, addr); // R -> 32 // Higher numbers for hits // Higher numbers of reads
@@ -274,18 +271,17 @@ VOID RecordMemRead(VOID * addr) {
     }
   }
   if (!recorded) { // Outside ranges
-    ADDRINT addr_int = (ADDRINT)addr; // Condense to opposite side of space
-    addr_int = addr_int - addr_int%cache_line;
-    if (stack_map.find(addr_int) == stack_map.end()) {
-      stack_map[addr_int] = free_stack;
+    addr -= addr%cache_line;
+    if (stack_map.find(addr) == stack_map.end()) {
+      stack_map[addr] = free_stack; // Condense to opposite side of space
       free_stack-=cache_line;
     }
-    add_to_simulated_cache2((VOID *)stack_map[addr_int]); // Add transformed address to cache
+    add_to_simulated_cache2(stack_map[addr]); // Add transformed address to cache
   }
 }
 
 // Print a memory write record
-VOID RecordMemWrite(VOID * addr) {
+VOID RecordMemWrite(ADDRINT addr) {
   bool recorded = false;
   // Every tag
   for (auto& x : active_ranges) {
@@ -296,8 +292,7 @@ VOID RecordMemWrite(VOID * addr) {
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
      recorded = true;
-     ADDRINT offset = range_offsets[id];
-     addr = (VOID *)((ADDRINT)addr - offset); // Transform
+     addr -= range_offsets[id]; // Transform
      bool is_hit = add_to_simulated_cache2(addr);
      if (is_hit) { // hit
        write_to_memfile(id, 16, addr); // W -> 16
@@ -311,13 +306,12 @@ VOID RecordMemWrite(VOID * addr) {
     }
   }
   if (!recorded) { // Outside ranges
-    ADDRINT addr_int = (ADDRINT)addr; // Condense to opposite side of space
-    addr_int = addr_int - addr_int%cache_line;
-    if (stack_map.find(addr_int) == stack_map.end()) {
-      stack_map[addr_int] = free_stack;
+    addr -= addr%cache_line;
+    if (stack_map.find(addr) == stack_map.end()) {
+      stack_map[addr] = free_stack; // Condense to opposite side of space
       free_stack-=cache_line;
     }
-    add_to_simulated_cache2((VOID *)stack_map[addr_int]); // Add transformed address to cache
+    add_to_simulated_cache2(stack_map[addr]); // Add transformed address to cache
   }
 }
 
@@ -344,8 +338,7 @@ VOID Fini(INT32 code, VOID *v) {
   std::cerr << accesses.size() << " " << inorder_acc.size() << "\n";
   //accesses_file << "Accesses" << "\n"; // For vaex read from csv
   //for(VOID* x : cache_accesses) {
-  for(VOID* x : inorder_acc) {
-    ADDRINT addr_int = (ADDRINT)x;
+  for(ADDRINT addr_int : inorder_acc) {
     if (addr_int >= max_range) { // outside ranges - stack, untracked data structures
       addr_int  = max_range + (free_stack_start - addr_int); // Move transformed stack to right on top of tracked ranges
     }
