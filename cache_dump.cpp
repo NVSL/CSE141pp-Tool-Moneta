@@ -176,10 +176,8 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     }
 
     // Throw exception if redefining tag
-    // BUG - id is not defined here
+    id = tag_to_id[str_tag];
     assert(active_ranges.find(id) == active_ranges.end());
-
-    id = tag_to_id[str_tag]; // Move this up?
   }
   active_ranges[id] = AddressRange(begin, end);
   analysis_num_dump_calls++;
