@@ -3,15 +3,23 @@ FROM jupyter/scipy-notebook:dc9744740e12
 USER root
 RUN apt-get update -y
 RUN apt-get install -y vim
+RUN apt-get install -y libhdf5-dev
 
 WORKDIR /setup
 
 # Install pintool and add to PATH
-RUN wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-3.13-98189-g60a6ef199-gcc-linux.tar.gz -O pintool.tar.gz
+RUN wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz -O pintool.tar.gz
 RUN tar -xzf pintool.tar.gz
-RUN mv pin-3.13-98189-g60a6ef199-gcc-linux pintool
+RUN mv pin-2.14-71313-gcc.4.4.7-linux pintool
 RUN rm pintool.tar.gz
-ENV PATH=$PATH:/setup/pintool
+
+ENV PIN_ROOT=/setup/pintool
+RUN echo "alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'" >> ~/.bashrc
+
+# Fix PIN compilation: https://chunkaichang.com/tool/pin-notes/
+ADD pin_makefile.unix.config /setup/pintool/source/tools/Config/makefile.unix.config
+# Use HDF5 library with PINtool
+ADD pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile.default.rules
 
 # Install python libraries
 ADD requirements.txt /setup

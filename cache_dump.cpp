@@ -1,6 +1,7 @@
 #include "pin.H"
-#include <iostream>
+#include "hdf5_pin.h"
 
+#include <iostream>
 #include <fstream>
 #include <iomanip>
 #include <string.h>
@@ -10,6 +11,7 @@
 #include <set>
 #include <unordered_set>
 #include <unordered_map>
+#include <assert.h>
 
 #define DUMP_MACRO_BEG "DUMP_ACCESS_START_TAG"
 #define DUMP_MACRO_END "DUMP_ACCESS_STOP_TAG"
@@ -42,10 +44,10 @@ using std::pair;
 // Pin comes with some old standard libraries.
 namespace pintool {
 template <typename V>
-using unordered_set = std::tr1::unordered_set<V>;
+using unordered_set = std::unordered_set<V>;
 
 template <typename K, typename V>
-using unordered_map = std::tr1::unordered_map<K, V>;
+using unordered_map = std::unordered_map<K, V>;
 }
 
 ofstream out_file;
@@ -108,7 +110,7 @@ public:
 };*/
 
 
-std::tr1::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
+std::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
 //std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses;
 std::list<ADDRINT> inorder_acc;
 
@@ -477,6 +479,12 @@ int main(int argc, char *argv[]) {
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
+
+  // HDF5 example TODO remove
+  createFile("w");
+  writeData(1,1,1);
+  flushData();
+  closeFile();
 
   if (DEBUG) {
     cerr << "Starting now\n";
