@@ -80,7 +80,7 @@ As an example, we can make our own hdf5_pin library and link it with the pintool
 #### Compiling hdf5_pin.cpp to libhdf5_pin.so
 ```
 g++ -c -L/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/include/hdf5/serial hdf5_pin.cpp -lhdf5 -o hdf5_pin.o -fPIC -O3
-g++ -shared -o libhdf5_pin.so hdf5_pin.o -Wl,--hash-style=both -O3
+g++ -shared hdf5_pin.o -o libhdf5_pin.so -L/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/include/hdf5/serial -lhdf5 -Wl,--hash-style=both -O3
 ```
 #### Adding libhdf5_pin to the makefile rules
 Assume that we have `hdf5_pin.h` located in `/folder1`, and `libhdf5_pin.so` which is located in `/folder2`.
@@ -90,6 +90,11 @@ Change the makefile config, lines 168-170 to the following:
 TOOL_CXXFLAGS += -I/usr/include/hdf5/serial -I/folder1
 TOOL_LPATHS += -L/usr/lib/x86_64-linux-gnu/hdf5/serial -L/folder2
 TOOL_LIBS += -lhdf5 -lhdf5_pin
+```
+
+Add `libhdf5_pin.so` to the LD_LIBRARY_PATH:
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/folder2
 ```
 
 Now we can use the library in a pintool:
