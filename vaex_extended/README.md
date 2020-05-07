@@ -37,12 +37,29 @@ Import `vaex_extended` and use exactly like `vaex`.
 Specify the backend you want to use.
 In `vaex_extended/__init__.py`, name the backend `bqplot` instead of `bqplot_v2`
 to replace the existing default bqplot backend rather than create a new one.
-
 ```
 import vaex_extended
 df = vaex_extended.example()
 df.plot_widget(df.x,df.y,backend='bqplot_v2')
 ```
+## Use in Other Directories
+If the Jupyter notebook is not in the directory that contains `vaex_extended`, the path may
+need to be extended.  Eventually, `vaex_extended` should be moved to the correct direcory
+so that this is not a issue.
+
+```
+import sys, os
+sys.path.append('../') # here vaex_extended is in the parent directory
+import vaex
+import vaex.jupyter.plot
+vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
+```
+Alternatively, the package can be installed so that it is available anywhere.
+In the directory outside `vaex_extended`, which should contain `setup.py`, run:
+```
+pip install -e .
+```
+The flag `-e` will allow edits to the source files to appear without needing a reinstall.
 ## How to Modify bqplot.py
 
 decorator.py has a decorator to make it easy to modify or add functions to existing
