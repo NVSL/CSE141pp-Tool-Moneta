@@ -1,4 +1,5 @@
 from vaex import *
+import vaex.jupyter.plot
 
 # Alternate: Overwrite existing backend
 # vaex.jupyter.plot.backends['bqplot'] = ('vaex_extended.jupyter.bqplot','BqplotBackend')
