@@ -49,6 +49,7 @@ using unordered_map = std::unordered_map<K, V>;
 const ADDRINT DefaultMaxLines = 100000000;
 const ADDRINT L1CacheEntries = 4096;
 const ADDRINT DefaultCacheLineSize = 64;
+const std::string DefaultPath = "./";
 
 ofstream map_file;
 
@@ -59,6 +60,7 @@ static UINT64 max_lines = DefaultMaxLines;
 static UINT64 cache_size = L1CacheEntries;
 static UINT64 cache_line = DefaultCacheLineSize;
 static UINT64 curr_lines = 0;
+static std::string output_path = DefaultPath;
 
 // Increment id every time DUMP_ACCESS is called
 static int curr_id = 0;
@@ -268,7 +270,7 @@ public:
 
 
 
-HandleHdf5 hdf_handler;
+HandleHdf5 *hdf_handler;
 
 
 
@@ -315,13 +317,13 @@ static char * buffer3 = new char[BUF_SIZE];
 // - Set maximum line limit
 
 KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "trace", "specify trace file name");
+    "o", "./", "specify output file directory with an absolute path");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "m", "0", "specify max lines of output");
 
 KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
-    "c", "0", "specify entires in L1 cache");
+    "c", "0", "specify entries in L1 cache");
 
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
     "l", "0", "specify size of cache line for L1 cache");
@@ -399,7 +401,7 @@ VOID dump_end_called(VOID * tag) {
 
 // Write id,op,addr to file
 inline VOID write_to_memfile(int id, int op, ADDRINT addr){
-  hdf_handler.write_data_mem(id, op, addr); // straight to hdf
+  hdf_handler->write_data_mem(id, op, addr); // straight to hdf
   curr_lines++;
   // If reached file size limit, exit
   if(curr_lines >= max_lines) { // Should probably close files
@@ -507,8 +509,9 @@ const char * StripPath(const char * path) {
 VOID Fini(INT32 code, VOID *v) {
 
   // Write out mapping - only need to open and close map_file here
-  map_file.open("tag_map.out");
+  map_file.open(output_path + "/tag_map.csv");
   // Every id->tag
+  map_file << "Tag_Name,Tag_Value\n";
   for (auto& x : id_to_tag) {
     int id = x.first;
     string tag = x.second;
@@ -521,13 +524,14 @@ VOID Fini(INT32 code, VOID *v) {
     if (addr_int >= max_range) { // outside ranges - stack, untracked data structures
       addr_int  = max_range + (free_stack_start - addr_int); // Move transformed stack to right on top of tracked ranges
     }
-    hdf_handler.write_data_cache(addr_int);
+    hdf_handler->write_data_cache(addr_int);
   }
 
   // Close files
   map_file.flush();
   map_file.close();
-  hdf_handler.~HandleHdf5();
+  //hdf_handler.~HandleHdf5();
+  delete hdf_handler;
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -616,9 +620,8 @@ int main(int argc, char *argv[]) {
   }
 
   // Output file names
-  string hdf5_file_name = KnobOutputFile.Value().c_str();
-  hdf5_file_name += ".hdf5";
-  string cache_file_name = "cache.h5";
+  output_path = KnobOutputFile.Value();
+  //string cache_file_name = "cache.h5";
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -648,6 +651,9 @@ int main(int argc, char *argv[]) {
 	    "\n# of cache entries: " << cache_size <<
 	    "\nCache line size in bytes: " << cache_line << "\n";
   }
+
+  hdf_handler = new HandleHdf5(output_path + "/trace.hdf5",
+		               output_path + "/cache.hdf5");
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
