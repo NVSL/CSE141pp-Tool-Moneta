@@ -515,7 +515,7 @@ VOID Fini(INT32 code, VOID *v) {
   for (auto& x : id_to_tag) {
     int id = x.first;
     string tag = x.second;
-    map_file << id << "," << tag << "\n";
+    map_file << tag << "," << id << "\n";
   }
 
   //std::cerr << cache_accesses.size() << " " << uniq_addr.size() << "\n";
