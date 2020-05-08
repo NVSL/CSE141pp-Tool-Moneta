@@ -10,8 +10,15 @@ WORKDIR /setup
 # Install pintool and add to PATH
 RUN wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz -O pintool.tar.gz
 RUN tar -xzf pintool.tar.gz
-RUN mv pin-2.14-71313-gcc.4.4.7-linux pintool
+RUN echo "This may take a while..." && mv pin-2.14-71313-gcc.4.4.7-linux pintool
 RUN rm pintool.tar.gz
+
+
+# Make directories for pintool executable and outfiles
+RUN mkdir /setup/converter
+RUN mkdir /setup/converter/outfiles
+ADD Setup/trace_tool.so /setup/converter
+
 
 ENV PIN_ROOT=/setup/pintool
 RUN echo "alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'" >> ~/.bashrc
@@ -25,4 +32,4 @@ ADD Setup/pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile
 ADD requirements.txt /setup
 RUN pip install -r requirements.txt
 
-WORKDIR /
+WORKDIR /home/jovyan/work/memorytrace
