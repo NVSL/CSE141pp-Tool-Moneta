@@ -17,9 +17,9 @@ ENV PIN_ROOT=/setup/pintool
 RUN echo "alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'" >> ~/.bashrc
 
 # Fix PIN compilation: https://chunkaichang.com/tool/pin-notes/
-ADD pin_makefile.unix.config /setup/pintool/source/tools/Config/makefile.unix.config
+ADD Setup/pin_makefile.unix.config /setup/pintool/source/tools/Config/makefile.unix.config
 # Use HDF5 library with PINtool
-ADD pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile.default.rules
+ADD Setup/pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile.default.rules
 
 # Install python libraries
 ADD requirements.txt /setup
