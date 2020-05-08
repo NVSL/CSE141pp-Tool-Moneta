@@ -17,11 +17,11 @@ Ignore any errors about the directories already existing (there shouldn't be any
 
 # Running an Example
 
-After setup is complete, you can run an example from the "Examples" directory. Here is a sample using Examples/sorting.cpp
+After setup is complete, you can run an example from the "Examples" directory. Here is a sample using Examples/src/sorting.cpp
 
 The cpp file must be compiled prior to running the tool. Then, launch Juptyer Notebook and open LinkedSelectors.ipynb
 ```
-g++ -o sort ../Examples/sorting.cpp
+g++ -o sort /Examples/src/sorting.cpp
 jupyter notebook --allow-root
 ```
 Launching the notebook should print a file link to be opened in a browser.
