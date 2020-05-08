@@ -22,7 +22,7 @@ Start a detached docker container named "memtrace".
 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes memorytrace bash -c "while true; do sleep 10;done"
 ```
 
-**NOTE:** If you are running on Windows, run the following instead:
+**Windows: ** Run the following instead:
 ```
 MSYS_NO_PATHCONV=1 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes memorytrace bash -c "while true; do sleep 10;done"
 ```
@@ -30,6 +30,11 @@ MSYS_NO_PATHCONV=1 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/
 Connect to the container.
 ```
 docker exec -it memtrace bash
+```
+
+**Windows: ** You may need add "winpty" if prompted:
+```
+winpty docker exec -it memtrace bash
 ```
 
 # Usage
@@ -44,7 +49,8 @@ to
 ```
 I = np.flipud(np.transpose(color_grid, (1, 0, 2)).copy())
 ```
-`vaex.plot_widget` only works for jupyter notebook
+
+**Note: ** `vaex.plot_widget` only works for jupyter notebook
 
 Go to memorytrace/  
 Do setup there and then run the notebook
