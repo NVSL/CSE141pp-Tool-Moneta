@@ -33,10 +33,16 @@ df = vaex.example()
 df.plot_widget(df.x,df.y,backend='bqplot_v2')
 ```
 ### Using the Built-In Modified Version of Vaex
-Import `vaex_extended` and use exactly like `vaex`.
+Including `vaex_extended` will automatically apply all changes to vaex.
 Specify the backend you want to use.
 In `vaex_extended/__init__.py`, name the backend `bqplot` instead of `bqplot_v2`
 to replace the existing default bqplot backend rather than create a new one.
+```
+import vaex, vaex_extended
+df = vaex.example()
+df.plot_widget(df.x,df.y,backend='bqplot_v2')
+```
+It can also be used in place of Vaex:
 ```
 import vaex_extended
 df = vaex_extended.example()
