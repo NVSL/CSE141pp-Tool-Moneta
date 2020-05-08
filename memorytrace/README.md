@@ -1,6 +1,6 @@
 # Our Project lies here
 
-Compile the program you want to trace
+Compile the program you want to trace  
 Start up the notebook and run it
 
 # Setup Information
