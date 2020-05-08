@@ -34,20 +34,11 @@ docker exec -it memtrace bash
 
 # Usage
 
-## JupyterLab
-### ~~JupyterLab extension~~ Ignore this section, we are using Jupyter notebook.
-First install the memorytrace extension.
-```
-cd ~/work/memorytrace
-jupyter labextension install . --no-build
-```
-### Run JupyterLab
-Start the Jupyter Lab in the work directory.
-```
-cd ~/work/
-jupyter lab --allow-root --watch
-```
-Copy the last URL into the browser (change port as needed).
+TODO
+
+## For Devs Only
+
+TODO
 
 ## Binary Instrumentation with PIN
 The pintool folder is installed at `/setup/pintool`. Currently using PIN 2.14.
