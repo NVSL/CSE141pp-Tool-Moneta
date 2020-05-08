@@ -34,6 +34,21 @@ docker exec -it memtrace bash
 
 # Usage
 
+Got to line 399 of  
+/opt/conda/lib/python3.7/site-packages/vaex/jupyter/plot.py
+Change it from  
+```
+I = np.transpose(color_grid, (1, 0, 2)).copy()
+```
+to
+```
+I = np.flipud(np.transpose(color_grid, (1, 0, 2)).copy())
+```
+`vaex.plot_widget` only works for jupyter notebook
+
+Got to memorytrace/  
+Do setup there and then run the notebook
+
 TODO
 
 ## For Devs Only
