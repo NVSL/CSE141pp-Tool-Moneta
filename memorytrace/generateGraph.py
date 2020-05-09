@@ -2,10 +2,14 @@ import ipywidgets as widgets
 from ipywidgets import Checkbox, VBox, HBox
 import os
 from os import path
+import sys
+sys.path.append('../')
 import vaex
 import vaex.jupyter
 import numpy as np
 import pylab as plt
+import vaex.jupyter.plot
+vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -136,7 +140,7 @@ for button in hmButtons:
     
 checks = HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)])
 
-df.plot_widget(df.index, df.Address, selection=[True], backend='bqplot', tool_select=True)
+df.plot_widget(df.index, df.Address, selection=[True], backend='bqplot_v2', tool_select=True)
 
 
 
