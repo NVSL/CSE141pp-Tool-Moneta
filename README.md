@@ -12,12 +12,12 @@ git clone https://github.com/NVSL/CSE141pp-Tool-MemoryTrace
 cd CSE141pp-Tool-MemoryTrace
 ```
 
-Build the Docker image and name it "memorytrace".
+Build the Docker image and name it `memorytrace`.
 ```
 docker build -t memorytrace .
 ```
 
-Start a detached docker container named "memtrace".
+<a name="port"></a>Start a detached docker container named `memtrace`. Take note of the `XXXX:8888` in the command. the `XXXX` will be your port number for running the notebook. The port number will be `8080` here but can be changed if there are any conflicts.
 ```
 docker run --detach --name memtrace -p 8080:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes memorytrace bash -c "while true; do sleep 10;done"
 ```
@@ -32,7 +32,7 @@ Connect to the container.
 docker exec -it memtrace bash
 ```
 
-**Windows:** You may need add "winpty" if prompted:
+**Windows:** You may need add `winpty` if prompted:
 ```
 winpty docker exec -it memtrace bash
 ```
@@ -52,21 +52,21 @@ Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you
 
 # Memory Trace Tool Usage
 
-You should be in the memorytrace directory. If not, cd to the directory
+You should be in the `memorytrace` directory. If not, `cd` to the directory
 ```
 cd ~/work/memorytrace/
 ```
 Run the notebook.  
-**Note:** `vaex.plot_widget` only works for jupyter notebook.
+**Note:** `vaex.plot_widget` only works for Jupyter notebook.
 ```
 jupyter notebook --allow-root
 ```
 You should see two links appear. Go to your preferred web browser and paste the second link. It should look something like this.  
-**Note:** You will have to replace the "8888" with the port you specified in when setting up the Docker image. 
+**Note:** You will have to replace the `8888` with the [port you specified](#port) when setting up the Docker image. 
 ```
 http://127.0.0.1:8888/?token=...
 ```
-You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press "Run".
+You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press `Run`.
 ![](https://i.gyazo.com/8a5e8c3de2bd45a677f31f0be9d59d51.png "Memory Trace Tool")
 <br/>
 
