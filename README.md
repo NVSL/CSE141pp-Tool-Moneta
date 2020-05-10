@@ -37,7 +37,20 @@ docker exec -it memtrace bash
 winpty docker exec -it memtrace bash
 ```
 
-# Usage
+# Program Tagging Usage
+Copy these two lines below the `#include` statements at the top of your code file:
+```
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START_TAG(const char* tag, int* begin, int* end) {}
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP_TAG(const char* tag) {}
+```
+#### Parameters:
+**tag:** A string name to identify the trace  
+**begin:** The address of the first element of the data structure (Array Example: `&arr[0]`)  
+**end:** The address of the last element of the data structure (Array Example: `&arr[arr.size()-1]`)  
+  
+Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you want to trace. Examples can be found in `memorytrace/Examples/src`.
+
+# Memory Trace Tool Usage
 
 You should be in the memorytrace directory. If not, cd to the directory
 ```
@@ -53,7 +66,7 @@ You should see two links appear. Go to your preferred web browser and paste the 
 ```
 http://127.0.0.1:8888/?token=...
 ```
-You should see a file called "LinkedSelectors.ipynb". Open the file, click on the first cell, and click "Run" (or press SHIFT+ENTER with the cell selected). You should see input boxes appear like below. 
+You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press "Run".
 ![](https://i.gyazo.com/8a5e8c3de2bd45a677f31f0be9d59d51.png "Memory Trace Tool")
 <br/>
 
