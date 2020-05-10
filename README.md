@@ -39,23 +39,28 @@ winpty docker exec -it memtrace bash
 
 # Usage
 
-Go to line 399 of  
-/opt/conda/lib/python3.7/site-packages/vaex/jupyter/plot.py  
-Change it from  
+You should be in the memorytrace directory. If not, cd to the directory
 ```
-I = np.transpose(color_grid, (1, 0, 2)).copy()
+cd ~/work/memorytrace/
 ```
-to
+Run the notebook.  
+**Note:** `vaex.plot_widget` only works for jupyter notebook.
 ```
-I = np.flipud(np.transpose(color_grid, (1, 0, 2)).copy())
+jupyter notebook --allow-root
 ```
+You should see two links appear. Go to your preferred web browser and paste the second link. It should look something like this.  
+**Note:** You will have to replace the "8888" with the port you specified in when setting up the Docker image. 
+```
+http://127.0.0.1:8888/?token=...
+```
+You should see a file called "LinkedSelectors.ipynb". Open the file, click on the first cell, and click "Run" (or press SHIFT+ENTER with the cell selected). You should see input boxes appear like below. 
+![](https://i.gyazo.com/8a5e8c3de2bd45a677f31f0be9d59d51.png "Memory Trace Tool")
+<br/>
 
-**Note:** `vaex.plot_widget` only works for jupyter notebook
-
-Go to memorytrace/  
-Do setup there and then run the notebook
-
-TODO
+**Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)  
+**Lines to Output:** The maximum number of memory accesses to record. Larger numbers will take longer to run. (Default: 100,000,000)  
+**Block Size:** The size of each cache line. (Default: 64 Bytes)  
+**Executable Path:** Path to the executable to trace (Default: "./Examples/build/sorting")  
 
 ## For Devs Only
 
