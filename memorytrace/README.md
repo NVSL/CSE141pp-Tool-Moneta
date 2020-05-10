@@ -7,7 +7,7 @@ Start up the notebook and run it after specifying the full path to the executabl
 
 After setup is complete, you can run an example from the "Examples" directory. Here is a sample using Examples/src/sorting.cpp
 
-The cpp file must be compiled prior to running the tool. The sorting.cpp file has already been compiled and is stored as Examples/build/sorting. Launch Juptyer Notebook with the following command. 
+The cpp file must be compiled prior to running the tool. The sorting.cpp file has already been compiled and is stored as Examples/build/sorting. Launch Jupyter Notebook with the following command. 
 
 ```
 jupyter notebook --allow-root

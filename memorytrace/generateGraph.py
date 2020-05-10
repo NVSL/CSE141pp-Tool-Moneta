@@ -1,18 +1,11 @@
-import ipywidgets as widgets
-from ipywidgets import Checkbox, VBox, HBox
-import os
-from os import path
-import sys
-sys.path.append('../')
-import vaex
-import vaex.jupyter
-import numpy as np
-import pylab as plt
-import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
-
+from imports import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+sys.path.append('/setup/') # Uncomment this line for master branch
+#sys.path.append('../') # Uncomment this line for development branch
+vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
 
 #Enumerations
@@ -22,8 +15,7 @@ WRITE_HIT = 16
 READ_HIT = 32
 
 
-
-df = vaex.open(path.expanduser("/setup/converter/outfiles/trace.hdf5"))
+df = vaex.open("/setup/converter/outfiles/trace.hdf5")
 tag_map = vaex.open("/setup/converter/outfiles/tag_map.csv")
 
 

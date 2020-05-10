@@ -9,7 +9,7 @@ WORKDIR /setup
 
 # Install pintool and add to PATH
 RUN wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz -O pintool.tar.gz
-RUN tar -xzf pintool.tar.gz -c /setup/pintool
+RUN tar -xzf pintool.tar.gz
 RUN echo "This may take a while..." && mv pin-2.14-71313-gcc.4.4.7-linux pintool
 RUN rm pintool.tar.gz
 
@@ -18,6 +18,7 @@ RUN rm pintool.tar.gz
 RUN mkdir /setup/converter
 RUN mkdir /setup/converter/outfiles
 ADD Setup/trace_tool.so /setup/converter
+ADD Setup/vaex_extended_setup /setup/vaex_extended
 
 
 ENV PIN_ROOT=/setup/pintool
@@ -31,7 +32,6 @@ ADD Setup/pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile
 # Install python libraries
 ADD requirements.txt /setup
 RUN pip install -r requirements.txt
-ADD Setup/plot_widget_fix.py /opt/conda/lib/python3.7/site-packages/vaex/jupyter/plot.py
 
 
 WORKDIR /home/jovyan/work/memorytrace
