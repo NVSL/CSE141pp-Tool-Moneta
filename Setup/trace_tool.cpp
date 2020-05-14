@@ -449,9 +449,9 @@ VOID RecordMemRead(ADDRINT addr) {
      addr -= range_offsets[id]; // Apply transformation
      bool is_hit = add_to_simulated_cache(addr);
      if (is_hit) { // hit
-       write_to_memfile(id, 32, addr); // R -> 32 // Higher numbers for hits // Higher numbers of reads
+       write_to_memfile(id, 1, addr); // R -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
      } else { // miss
-       write_to_memfile(id, 8, addr); // S -> 8
+       write_to_memfile(id, 3, addr); // S -> 3
      }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";
@@ -484,7 +484,7 @@ VOID RecordMemWrite(ADDRINT addr) {
      addr -= range_offsets[id]; // Transform
      bool is_hit = add_to_simulated_cache(addr);
      if (is_hit) { // hit
-       write_to_memfile(id, 16, addr); // W -> 16
+       write_to_memfile(id, 2, addr); // W -> 2
      } else { // miss
        write_to_memfile(id, 4, addr); // X -> 4
      }

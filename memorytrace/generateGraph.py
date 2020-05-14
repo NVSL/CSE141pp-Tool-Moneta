@@ -3,8 +3,9 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-sys.path.append('/setup/') # Uncomment this line for master branch
-#sys.path.append('../') # Uncomment this line for development branch
+#sys.path.append('/setup/') # Uncomment this line for master branch
+sys.path.append('../') # Uncomment this line for development branch
+import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
 
@@ -131,8 +132,17 @@ for button in hmButtons:
     button.observe(updateHitMiss)
     
 checks = HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)])
+newc = np.ones((6, 4))
+newc[1] = [0, 0, 1, 1] # read_hits
+newc[2] = [0.047, 1, 0, 1] # cache_size
+newc[3] = [0, 1, 1, 1] # write_hits
+newc[4] = [1, 1, 0, 1] # read_misses
+newc[5] = [1, 0, 0, 1] # write_misses
 
-df.plot_widget(df.index, df.Address, selection=[True], backend='bqplot_v2', tool_select=True)
+custom_cmap = ListedColormap(newc)
+
+vaex_extended.vaex_cache_size = int(CACHE_SIZE)*int(BLOCK_SIZE)
+df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, selection=[True], backend='bqplot_v2', tool_select=True)
 
 
 

@@ -10,3 +10,4 @@ import vaex.jupyter
 import numpy as np
 import pylab as pt
 import vaex.jupyter.plot
+from matplotlib.colors import ListedColormap
