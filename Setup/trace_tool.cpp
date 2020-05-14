@@ -59,7 +59,7 @@ static bool analysis_dump_on = false;
 static UINT64 max_lines = DefaultMaxLines;
 static UINT64 cache_size = L1CacheEntries;
 static UINT64 cache_line = DefaultCacheLineSize;
-static UINT64 curr_lines = 0;
+static UINT64 curr_lines = 0; // Increment for every write to hdf5 for memory accesses
 static std::string output_path = DefaultPath;
 
 // Increment id every time DUMP_ACCESS is called
@@ -69,11 +69,13 @@ static int curr_id = 0;
 // Only the id is output to out_file.
 // id_to_tag is output to out_file
 typedef pair<ADDRINT, ADDRINT> AddressRange; 
-pintool::unordered_map<int, AddressRange> active_ranges;
-pintool::unordered_map<int, ADDRINT> range_offsets;
-pintool::unordered_map<ADDRINT, ADDRINT> stack_map;
-pintool::unordered_map<string, int> tag_to_id;
-pintool::unordered_map<int, string> id_to_tag;
+pintool::unordered_map<int, AddressRange> active_ranges; // Original ranges - Suggestions for refactoring - coalesce maps to id -> class mapping
+pintool::unordered_map<int, AddressRange> all_ranges; // Save the ranges whereas active_ranges deletes them
+pintool::unordered_map<int, ADDRINT> range_offsets; // To normalize on top of each other
+pintool::unordered_map<ADDRINT, ADDRINT> stack_map;  // For all values outside active_ranges but inside macros
+pintool::unordered_map<string, int> tag_to_id; // String tag to id
+pintool::unordered_map<int, string> id_to_tag; // Id to string tag
+pintool::unordered_map<int, pair<int, int>> x_range; // First and last access
 
 static ADDRINT free_block = 0; // State for normalized accesses
 static ADDRINT free_stack_start = ULLONG_MAX - ULLONG_MAX%DefaultCacheLineSize - DefaultCacheLineSize;
@@ -378,6 +380,7 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     assert(active_ranges.find(id) == active_ranges.end());
   }
   active_ranges[id] = AddressRange(begin, end);
+  all_ranges[id] = AddressRange(begin, end);
   analysis_num_dump_calls++;
   analysis_dump_on = true;
   PIN_RemoveInstrumentation();
@@ -409,6 +412,11 @@ VOID dump_end_called(VOID * tag) {
 inline VOID write_to_memfile(int id, int op, ADDRINT addr){
   hdf_handler->write_data_mem(id, op, addr); // straight to hdf
   curr_lines++;
+  if (x_range.find(id) == x_range.end()) {
+    x_range[id] = std::make_pair(curr_lines, curr_lines);
+  } else {
+    x_range[id].second = curr_lines;
+  }
   // If reached file size limit, exit
   if(curr_lines >= max_lines) { // Should probably close files
     PIN_ExitApplication(0);
@@ -538,11 +546,23 @@ VOID Fini(INT32 code, VOID *v) {
   // Write out mapping - only need to open and close map_file here
   map_file.open(output_path + "/tag_map.csv");
   // Every id->tag
-  map_file << "Tag_Name,Tag_Value\n";
+  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n";
   for (auto& x : id_to_tag) {
     int id = x.first;
     string tag = x.second;
-    map_file << tag << "," << id << "\n";
+    AddressRange addr_range = all_ranges[id];
+    ADDRINT offset = range_offsets[id];
+    int lo_ind = 0;
+    int hi_ind = 0;
+    auto iter = x_range.find(id);
+    if (iter != x_range.end()) {
+      lo_ind = iter->second.first;
+      hi_ind = iter->second.second;
+    }
+    map_file << tag << "," << id << ","
+             << addr_range.first - offset << ","
+	     << addr_range.second - offset << ","
+	     << lo_ind << "," << hi_ind << "\n";
   }
 
   //std::cerr << cache_accesses.size() << " " << uniq_addr.size() << "\n";
