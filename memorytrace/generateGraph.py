@@ -38,6 +38,18 @@ df.select(True, name='rw')
 df.select(True, name='hm')
 df.select(True, name='total')
 
+#Initialize counts
+read_hits = df[df.Access == READ_HIT]
+write_hits = df[df.Access == WRITE_HIT]
+read_misses = df[df.Access == READ_MISS]
+write_misses = df[df.Access == WRITE_MISS]
+comp_read_misses = df[df.Access == COMP_R_MISS]
+comp_write_misses = df[df.Access == COMP_W_MISS]
+readCount = read_hits.count() + read_misses.count()
+writeCount = write_hits.count() + write_misses.count()
+hitCount = read_hits.count() + write_hits.count()
+missCount = read_misses.count() + write_misses.count()
+compMissCount = comp_read_misses.count() + comp_write_misses.count()
 
 #Initialize selections
 for tag in tagsFromFile:
@@ -125,13 +137,16 @@ def updateHitMiss(change):
         
 tagButtons = [Checkbox(description=name, value=True, disabled=False, indent=False) for name in namesFromFile]
 
-rwButtons = [Checkbox(description="Reads", value=True, disabled=False, indent=False),
-             Checkbox(description="Writes", value=True, disabled=False, indent=False)]
+rwButtons = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
+             Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
 
-hmButtons = [Checkbox(description="Hits", value=True, disabled=False, indent=False),
-             Checkbox(description="Misses", value=True, disabled=False, indent=False),
-             Checkbox(description="Compulsory Misses", value=True, disabled=False, indent=False)]
-    
+hmButtons = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
+             Checkbox(description="Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
+             Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
+
+hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
+           Label(value="Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
+           Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
     
 for i in range(numTags):
     tagButtons[i].observe(updateGraph)
@@ -142,7 +157,7 @@ for button in rwButtons:
 for button in hmButtons:
     button.observe(updateHitMiss)
     
-checks = HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)])
+checks = VBox([HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)]),VBox(hmRates)])
 
 newc = np.ones((11, 4))
 newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
