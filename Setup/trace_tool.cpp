@@ -301,6 +301,7 @@ public:
 
 
 std::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
+std::unordered_set<ADDRINT> all_accesses;
 //std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses;
 std::list<ADDRINT> inorder_acc;
 
@@ -415,22 +416,38 @@ inline VOID write_to_memfile(int id, int op, ADDRINT addr){
 }
 
 
-bool add_to_simulated_cache(ADDRINT addr) {
-  bool is_hit = false;
+/*
+ * Returns: a value based on hit, miss, or compulsory miss
+ * 0 - hit
+ * 1 - miss
+ * 2 - compulsory miss
+ *
+ */
+int add_to_simulated_cache(ADDRINT addr) {
   addr -= addr%cache_line; // Cache line modulus
-  auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
-  if (iter != accesses.end()) { // In cache, move to front
-    inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
-    is_hit = true;
-  } else { // Not in cache, move to front
+  if (all_accesses.find(addr) == all_accesses.end()) { // Compulsory miss
     if (accesses.size() >= cache_size) { // Evict
       accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
       inorder_acc.pop_back();
     }
     inorder_acc.push_front(addr); // Add to list and set
     accesses.insert(std::make_pair(addr, inorder_acc.begin()));
+    all_accesses.insert(addr);
+    return 2;
   }
-  return is_hit;
+
+  auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
+  if (iter != accesses.end()) { // In cache, move to front - Hit
+    inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
+    return 0;
+  } // Not in cache, move to front - Capacity miss
+  if (accesses.size() >= cache_size) { // Evict
+    accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
+    inorder_acc.pop_back();
+  }
+  inorder_acc.push_front(addr); // Add to list and set
+  accesses.insert(std::make_pair(addr, inorder_acc.begin()));
+  return 1;
 
 }
 
@@ -447,11 +464,14 @@ VOID RecordMemRead(ADDRINT addr) {
     if (start_addr <= addr && addr <= end_addr) {
      recorded = true;
      addr -= range_offsets[id]; // Apply transformation
-     bool is_hit = add_to_simulated_cache(addr);
-     if (is_hit) { // hit
-       write_to_memfile(id, 1, addr); // R -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
-     } else { // miss
-       write_to_memfile(id, 3, addr); // S -> 3
+
+     int acc_typ = add_to_simulated_cache(addr);
+     if (acc_typ == 0) {
+       write_to_memfile(id, 1, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
+     } else if (acc_typ == 1) {
+       write_to_memfile(id, 3, addr); // Capacity miss -> 3
+     } else {
+       write_to_memfile(id, 5, addr); // Compulsory miss -> 5
      }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";
@@ -482,11 +502,13 @@ VOID RecordMemWrite(ADDRINT addr) {
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
      recorded = true;
      addr -= range_offsets[id]; // Transform
-     bool is_hit = add_to_simulated_cache(addr);
-     if (is_hit) { // hit
-       write_to_memfile(id, 2, addr); // W -> 2
-     } else { // miss
-       write_to_memfile(id, 4, addr); // X -> 4
+     int acc_typ = add_to_simulated_cache(addr);
+     if (acc_typ == 0) {
+       write_to_memfile(id, 2, addr); // Hit -> 2 
+     } else if (acc_typ == 1) {
+       write_to_memfile(id, 4, addr); // Capacity miss -> 4
+     } else {
+       write_to_memfile(id, 6, addr); // Compulsory miss -> 6
      }
       if (EXTRA_DEBUG) {
         cerr << "Record read\n";

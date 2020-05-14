@@ -27,25 +27,21 @@ def _update_image(self):
             #mask = np.isfinite(fgrid)
             #vmin, vmax = np.percentile(fgrid[mask], [self.grid_limits_min, self.grid_limits_max])
             #self.grid_limits = [vmin, vmax]
-            self.grid_limits = [0, 4] # Make scale invariant
+            self.grid_limits = [0, 8] # Make scale invariant
             #print("backend limits ", self.backend.limits)
         except:
             pass
         if self.smooth_post:
             for i in range(grid.shape[0]):
                 fgrid[i] = vaex.grids.gf(fgrid[i], self.smooth_post)
-        #print(fgrid.shape)
         y_lo, y_hi = self.backend.limits[1]
         cache_size = vaex_extended.vaex_cache_size
         diff = y_hi - y_lo
         cache_fraction = min(1, cache_size/diff)
         lim = cache_fraction*fgrid.shape[1]
-        #lim_from_bottom = fgrid.shape[1] - lim
         for i in range(int(lim)):
-            fgrid[0][0][i] = 1.6
-        #print(lim, lim_from_bottom)
+            fgrid[0][0][i] = 2.4
         ngrid, fmin, fmax = self.normalise(fgrid)
-        #print(ngrid.dtype)
         if self.backend.wants_colors():
             color_grid = self.colorize(ngrid)
             if len(color_grid.shape) > 3:
