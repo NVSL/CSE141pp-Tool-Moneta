@@ -11,9 +11,9 @@ vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'Bqpl
 
 #Enumerations
 WRITE_MISS = 4
-READ_MISS = 8
-WRITE_HIT = 16
-READ_HIT = 32
+READ_MISS = 3
+WRITE_HIT = 2
+READ_HIT = 1
 
 
 df = vaex.open("/setup/converter/outfiles/trace.hdf5")
