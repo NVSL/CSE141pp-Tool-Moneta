@@ -105,7 +105,7 @@ def updateHitMiss(change):
         if(name == "Hits"):
             targetRead = READ_HIT
             targetWrite = WRITE_HIT
-        elif(name == "Misses"):
+        elif(name == "Capacity Misses"):
             targetRead = READ_MISS
             targetWrite = WRITE_MISS
         else:
@@ -129,7 +129,7 @@ rwButtons = [Checkbox(description="Reads", value=True, disabled=False, indent=Fa
              Checkbox(description="Writes", value=True, disabled=False, indent=False)]
 
 hmButtons = [Checkbox(description="Hits", value=True, disabled=False, indent=False),
-             Checkbox(description="Misses", value=True, disabled=False, indent=False),
+             Checkbox(description="Capacity Misses", value=True, disabled=False, indent=False),
              Checkbox(description="Compulsory Misses", value=True, disabled=False, indent=False)]
     
     

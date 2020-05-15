@@ -53,6 +53,10 @@ const std::string DefaultPath = "./";
 
 ofstream map_file;
 
+// More debug vars
+static int read_insts = 0;
+
+
 static int analysis_num_dump_calls = 0;
 static bool analysis_dump_on = false;
 
@@ -383,7 +387,7 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
   all_ranges[id] = AddressRange(begin, end);
   analysis_num_dump_calls++;
   analysis_dump_on = true;
-  PIN_RemoveInstrumentation();
+  //PIN_RemoveInstrumentation();
 }
 
 VOID dump_end_called(VOID * tag) {
@@ -405,7 +409,7 @@ VOID dump_end_called(VOID * tag) {
       cerr << "End TAG - Deactivated analysis\n";
     }
   }
-  PIN_RemoveInstrumentation();
+  //PIN_RemoveInstrumentation();
 }
 
 // Write id,op,addr to file
@@ -461,6 +465,9 @@ int add_to_simulated_cache(ADDRINT addr) {
 
 // Print a memory read record
 VOID RecordMemRead(ADDRINT addr) {
+  if (DEBUG) {
+    read_insts++;
+  }
   bool recorded = false;
   // Every tag
   for (auto& x : active_ranges) {
@@ -471,9 +478,9 @@ VOID RecordMemRead(ADDRINT addr) {
     ADDRINT end_addr   = range.second;
     if (start_addr <= addr && addr <= end_addr) {
      recorded = true;
-     addr -= range_offsets[id]; // Apply transformation
 
-     int acc_typ = add_to_simulated_cache(addr);
+     int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
+     addr -= range_offsets[id]; // Apply transformation
      if (acc_typ == 0) {
        write_to_memfile(id, 1, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
      } else if (acc_typ == 1) {
@@ -487,13 +494,17 @@ VOID RecordMemRead(ADDRINT addr) {
       if(RECORD_ONCE) break; // Record just once
     }
   }
+  /*if (DEBUG) {
+    cerr << "Insts so far: " << read_insts << " Recorded - " << (recorded ? "true" : "false" ) << "\n";
+  }*/
   if (!recorded) { // Outside ranges
     addr -= addr%cache_line;
-    if (stack_map.find(addr) == stack_map.end()) {
+    /*if (stack_map.find(addr) == stack_map.end()) {
       stack_map[addr] = free_stack; // Condense to opposite side of space
       free_stack-=cache_line;
-    }
-    add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
+    }*/
+    //add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
+    add_to_simulated_cache(addr); // Add original value to cache
   }
 }
 
@@ -509,8 +520,8 @@ VOID RecordMemWrite(ADDRINT addr) {
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
      recorded = true;
+     int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
      addr -= range_offsets[id]; // Transform
-     int acc_typ = add_to_simulated_cache(addr);
      if (acc_typ == 0) {
        write_to_memfile(id, 2, addr); // Hit -> 2 
      } else if (acc_typ == 1) {
@@ -526,11 +537,12 @@ VOID RecordMemWrite(ADDRINT addr) {
   }
   if (!recorded) { // Outside ranges
     addr -= addr%cache_line;
-    if (stack_map.find(addr) == stack_map.end()) {
+    /*if (stack_map.find(addr) == stack_map.end()) {
       stack_map[addr] = free_stack; // Condense to opposite side of space
       free_stack-=cache_line;
-    }
-    add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
+    }*/
+    //add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
+    add_to_simulated_cache(addr); // Add original value to cache
   }
 }
 
@@ -542,6 +554,10 @@ const char * StripPath(const char * path) {
 }
 
 VOID Fini(INT32 code, VOID *v) {
+
+  if (DEBUG) {
+    cerr << "Number of read insts: " << read_insts << "\n";
+  }
 
   // Write out mapping - only need to open and close map_file here
   map_file.open(output_path + "/tag_map.csv");
@@ -567,11 +583,30 @@ VOID Fini(INT32 code, VOID *v) {
 
   //std::cerr << cache_accesses.size() << " " << uniq_addr.size() << "\n";
   //for(VOID* x : cache_accesses) {
-  for(ADDRINT addr_int : inorder_acc) {
+  /*for(ADDRINT addr_int : inorder_acc) {
     if (addr_int >= max_range) { // outside ranges - stack, untracked data structures
       addr_int  = max_range + (free_stack_start - addr_int); // Move transformed stack to right on top of tracked ranges
     }
     hdf_handler->write_data_cache(addr_int);
+  }*/
+  // Updated cache write - Must check if it's in any of the tagged ranges
+  // Add cache values from least recently used to most recently used
+  for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
+    // Check if it's part of any of the ranges
+    ADDRINT correct_val = *rit;
+    bool tagged = false;
+    for (auto& x : all_ranges) {
+      if (x.second.first <= *rit && *rit <= x.second.second) {
+        correct_val -= range_offsets[x.first]; // Normalize
+        tagged = true;
+        break;
+      }
+    }
+    if (!tagged) {
+      correct_val = max_range; // Just move the cache value that's not tagged to somewhere above all tagged accesses
+      max_range+= cache_line;
+    }
+    hdf_handler->write_data_cache(correct_val);
   }
 
   // Close files
@@ -585,7 +620,7 @@ VOID Fini(INT32 code, VOID *v) {
 VOID Instruction(INS ins, VOID *v)
 {
 	// Don't add instrumentation if not inside a DUMP_ACCESS block
-	if(!analysis_dump_on) return;
+//	if(!analysis_dump_on) return;
 
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
