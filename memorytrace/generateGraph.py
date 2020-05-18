@@ -21,14 +21,34 @@ READ_HIT = 1
 
 df = vaex.open("/setup/converter/outfiles/trace.hdf5")
 tag_map = vaex.open("/setup/converter/outfiles/tag_map.csv")
+numAccesses = df.Address.count()
 
-
-df['index'] = np.arange(0, df.Address.count())
+df['index'] = np.arange(0, numAccesses)
 
 #Set up name-tag mapping
 namesFromFile = (tag_map.Tag_Name.values).tolist()
 tagsFromFile = (tag_map.Tag_Value.values).tolist()
+startIndices = (tag_map.First_Access.values).tolist()
+startAddresses = (tag_map.Low_Address.values).tolist()
+endIndices = (tag_map.Last_Access.values).tolist()
+endAddresses = (tag_map.High_Address.values).tolist()
+
 numTags = len(namesFromFile)
+
+
+# Initialize accessRanges dictionary in bqplot backend with file info
+from vaex_extended.jupyter.bqplot import accessRanges
+accessRanges.clear()
+for i in range(numTags):
+    name = namesFromFile[i]
+    accessRanges.update({name : {}})
+
+    rangeData = accessRanges[name]
+    rangeData.update({"startIndex" : startIndices[i]})
+    rangeData.update({"endIndex" : endIndices[i]})
+    rangeData.update({"startAddr" : startAddresses[i]})
+    rangeData.update({"endAddr" : endAddresses[i]})
+
 
 
 
