@@ -19,8 +19,9 @@
 
 #define DEBUG 0
 #define EXTRA_DEBUG 0
-#define INPUT_DEBUG 1
+#define INPUT_DEBUG 0
 #define HDF_DEBUG 0
+#define CACHE_DEBUG 0
 // Use larger buffer
 #define BUFFERED 1
 // If addr overlaps multiple ranges, whether to record only one
@@ -55,6 +56,12 @@ ofstream map_file;
 
 // More debug vars
 static int read_insts = 0;
+// Cache debug
+static int cache_writes = 0;
+static int first_record = 0;
+static int comp_misses = 0;
+static int cap_misses = 0;
+static int skip_rate = 100;
 
 
 static int analysis_num_dump_calls = 0;
@@ -415,12 +422,12 @@ VOID dump_end_called(VOID * tag) {
 // Write id,op,addr to file
 inline VOID write_to_memfile(int id, int op, ADDRINT addr){
   hdf_handler->write_data_mem(id, op, addr); // straight to hdf
-  curr_lines++;
   if (x_range.find(id) == x_range.end()) {
     x_range[id] = std::make_pair(curr_lines, curr_lines);
   } else {
     x_range[id].second = curr_lines;
   }
+  curr_lines++; // Afterward, for 0-based indexing
   // If reached file size limit, exit
   if(curr_lines >= max_lines) { // Should probably close files
     PIN_ExitApplication(0);
@@ -437,22 +444,39 @@ inline VOID write_to_memfile(int id, int op, ADDRINT addr){
  */
 int add_to_simulated_cache(ADDRINT addr) {
   addr -= addr%cache_line; // Cache line modulus
+  if (CACHE_DEBUG) {
+    cache_writes++;
+  }
   if (all_accesses.find(addr) == all_accesses.end()) { // Compulsory miss
+    if (CACHE_DEBUG) {
+      comp_misses++;
+    }
     if (accesses.size() >= cache_size) { // Evict
+      // Second value doesn't matter due to custom equal function
       accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
       inorder_acc.pop_back();
     }
     inorder_acc.push_front(addr); // Add to list and set
     accesses.insert(std::make_pair(addr, inorder_acc.begin()));
     all_accesses.insert(addr);
+    if (CACHE_DEBUG) {
+      cerr << cache_writes << "th write (comp miss): " << addr << "\n";
+    }
     return 2;
   }
 
   auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
   if (iter != accesses.end()) { // In cache, move to front - Hit
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
+    if (CACHE_DEBUG && cache_writes%skip_rate == 0) {
+      cerr << cache_writes << "th write (Hit): " << addr << "\n";
+    }
     return 0;
   } // Not in cache, move to front - Capacity miss
+  if (CACHE_DEBUG) {
+    cap_misses++;
+    cerr << cache_writes << "th write (cap miss): " << addr << "\n";
+  }
   if (accesses.size() >= cache_size) { // Evict
     accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
     inorder_acc.pop_back();
@@ -478,6 +502,12 @@ VOID RecordMemRead(ADDRINT addr) {
     ADDRINT end_addr   = range.second;
     if (start_addr <= addr && addr <= end_addr) {
      recorded = true;
+     if (CACHE_DEBUG) {
+       if (first_record == 0) {
+         first_record = cache_writes;
+         cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+       }
+     }
 
      int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
      addr -= range_offsets[id]; // Apply transformation
@@ -520,6 +550,12 @@ VOID RecordMemWrite(ADDRINT addr) {
     ADDRINT end_addr   = range.second;
     if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
      recorded = true;
+     if (CACHE_DEBUG) {
+       if (first_record == 0) {
+         first_record = cache_writes;
+         cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+       }
+     }
      int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
      addr -= range_offsets[id]; // Transform
      if (acc_typ == 0) {
@@ -557,6 +593,10 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (DEBUG) {
     cerr << "Number of read insts: " << read_insts << "\n";
+  }
+  if (CACHE_DEBUG) {
+    cerr << "Number of compulsory misses: " << comp_misses << "\n";
+    cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
 
   // Write out mapping - only need to open and close map_file here
@@ -620,7 +660,7 @@ VOID Fini(INT32 code, VOID *v) {
 VOID Instruction(INS ins, VOID *v)
 {
 	// Don't add instrumentation if not inside a DUMP_ACCESS block
-//	if(!analysis_dump_on) return;
+	//if(!analysis_dump_on) return;
 
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
