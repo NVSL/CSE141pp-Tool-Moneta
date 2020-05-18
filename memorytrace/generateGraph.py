@@ -21,14 +21,34 @@ READ_HIT = 1
 
 df = vaex.open("/setup/converter/outfiles/trace.hdf5")
 tag_map = vaex.open("/setup/converter/outfiles/tag_map.csv")
+numAccesses = df.Address.count()
 
-
-df['index'] = np.arange(0, df.Address.count())
+df['index'] = np.arange(0, numAccesses)
 
 #Set up name-tag mapping
 namesFromFile = (tag_map.Tag_Name.values).tolist()
 tagsFromFile = (tag_map.Tag_Value.values).tolist()
+startIndices = (tag_map.First_Access.values).tolist()
+startAddresses = (tag_map.Low_Address.values).tolist()
+endIndices = (tag_map.Last_Access.values).tolist()
+endAddresses = (tag_map.High_Address.values).tolist()
+
 numTags = len(namesFromFile)
+
+
+# Initialize accessRanges dictionary in bqplot backend with file info
+from vaex_extended.jupyter.bqplot import accessRanges
+accessRanges.clear()
+for i in range(numTags):
+    name = namesFromFile[i]
+    accessRanges.update({name : {}})
+
+    rangeData = accessRanges[name]
+    rangeData.update({"startIndex" : startIndices[i]})
+    rangeData.update({"endIndex" : endIndices[i]})
+    rangeData.update({"startAddr" : startAddresses[i]})
+    rangeData.update({"endAddr" : endAddresses[i]})
+
 
 
 
@@ -117,7 +137,7 @@ def updateHitMiss(change):
         if(name == "Hits"):
             targetRead = READ_HIT
             targetWrite = WRITE_HIT
-        elif(name == "Misses"):
+        elif(name == "Capacity Misses"):
             targetRead = READ_MISS
             targetWrite = WRITE_MISS
         else:
@@ -141,7 +161,7 @@ rwButtons = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disa
              Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
 
 hmButtons = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
-             Checkbox(description="Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
+             Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
              Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
 hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),

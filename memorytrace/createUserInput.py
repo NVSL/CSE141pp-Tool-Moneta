@@ -2,26 +2,23 @@ from imports import *
 
 showFullDescription = {'description_width': '150px'}
 
-cache = Text(
+cache = IntText(
             value='4096',
-            placeholder='',
             description='Cache Lines:',
             style=showFullDescription,
             layout= Layout(width='90%'),
             disabled=False
         )
-lines = Text(
-            value='1000000000',
-            placeholder='',
+lines = IntText(
+            value=1000000000,
             description='Lines to Output:',
             style=showFullDescription,
             layout= Layout(width='90%'),
             disabled=False
         )
 
-block = Text(
+block = IntText(
             value='64',
-            placeholder='',
             description='Block Size (Bytes):',
             style=showFullDescription,
             layout= Layout(width='90%'),

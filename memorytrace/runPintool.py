@@ -14,7 +14,7 @@ BLOCK_SIZE = block.value
    
 err = False
  
-if(not CACHE_SIZE.isdigit() or not NUM_LINES.isdigit() or not BLOCK_SIZE.isdigit()):
+if(CACHE_SIZE < 0 or NUM_LINES < 0 or BLOCK_SIZE < 0):
     print("Cache Lines, Lines to Output, and Block Size must be positive integers")
     err = True
     sys.exit() 
@@ -37,11 +37,11 @@ args = [
     "-o",
     OUTFILE_DIRECTORY,
     "-c",
-    CACHE_SIZE,
+    str(CACHE_SIZE),
     "-m",
-    NUM_LINES,
+    str(NUM_LINES),
     "-l",
-    BLOCK_SIZE,
+    str(BLOCK_SIZE),
     "--",
     INFILE_EXECUTABLE
 ]

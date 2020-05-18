@@ -12,6 +12,10 @@ import vaex_extended
 #     return wrapper
 # BqplotBackend.update_image = fix_image_flipping(BqplotBackend.update_image)
 
+
+accessRanges = {}
+
+
 @extend_class(PlotBase)
 def _update_image(self):
     with self.output:
@@ -236,6 +240,52 @@ def create_tools(self):
         ])
         self.plot.add_control_widget(self.widget_tool_basic)
 
+        control_lyt = widgets.Layout(max_width='30px')
+        self.panzoom_x = control_x = widgets.Checkbox(value=True,description='X',indent=False, layout=control_lyt)
+        self.panzoom_y = control_y = widgets.Checkbox(value=True,description='Y',indent=False, layout=control_lyt)
+        def update_panzoom(checkbox):
+            if control_x.value == True:
+                if control_y.value == True:
+                    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
+                else:
+                    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x]})
+            else:
+                if control_y.value:
+                    self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
+                else:
+                    self.panzoom = bqplot.PanZoom(scales={})
+            self.figure.interaction = self.panzoom
+        self.panzoom_x.observe(update_panzoom)
+        self.panzoom_y.observe(update_panzoom)
+        #self.plot.add_control_widget(self.panzoom_x)
+        #self.plot.add_control_widget(self.panzoom_y)
+        self.panzoom_controls_label = widgets.Label(value="Pan & zoom",layout=widgets.Layout(margin='0 10px 0 0'))
+        self.panzoom_controls = widgets.VBox([self.panzoom_x,self.panzoom_y])
+        pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
+        self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
+        self.plot.add_control_widget(self.panzoom_controls_menu)
+        
+
+        # Create list of buttons for tag zooming
+        self.buttons = [widgets.Button(
+                        description=name, 
+                        icon='search-plus',
+                        layout=widgets.Layout(margin='10px 0px 0px 0px', 
+                                              height='40px', 
+                                              width='90%', 
+                                              border='1px solid black'))
+                   for name in accessRanges.keys()]
+        
+        self.zoomButtonList = widgets.VBox(self.buttons, layout = widgets.Layout(align_items="center"))
+    
+        for button in self.buttons:
+            button.on_click(self.zoomSection)        
+
+        self.plot.add_control_widget(self.zoomButtonList)
+
+
+
+
         self.button_action.observe(change_interact, "v_model")
         self.tools.insert(0, self.button_action)
         self.button_action.value = "pan/zoom"  # tool_actions[-1]
@@ -250,25 +300,49 @@ def create_tools(self):
     self._update_grid_counter = 0  # keep track of t
     self._update_grid_counter_scheduled = 0  # keep track of t
 
+
+
 @extend_class(BqplotBackend)
 @debounced(0.5, method=True)
 def update_zoom_brush(self, *args):
     with self.output:
         if not self.zoom_brush.brushing:  # if we ended brushing, reset it
             self.figure.interaction = None
-            #(x1, y1), (x2, y2) = self.zoom_brush.selected
-           #self.limits = [[x1,x2],[y1,y2]]
-            #self.dataset.selec_nothing()
-            #if not self.zoom_brush.brushing:
-            #    self.figure.interaction = self.zoom_brush
+
         if self.zoom_brush.selected is not None:
             (x1, y1), (x2, y2) = self.zoom_brush.selected
             mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
-            #if not self.zoom_brush.brushing:
-            self.limits = [[x1,x2],[y1,y2]]
+
+            with self.scale_x.hold_trait_notifications():
+                self.scale_x.min = min(x1, x2)
+                self.scale_x.max = max(x1, x2)
+            with self.scale_y.hold_trait_notifications():
+                self.scale_y.min = min(y1, y2)
+                self.scale_y.max = max(y1, y2)
         else:
             self.dataset.select_nothing()
         if not self.zoom_brush.brushing:  # but then put it back again so the rectangle is gone,
             self.figure.interaction = self.zoom_brush
 
+
+
+# From the addressRange dictionary, get the metadata corresponding to the button/tag name
+# and modify the scale_x and scale_y of the graph based on the min and max of the axes ranges
+@extend_class(BqplotBackend)
+@debounced(0.5, method=True)
+def zoomSection(self, change):
+
+    rangeData = accessRanges[change.description]    
+
+    xmin = rangeData['startIndex']
+    xmax = rangeData['endIndex']
+    ymin = rangeData['startAddr']
+    ymax = rangeData['endAddr']
+
+    with self.scale_x.hold_trait_notifications():
+        self.scale_x.min = xmin
+        self.scale_x.max = xmax
+    with self.scale_y.hold_trait_notifications():
+        self.scale_y.min = ymin
+        self.scale_y.max = ymax
 
