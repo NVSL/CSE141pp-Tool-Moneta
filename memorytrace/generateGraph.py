@@ -160,12 +160,12 @@ for button in hmButtons:
 checks = VBox([HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)]),VBox(hmRates)])
 
 newc = np.ones((11, 4))
-newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
-newc[2] = [0, 1, 1, 1] # write_hits - 2, .25
-newc[3] = [0.047, 1, 0, 1] # cache_size
-newc[4] = [1, 1, 0, 1] # read_misses - 3, .375
-newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
-newc[6] = [0.737, 0.745, 0.235, 1] # compulsory read misses - 5, .625
+newc[1] = [0, 0.4, 0, 1] # read_hits - 1, .125
+newc[2] = [0, 0.7, 0, 1] # write_hits - 2, .25
+newc[3] = [0, 0, 0, 1] # cache_size
+newc[4] = [1, 0.2, 0, 1] # read_misses - 3, .375
+newc[5] = [1, 0, 0.2, 1] # write_misses - 4, .5
+newc[6] = [0.737, 0.401, 0.235, 1] # compulsory read misses - 5, .625
 newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 
 custom_cmap = ListedColormap(newc)
