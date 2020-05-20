@@ -16,6 +16,7 @@
 #define DUMP_MACRO_BEG "DUMP_ACCESS_START_TAG"
 #define DUMP_MACRO_END "DUMP_ACCESS_STOP_TAG"
 #define SET_MAX_OUTPUT "SET_MAX_OUTPUT"
+#define FLUSH_CACHE "FLUSH_CACHE"
 
 #define DEBUG 0
 #define EXTRA_DEBUG 0
@@ -349,6 +350,15 @@ VOID set_max_output_called(UINT64 new_max_lines) {
   if(curr_lines >= max_lines) {
     PIN_ExitApplication(0);
   }
+}
+
+VOID flush_cache() {
+  if (CACHE_DEBUG) {
+    cerr << "Clearing cache\n";
+  }
+  inorder_acc.clear();
+  all_accesses.clear();
+  accesses.clear();
 }
 
 VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
@@ -721,6 +731,13 @@ VOID FindFunc(IMG img, VOID *v)
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)set_max_output_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, FLUSH_CACHE);
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
 				IARG_END);
 		RTN_Close(rtn);
 	}
