@@ -13,21 +13,6 @@
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
 
-#define DUMP_MACRO_BEG "DUMP_ACCESS_START_TAG"
-#define DUMP_MACRO_END "DUMP_ACCESS_STOP_TAG"
-#define SET_MAX_OUTPUT "SET_MAX_OUTPUT"
-
-#define DEBUG 0
-#define EXTRA_DEBUG 0
-#define INPUT_DEBUG 0
-#define HDF_DEBUG 0
-#define CACHE_DEBUG 0
-// Use larger buffer
-#define BUFFERED 1
-// If addr overlaps multiple ranges, whether to record only one
-#define RECORD_ONCE 0
-
-using std::ofstream;
 using std::string;
 using std::hex;
 using std::setw;
@@ -46,35 +31,51 @@ template <typename K, typename V>
 using unordered_map = std::unordered_map<K, V>;
 }
 
-// Constant Vars
-const ADDRINT DefaultMaxLines = 100000000;
-const ADDRINT L1CacheEntries = 4096;
-const ADDRINT DefaultCacheLineSize = 64;
-const std::string DefaultPath = "./";
+// Debug vars
+const bool DEBUG {0};
+const bool EXTRA_DEBUG {0};
+const bool INPUT_DEBUG {0};
+const bool HDF_DEBUG   {0};
+const bool CACHE_DEBUG {0};
 
-ofstream map_file;
-
-// More debug vars
 static int read_insts = 0;
 // Cache debug
-static int cache_writes = 0;
-static int first_record = 0;
-static int comp_misses = 0;
-static int cap_misses = 0;
-static int skip_rate = 100;
+static int cache_writes {0};
+static int first_record {0};
+static int comp_misses  {0};
+static int cap_misses   {0};
+const int SkipRate    {100};
 
+// Constant Vars for User input
+const ADDRINT DefaultMaximumLines   {100000000};
+const ADDRINT NumberCacheEntries    {4096};
+const ADDRINT DefaultCacheLineSize  {64};
+const std::string DefaultOutputPath {"./"};
 
+// User-initialized
+static UINT64 max_lines  {DefaultMaximumLines};
+static UINT64 cache_size {NumberCacheEntries};
+static UINT64 cache_line {DefaultCacheLineSize};
+static std::string output_path {DefaultOutputPath};
+
+const std::string TagFileName       {"/tag_map.csv"};
+
+// Macros to track
+const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
+const std::string DUMP_MACRO_END {"DUMP_ACCESS_STOP_TAG"};
+const std::string FLUSH_CACHE    {"FLUSH_CACHE"};
+
+// Analysis state
 static int analysis_num_dump_calls = 0;
 static bool analysis_dump_on = false;
 
-static UINT64 max_lines = DefaultMaxLines;
-static UINT64 cache_size = L1CacheEntries;
-static UINT64 cache_line = DefaultCacheLineSize;
-static UINT64 curr_lines = 0; // Increment for every write to hdf5 for memory accesses
-static std::string output_path = DefaultPath;
+// How to record duplicate addr in multiple ranges
+const bool RECORD_ONCE {0};
+
+static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id every time DUMP_ACCESS is called
-static int curr_id = 0;
+static int curr_id {0};
 
 // tag_to_id used only for dump_access_begin/end
 // Only the id is output to out_file.
@@ -101,10 +102,10 @@ static ADDRINT max_range = 0;
  */
 
 // Output Columns
-const string TagColumn {"Tag"};
-const string AddressColumn {"Address"};
-const string AccessColumn {"Access"};
-const string CacheAccessColumn {"CacheAccess"};
+const std::string TagColumn {"Tag"};
+const std::string AddressColumn {"Address"};
+const std::string AccessColumn {"Access"};
+const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
  * Use this to handle hdf with write_data_mem and write_data_cache
@@ -200,7 +201,7 @@ public:
   HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}),
                  cache_file({"cache.hdf5", H5F_ACC_TRUNC}) { setup_files(); }
   // With names
-  HandleHdf5(string h, string c) : 
+  HandleHdf5(std::string h, std::string c) : 
 	         mem_file({h.c_str(), H5F_ACC_TRUNC}),
                  cache_file({c.c_str(), H5F_ACC_TRUNC}) { setup_files(); }
   // Destructor
@@ -330,7 +331,7 @@ static char * buffer3 = new char[BUF_SIZE];
 // - Set L1 cache size
 // - Set maximum line limit
 
-KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
+KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
     "o", "./", "specify output file directory with an absolute path");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
@@ -349,6 +350,15 @@ VOID set_max_output_called(UINT64 new_max_lines) {
   if(curr_lines >= max_lines) {
     PIN_ExitApplication(0);
   }
+}
+
+VOID flush_cache() {
+  if (CACHE_DEBUG) {
+    cerr << "Clearing cache\n";
+  }
+  inorder_acc.clear();
+  all_accesses.clear();
+  accesses.clear();
 }
 
 VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
@@ -388,7 +398,11 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
 
     // Throw exception if redefining tag
     id = tag_to_id[str_tag];
-    assert(active_ranges.find(id) == active_ranges.end());
+    if (all_ranges.find(id) != all_ranges.end()) {
+      cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
+	      "Exiting Program...\n";
+      PIN_ExitApplication(0);
+    }
   }
   active_ranges[id] = AddressRange(begin, end);
   all_ranges[id] = AddressRange(begin, end);
@@ -468,7 +482,7 @@ int add_to_simulated_cache(ADDRINT addr) {
   auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
   if (iter != accesses.end()) { // In cache, move to front - Hit
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
-    if (CACHE_DEBUG && cache_writes%skip_rate == 0) {
+    if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
       cerr << cache_writes << "th write (Hit): " << addr << "\n";
     }
     return 0;
@@ -599,8 +613,9 @@ VOID Fini(INT32 code, VOID *v) {
     cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
 
+  std::ofstream map_file (output_path + TagFileName);
   // Write out mapping - only need to open and close map_file here
-  map_file.open(output_path + "/tag_map.csv");
+  //map_file.open(output_path + "/tag_map.csv");
   // Every id->tag
   map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n";
   for (auto& x : id_to_tag) {
@@ -694,9 +709,8 @@ VOID Instruction(INS ins, VOID *v)
 }
 
 // Find the DUMP_MACRO and SET_MAX_OUTPUT routines in the current image and insert a call
-VOID FindFunc(IMG img, VOID *v)
-{
-	RTN rtn = RTN_FindByName(img, DUMP_MACRO_BEG);
+VOID FindFunc(IMG img, VOID *v) {
+	RTN rtn = RTN_FindByName(img, DUMP_MACRO_BEG.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_beg_called,
@@ -706,21 +720,18 @@ VOID FindFunc(IMG img, VOID *v)
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, DUMP_MACRO_END);
+	rtn = RTN_FindByName(img, DUMP_MACRO_END.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_end_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, SET_MAX_OUTPUT);
+	rtn = RTN_FindByName(img, FLUSH_CACHE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)set_max_output_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -750,20 +761,13 @@ int main(int argc, char *argv[]) {
   if (INPUT_DEBUG) {
     cerr << "User input: " << in_output_limit << ", " << in_cache_size << ", " << in_cache_line << "\n";
   }
-  if (in_output_limit <= 0) {
-    max_lines = DefaultMaxLines;
-  } else {
+  if (in_output_limit > 0) {
     max_lines = in_output_limit;
   }
-  if (in_cache_size <= 0) {
-    cache_size = L1CacheEntries;
-  } else {
+  if (in_cache_size > 0) {
     cache_size = in_cache_size;
   }
-
-  if (in_cache_line <= 0) {
-    cache_line = DefaultCacheLineSize;
-  } else {
+  if (in_cache_line > 0) {
     cache_line = in_cache_line;
     free_stack_start = ULLONG_MAX - ULLONG_MAX%cache_line - cache_line;
     free_stack = free_stack_start; // Actual free space for stack
@@ -790,25 +794,5 @@ int main(int argc, char *argv[]) {
   
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
