@@ -22,9 +22,11 @@
 * The file that trace_tool.so is built from can be found at CSE141pp-Tool-MemoryTrace/Setup/trace_tool.cpp
   * To edit this file then convert it to a .so, first copy the .cpp to /setup/pintool/source/tools/ManualExamples/ 
   * Run the following commands:
-        `$make
-        $make obj-intel64/trace_tool.so
-        $cp obj-intel64/trace_tool.so /setup/converter`
+```
+$make     
+$make obj-intel64/trace_tool.so TARGET=intel64
+$cp obj-intel64/trace_tool.so /setup/converter
+```
   *	You can now use the command from above to execute the pintool with the updated .so file
 
 ## The Pintool – What Is It Doing:
