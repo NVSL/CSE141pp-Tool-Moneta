@@ -240,6 +240,31 @@ def create_tools(self):
         ])
         self.plot.add_control_widget(self.widget_tool_basic)
 
+        control_lyt = widgets.Layout(max_width='30px')
+        self.panzoom_x = control_x = widgets.Checkbox(value=True,description='X',indent=False, layout=control_lyt)
+        self.panzoom_y = control_y = widgets.Checkbox(value=True,description='Y',indent=False, layout=control_lyt)
+        def update_panzoom(checkbox):
+            if control_x.value == True:
+                if control_y.value == True:
+                    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
+                else:
+                    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x]})
+            else:
+                if control_y.value:
+                    self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
+                else:
+                    self.panzoom = bqplot.PanZoom(scales={})
+            self.figure.interaction = self.panzoom
+        self.panzoom_x.observe(update_panzoom)
+        self.panzoom_y.observe(update_panzoom)
+        #self.plot.add_control_widget(self.panzoom_x)
+        #self.plot.add_control_widget(self.panzoom_y)
+        self.panzoom_controls_label = widgets.Label(value="Pan & zoom",layout=widgets.Layout(margin='0 10px 0 0'))
+        self.panzoom_controls = widgets.VBox([self.panzoom_x,self.panzoom_y])
+        pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
+        self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
+        self.plot.add_control_widget(self.panzoom_controls_menu)
+        
 
         # Create list of buttons for tag zooming
         self.buttons = [widgets.Button(
