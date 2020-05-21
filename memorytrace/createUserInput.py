@@ -3,14 +3,14 @@ from imports import *
 showFullDescription = {'description_width': '150px'}
 
 cache = IntText(
-            value='4096',
+            value=4096,
             description='Cache Lines:',
             style=showFullDescription,
             layout= Layout(width='90%'),
             disabled=False
         )
 lines = IntText(
-            value=1000000000,
+            value=100000000,
             description='Lines to Output:',
             style=showFullDescription,
             layout= Layout(width='90%'),
@@ -18,7 +18,7 @@ lines = IntText(
         )
 
 block = IntText(
-            value='64',
+            value=64,
             description='Block Size (Bytes):',
             style=showFullDescription,
             layout= Layout(width='90%'),

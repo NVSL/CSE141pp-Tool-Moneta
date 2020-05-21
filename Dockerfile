@@ -30,7 +30,7 @@ ADD Setup/pin_makefile.unix.config /setup/pintool/source/tools/Config/makefile.u
 ADD Setup/pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile.default.rules
 
 # Install python libraries
-ADD requirements.txt /setup
+ADD Setup/requirements.txt /setup
 RUN pip install -r requirements.txt
 
 
