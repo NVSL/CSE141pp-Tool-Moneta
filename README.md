@@ -67,7 +67,7 @@ You should see two links appear. Go to your preferred web browser and paste the 
 http://127.0.0.1:8888/?token=...
 ```
 You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press `Run`.
-![](https://i.gyazo.com/8a5e8c3de2bd45a677f31f0be9d59d51.png "Memory Trace Tool")
+![](https://i.gyazo.com/0537edfe66db0d05d5d7e013a8d95b56.png "Memory Trace Tool")
 <br/>
 
 **Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)  

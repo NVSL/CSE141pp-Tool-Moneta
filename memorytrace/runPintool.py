@@ -17,12 +17,18 @@ err = False
 if(CACHE_SIZE < 0 or NUM_LINES < 0 or BLOCK_SIZE < 0):
     print("Cache Lines, Lines to Output, and Block Size must be positive integers")
     err = True
-    sys.exit() 
+    sys.exit()
     
 if(not path.isfile(INFILE_EXECUTABLE)):
     print("Executable \"{}\" Not Found".format(INFILE_EXECUTABLE))
     err = True
     sys.exit()
+
+if(not os.access(INFILE_EXECUTABLE, os.X_OK)):
+    print("\"{}\" is not an executable.".format(INFILE_EXECUTABLE))
+    err = True
+    sys.exit()
+
 
 
 print("Running {} with Cache Lines={} and Block Size={}B for Number of Lines={}".format(INFILE_EXECUTABLE, CACHE_SIZE, BLOCK_SIZE, NUM_LINES))
