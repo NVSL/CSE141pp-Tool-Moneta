@@ -32,11 +32,11 @@ using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
-const bool DEBUG {0};
-const bool EXTRA_DEBUG {0};
-const bool INPUT_DEBUG {0};
-const bool HDF_DEBUG   {0};
-const bool CACHE_DEBUG {0};
+constexpr bool DEBUG {0};
+constexpr bool EXTRA_DEBUG {0};
+constexpr bool INPUT_DEBUG {0};
+constexpr bool HDF_DEBUG   {0};
+constexpr bool CACHE_DEBUG {0};
 
 static int read_insts = 0;
 // Cache debug
@@ -44,12 +44,12 @@ static int cache_writes {0};
 static int first_record {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
-const int SkipRate    {100};
+constexpr int SkipRate    {100};
 
 // Constant Vars for User input
-const ADDRINT DefaultMaximumLines   {100000000};
-const ADDRINT NumberCacheEntries    {4096};
-const ADDRINT DefaultCacheLineSize  {64};
+constexpr ADDRINT DefaultMaximumLines   {100000000};
+constexpr ADDRINT NumberCacheEntries    {4096};
+constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"./"};
 
 // User-initialized
@@ -65,33 +65,40 @@ const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
 const std::string DUMP_MACRO_END {"DUMP_ACCESS_STOP_TAG"};
 const std::string FLUSH_CACHE    {"FLUSH_CACHE"};
 
-// Analysis state
-static int analysis_num_dump_calls = 0;
-static bool analysis_dump_on = false;
 
 // How to record duplicate addr in multiple ranges
-const bool RECORD_ONCE {0};
+constexpr bool RECORD_ONCE {0};
 
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
-// Increment id every time DUMP_ACCESS is called
+// Increment id for every new tag
 static int curr_id {0};
 
-// tag_to_id used only for dump_access_begin/end
+struct TagData {
+  const std::pair<ADDRINT, ADDRINT> addr_range; // Read only
+  const ADDRINT range_offset;
+  const std::string tag_name;
+  const int id;
+  bool active;                 // R/W
+  std::pair<int, int> x_range;
+  
+  TagData(std::string tn, ADDRINT low, ADDRINT hi, ADDRINT ro) : 
+	  addr_range({low, hi}),
+	  range_offset(ro),
+	  tag_name(tn), 
+	  id(curr_id++),
+	  active {1},
+          x_range({-1, -1}) {}
+  // Default destructor
+};
+
 // Only the id is output to out_file.
-// id_to_tag is output to out_file
 typedef pair<ADDRINT, ADDRINT> AddressRange; 
-pintool::unordered_map<int, AddressRange> active_ranges; // Original ranges - Suggestions for refactoring - coalesce maps to id -> class mapping
-pintool::unordered_map<int, AddressRange> all_ranges; // Save the ranges whereas active_ranges deletes them
-pintool::unordered_map<int, ADDRINT> range_offsets; // To normalize on top of each other
-pintool::unordered_map<ADDRINT, ADDRINT> stack_map;  // For all values outside active_ranges but inside macros
-pintool::unordered_map<string, int> tag_to_id; // String tag to id
-pintool::unordered_map<int, string> id_to_tag; // Id to string tag
-pintool::unordered_map<int, pair<int, int>> x_range; // First and last access
+
+pintool::unordered_map<std::string, TagData*> all_tags;
+//pintool::unordered_map<string
 
 static ADDRINT free_block = 0; // State for normalized accesses
-static ADDRINT free_stack_start = ULLONG_MAX - ULLONG_MAX%DefaultCacheLineSize - DefaultCacheLineSize;
-static ADDRINT free_stack = free_stack_start;
 
 static ADDRINT max_range = 0;
 
@@ -102,10 +109,10 @@ static ADDRINT max_range = 0;
  */
 
 // Output Columns
-const std::string TagColumn {"Tag"};
-const std::string AddressColumn {"Address"};
-const std::string AccessColumn {"Access"};
-const std::string CacheAccessColumn {"CacheAccess"};
+const std::string TagColumn         {"Tag"};
+const std::string AccessColumn      {"Access"};
+const std::string AddressColumn     {"Address"};
+//const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
  * Use this to handle hdf with write_data_mem and write_data_cache
@@ -116,10 +123,10 @@ class HandleHdf5 {
   uint8_t accs[chunk_size];
   int tags[chunk_size];
 
-  unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
+  //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
   size_t mem_ind = 0;
-  size_t cache_ind = 0;
+  //size_t cache_ind = 0;
 
   // Memory accesses
   H5::H5File mem_file;
@@ -132,12 +139,12 @@ class HandleHdf5 {
   hsize_t offset [1] = {0};
 
   // Cache accesses
-  H5::H5File cache_file;
+  /*H5::H5File cache_file;
   H5::DataSet cache_d;
     // State vars
   hsize_t curr_chunk_dims_c [1] = {chunk_size};
   hsize_t total_ds_dims_c [1] = {chunk_size};
-  hsize_t offset_c [1] = {0};
+  hsize_t offset_c [1] = {0};*/
 
   // Open files, dataspace, and datasets
   void setup_files() {
@@ -156,8 +163,8 @@ class HandleHdf5 {
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
-    H5::DataSpace c_dataspace {1, idims_t, max_dims};
-    cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
+    //H5::DataSpace c_dataspace {1, idims_t, max_dims};
+    //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
   }
 
   // Extends dataset and writes stored chunk
@@ -184,7 +191,7 @@ class HandleHdf5 {
   }
 
   // Extends dataset and writes stored chunk
-  void extend_write_cache() {
+  /*void extend_write_cache() {
     if (HDF_DEBUG) {
       cerr << "Extending and writing dataset for cache\n";
     }
@@ -193,17 +200,23 @@ class HandleHdf5 {
     H5::DataSpace new_dataspace = {1, curr_chunk_dims_c}; // Get new dataspace
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims_c, offset_c); // Select slab in extended dataset
     cache_d.write( cache_addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace); // Write to the extended part
-  }
-  
+  }*/
 
 public:
   // Default constructor
+  HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}) { setup_files(); }
+
+  /*// Default constructor - Cache
   HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}),
-                 cache_file({"cache.hdf5", H5F_ACC_TRUNC}) { setup_files(); }
+                 cache_file({"cache.hdf5", H5F_ACC_TRUNC}) { setup_files(); }*/
+
   // With names
-  HandleHdf5(std::string h, std::string c) : 
+  HandleHdf5(std::string h) : mem_file({h.c_str(), H5F_ACC_TRUNC}) { setup_files(); }
+
+  // With names - Cache
+  /*HandleHdf5(std::string h, std::string c) : 
 	         mem_file({h.c_str(), H5F_ACC_TRUNC}),
-                 cache_file({c.c_str(), H5F_ACC_TRUNC}) { setup_files(); }
+                 cache_file({c.c_str(), H5F_ACC_TRUNC}) { setup_files(); }*/
   // Destructor
   ~HandleHdf5() {
     if (HDF_DEBUG) {
@@ -216,16 +229,16 @@ public:
       extend_write_mem();
     }
 
-    if (cache_ind != 0) {
+    /*if (cache_ind != 0) { // Same for cache
       curr_chunk_dims_c[0] = cache_ind;
       total_ds_dims_c[0] -= chunk_size - cache_ind;
 
       extend_write_cache();
-    }
+    }*/
 
     // Close files
     mem_file.close();
-    cache_file.close();
+    //cache_file.close();
 
   }
 
@@ -264,7 +277,7 @@ public:
   }
 
   // Write data for cache access to file
-  int write_data_cache(ADDRINT address) {
+  /*int write_data_cache(ADDRINT address) {
     if (HDF_DEBUG) {
       cerr << "Write to Hdf5 - cache\n";
     }
@@ -278,46 +291,42 @@ public:
     total_ds_dims_c[0] += chunk_size;
     offset_c[0] += chunk_size;
     return 0;
-  }
+  }*/
 
 };
 
-
-
-HandleHdf5 *hdf_handler;
-
-
-
-
+HandleHdf5 *hdf_handler; // One for this pintool
 
 struct cache_hash {
-	inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
-		return (uint64_t)k.first;
-	}
+  inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
+    return (uint64_t)k.first;
+  }
 };
 
 struct cache_equal {
 public:
-	inline bool operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
+  inline bool operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
  
-		if (k1.first == k2.first)
-			return true;
-		return false;
-	}
+    if (k1.first == k2.first) {
+      return true;
+    }
+    return false;
+  }
 };
 
 
-/*struct cache_compare {
+/*struct cache_compare { // Need this to use set
     inline bool operator() (const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
         return k1.first < k2.first;
     }
 };*/
 
 
+// Stores all info for cache with pointers to where it is in list
 std::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
 std::unordered_set<ADDRINT> all_accesses;
-//std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses;
-std::list<ADDRINT> inorder_acc;
+//std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses; // Try set to see if it's faster than unordered_set
+std::list<ADDRINT> inorder_acc; // Everything in cache right now
 
 // Increase the file write buffer to speed up i/o
 const unsigned long long BUF_SIZE = 4ULL * 8ULL* 1024ULL * 1024ULL;
@@ -325,12 +334,7 @@ static char * buffer1 = new char[BUF_SIZE];
 static char * buffer2 = new char[BUF_SIZE];
 static char * buffer3 = new char[BUF_SIZE];
 
-// Extensions:
-// -----------
-// Add config options for:
-// - Set L1 cache size
-// - Set maximum line limit
-
+// Command line options for pintool
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
     "o", "./", "specify output file directory with an absolute path");
 
@@ -343,18 +347,9 @@ KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
     "l", "0", "specify size of cache line for L1 cache");
 
-// TODO make a config option?
-VOID set_max_output_called(UINT64 new_max_lines) {
-  max_lines = new_max_lines;
-  // If reached file size limit, exit
-  if(curr_lines >= max_lines) {
-    PIN_ExitApplication(0);
-  }
-}
-
 VOID flush_cache() {
   if (CACHE_DEBUG) {
-    cerr << "Clearing cache\n";
+    cerr << "Flushing cache\n";
   }
   inorder_acc.clear();
   all_accesses.clear();
@@ -369,26 +364,21 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     cerr << "Dump begin called - " << begin << ", " << end << " TAG: " << str_tag << "\n";
   }
 
-  int id;
-  if (tag_to_id.find(str_tag) == tag_to_id.end()) { // New tag
+  if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
       cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
       cerr << "Range: " << begin << ", " << end << "\n";
     }
 
-    id = curr_id++;
-    tag_to_id[str_tag] = id;
-    id_to_tag[id] = str_tag;
-
-
-    range_offsets[id] = begin - free_block;
+    TagData *new_tag = new TagData(str_tag, begin, end, begin-free_block);
+    all_tags[str_tag] = new_tag;
     free_block+= end-begin;
     free_block+= cache_line - free_block%cache_line; // Move to next cache_line for each new tag
 
     max_range = std::max(max_range, free_block);
 
     if (DEBUG) {
-      cerr << "Free_block: " << free_block << " range: " << range_offsets[id] << "\n";
+      cerr << "Free_block: " << free_block << " range: " << new_tag->range_offset  << "\n";
     }
 
   } else { // Reuse tag
@@ -396,19 +386,16 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
       cerr << "Dump begin called - Old tag\n";
     }
 
-    // Throw exception if redefining tag
-    id = tag_to_id[str_tag];
-    if (all_ranges.find(id) != all_ranges.end()) {
-      cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
-	      "Exiting Program...\n";
+    // Exit program if redefining tag
+    TagData *old_tag = all_tags[str_tag];
+    if (old_tag->addr_range.first != begin || // Must be same range
+      old_tag->addr_range.second != end) {
+      cerr << "1 - Error: Tag redefined - Tag can't map to different ranges\n"
+              "Exiting Program...\n";
       PIN_ExitApplication(0);
     }
+    old_tag->active = true;
   }
-  active_ranges[id] = AddressRange(begin, end);
-  all_ranges[id] = AddressRange(begin, end);
-  analysis_num_dump_calls++;
-  analysis_dump_on = true;
-  //PIN_RemoveInstrumentation();
 }
 
 VOID dump_end_called(VOID * tag) {
@@ -419,31 +406,27 @@ VOID dump_end_called(VOID * tag) {
   }
 
   // Assert tag exists
-  int id = tag_to_id[str_tag];
-  assert(active_ranges.find(id) != active_ranges.end());
+  // Could be try catch or if else
+  assert(all_tags.find(str_tag) != all_tags.end());
+  all_tags[str_tag]->active = false;
 
-  active_ranges.erase(id);
-  if (--analysis_num_dump_calls <= 0) {
-    analysis_num_dump_calls = 0;
-    analysis_dump_on = false;
-    if (DEBUG) {
+    /*if (DEBUG) { // Could iterate through all_tags and print if none are active
       cerr << "End TAG - Deactivated analysis\n";
-    }
-  }
-  //PIN_RemoveInstrumentation();
+    }*/
 }
 
 // Write id,op,addr to file
-inline VOID write_to_memfile(int id, int op, ADDRINT addr){
-  hdf_handler->write_data_mem(id, op, addr); // straight to hdf
-  if (x_range.find(id) == x_range.end()) {
-    x_range[id] = std::make_pair(curr_lines, curr_lines);
-  } else {
-    x_range[id].second = curr_lines;
+inline VOID write_to_memfile(TagData* t, int op, ADDRINT addr){
+  hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
+  if (t->x_range.first == -1) { // First time accessed
+    t->x_range.first  = curr_lines;
+    t->x_range.second = curr_lines;
+  } else { // Update last access
+    t->x_range.second = curr_lines;
   }
   curr_lines++; // Afterward, for 0-based indexing
-  // If reached file size limit, exit
-  if(curr_lines >= max_lines) { // Should probably close files
+  
+  if(curr_lines >= max_lines) { // If reached file size limit, exit
     PIN_ExitApplication(0);
   }
 }
@@ -501,108 +484,78 @@ int add_to_simulated_cache(ADDRINT addr) {
 
 }
 
-// Print a memory read record
+// Write address if in the range of the active tags as read to hdf5
 VOID RecordMemRead(ADDRINT addr) {
   if (DEBUG) {
     read_insts++;
   }
   bool recorded = false;
-  // Every tag
-  for (auto& x : active_ranges) {
-    // Every range for tag
-    int id = x.first;
-    AddressRange range = x.second;
-    ADDRINT start_addr = range.first;
-    ADDRINT end_addr   = range.second;
-    if (start_addr <= addr && addr <= end_addr) {
-     recorded = true;
-     if (CACHE_DEBUG) {
-       if (first_record == 0) {
-         first_record = cache_writes;
-         cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
-       }
-     }
-
-     int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
-     addr -= range_offsets[id]; // Apply transformation
-     if (acc_typ == 0) {
-       write_to_memfile(id, 1, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
-     } else if (acc_typ == 1) {
-       write_to_memfile(id, 3, addr); // Capacity miss -> 3
-     } else {
-       write_to_memfile(id, 5, addr); // Compulsory miss -> 5
-     }
-      if (EXTRA_DEBUG) {
-        cerr << "Record read\n";
+  for (auto& tag_iter : all_tags) {
+    TagData* t = tag_iter.second;
+    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second ) {
+      recorded = true;
+      if (CACHE_DEBUG) {
+        if (first_record == 0) {
+          first_record = cache_writes;
+          cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+        }
       }
-      if(RECORD_ONCE) break; // Record just once
+      int access_type = add_to_simulated_cache(addr);
+      addr -= t->range_offset; // Transform
+      if (access_type == 0) {
+        write_to_memfile(t, 1, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
+      } else if (access_type == 1) {
+        write_to_memfile(t, 3, addr); // Capacity miss -> 3
+      } else {
+        write_to_memfile(t, 5, addr); // Compulsory miss -> 5
+      }
+      if (RECORD_ONCE) break;
     }
   }
-  /*if (DEBUG) {
-    cerr << "Insts so far: " << read_insts << " Recorded - " << (recorded ? "true" : "false" ) << "\n";
-  }*/
   if (!recorded) { // Outside ranges
     addr -= addr%cache_line;
-    /*if (stack_map.find(addr) == stack_map.end()) {
-      stack_map[addr] = free_stack; // Condense to opposite side of space
-      free_stack-=cache_line;
-    }*/
-    //add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
     add_to_simulated_cache(addr); // Add original value to cache
   }
 }
 
-// Print a memory write record
+// Write address if in the range of the active tags as write to hdf5
 VOID RecordMemWrite(ADDRINT addr) {
+  if (DEBUG) {
+    read_insts++;
+  }
   bool recorded = false;
-  // Every tag
-  for (auto& x : active_ranges) {
-    // Every range for tag
-    int id = x.first;
-    AddressRange range = x.second;
-    ADDRINT start_addr = range.first;
-    ADDRINT end_addr   = range.second;
-    if (start_addr <= (ADDRINT)addr && (ADDRINT)addr <= end_addr) {
-     recorded = true;
-     if (CACHE_DEBUG) {
-       if (first_record == 0) {
-         first_record = cache_writes;
-         cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
-       }
-     }
-     int acc_typ = add_to_simulated_cache(addr); // Add original value to cache
-     addr -= range_offsets[id]; // Transform
-     if (acc_typ == 0) {
-       write_to_memfile(id, 2, addr); // Hit -> 2 
-     } else if (acc_typ == 1) {
-       write_to_memfile(id, 4, addr); // Capacity miss -> 4
-     } else {
-       write_to_memfile(id, 6, addr); // Compulsory miss -> 6
-     }
-      if (EXTRA_DEBUG) {
-        cerr << "Record read\n";
+  for (auto& tag_iter : all_tags) {
+    TagData* t = tag_iter.second;
+    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second ) {
+      recorded = true;
+      if (CACHE_DEBUG) {
+        if (first_record == 0) {
+          first_record = cache_writes;
+          cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+        }
       }
-      if(RECORD_ONCE) break; // Record just once
+      int access_type = add_to_simulated_cache(addr);
+      addr -= t->range_offset; // Transform
+      if (access_type == 0) {
+        write_to_memfile(t, 2, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
+      } else if (access_type == 1) {
+        write_to_memfile(t, 4, addr); // Capacity miss -> 3
+      } else {
+        write_to_memfile(t, 6, addr); // Compulsory miss -> 5
+      }
+      if (RECORD_ONCE) break;
     }
   }
   if (!recorded) { // Outside ranges
     addr -= addr%cache_line;
-    /*if (stack_map.find(addr) == stack_map.end()) {
-      stack_map[addr] = free_stack; // Condense to opposite side of space
-      free_stack-=cache_line;
-    }*/
-    //add_to_simulated_cache(stack_map[addr]); // Add transformed address to cache
     add_to_simulated_cache(addr); // Add original value to cache
   }
 }
 
-const char * StripPath(const char * path) {
-  const char * file = strrchr(path, '/');
-  if (file)
-    return file+1;
-  else return path;
-}
-
+/* Called when tracked program finishes or Pin_ExitApplication is called
+ *
+ * Fills up tag map file, cache file, closes files, destroys objects
+ */
 VOID Fini(INT32 code, VOID *v) {
 
   if (DEBUG) {
@@ -614,45 +567,25 @@ VOID Fini(INT32 code, VOID *v) {
   }
 
   std::ofstream map_file (output_path + TagFileName);
-  // Write out mapping - only need to open and close map_file here
-  //map_file.open(output_path + "/tag_map.csv");
-  // Every id->tag
-  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n";
-  for (auto& x : id_to_tag) {
-    int id = x.first;
-    string tag = x.second;
-    AddressRange addr_range = all_ranges[id];
-    ADDRINT offset = range_offsets[id];
-    int lo_ind = 0;
-    int hi_ind = 0;
-    auto iter = x_range.find(id);
-    if (iter != x_range.end()) {
-      lo_ind = iter->second.first;
-      hi_ind = iter->second.second;
-    }
-    map_file << tag << "," << id << ","
-             << addr_range.first - offset << ","
-	     << addr_range.second - offset << ","
-	     << lo_ind << "," << hi_ind << "\n";
+  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+  for (auto& x : all_tags) {
+    TagData* t = x.second;
+    map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
+             << t->addr_range.first - t->range_offset << ","
+	     << t->addr_range.second - t->range_offset << ","
+	     << t->x_range.first << "," << t->x_range.second << "\n";
   }
 
-  //std::cerr << cache_accesses.size() << " " << uniq_addr.size() << "\n";
-  //for(VOID* x : cache_accesses) {
-  /*for(ADDRINT addr_int : inorder_acc) {
-    if (addr_int >= max_range) { // outside ranges - stack, untracked data structures
-      addr_int  = max_range + (free_stack_start - addr_int); // Move transformed stack to right on top of tracked ranges
-    }
-    hdf_handler->write_data_cache(addr_int);
-  }*/
   // Updated cache write - Must check if it's in any of the tagged ranges
-  // Add cache values from least recently used to most recently used
-  for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
+  // Write cache values from least recently used to most recently used
+  /*for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
     // Check if it's part of any of the ranges
     ADDRINT correct_val = *rit;
     bool tagged = false;
-    for (auto& x : all_ranges) {
-      if (x.second.first <= *rit && *rit <= x.second.second) {
-        correct_val -= range_offsets[x.first]; // Normalize
+    for (auto& x : all_tags) {
+      TagData* t = x.second;
+      if (t->addr_range.first <= *rit && *rit <= t->addr_range.second) {
+        correct_val -= t->range_offset; // Normalize
         tagged = true;
         break;
       }
@@ -662,20 +595,22 @@ VOID Fini(INT32 code, VOID *v) {
       max_range+= cache_line;
     }
     hdf_handler->write_data_cache(correct_val);
-  }
+  }*/
 
   // Close files
   map_file.flush();
   map_file.close();
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
+  // Delete all TagData's
+  for (auto& x : all_tags) {
+    delete x.second;
+  }
 }
 
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
-	// Don't add instrumentation if not inside a DUMP_ACCESS block
-	//if(!analysis_dump_on) return;
 
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
@@ -754,7 +689,6 @@ int main(int argc, char *argv[]) {
 
   // Output file names
   output_path = KnobOutputFile.Value();
-  //string cache_file_name = "cache.h5";
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -769,8 +703,6 @@ int main(int argc, char *argv[]) {
   }
   if (in_cache_line > 0) {
     cache_line = in_cache_line;
-    free_stack_start = ULLONG_MAX - ULLONG_MAX%cache_line - cache_line;
-    free_stack = free_stack_start; // Actual free space for stack
   }
   if (INPUT_DEBUG) {
     cerr << "Max lines of trace: "   << max_lines <<
@@ -778,8 +710,7 @@ int main(int argc, char *argv[]) {
 	    "\nCache line size in bytes: " << cache_line << "\n";
   }
 
-  hdf_handler = new HandleHdf5(output_path + "/trace.hdf5",
-		               output_path + "/cache.hdf5");
+  hdf_handler = new HandleHdf5(output_path + "/trace.hdf5");
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
