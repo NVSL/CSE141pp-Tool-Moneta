@@ -113,7 +113,6 @@ def updateReadWrite(change):
             targetMiss = WRITE_MISS
             targetCMiss = COMP_W_MISS
         
-        print(targetHit) 
         if(change.new == True):
             df.select(df.Access == targetHit, mode='or', name='rw')
             df.select(df.Access == targetMiss, mode='or', name='rw')
