@@ -83,7 +83,6 @@ def combineSelections():
     df.select("hm", mode='and', name='total')
     
     
-    
 def updateGraph(change):
     if(change.name == 'value'):
         
@@ -105,7 +104,7 @@ def updateReadWrite(change):
         
         name = change.owner.description
         
-        if(name == "Reads"):
+        if(re.search('^Reads', name)):
             targetHit = READ_HIT
             targetMiss = READ_MISS
             targetCMiss = COMP_R_MISS
@@ -114,6 +113,7 @@ def updateReadWrite(change):
             targetMiss = WRITE_MISS
             targetCMiss = COMP_W_MISS
         
+        print(targetHit) 
         if(change.new == True):
             df.select(df.Access == targetHit, mode='or', name='rw')
             df.select(df.Access == targetMiss, mode='or', name='rw')
@@ -134,10 +134,10 @@ def updateHitMiss(change):
         
         name = change.owner.description
         
-        if(name == "Hits"):
+        if(re.search('^Hits', name)):
             targetRead = READ_HIT
             targetWrite = WRITE_HIT
-        elif(name == "Capacity Misses"):
+        elif(re.search('^Capacity', name)):
             targetRead = READ_MISS
             targetWrite = WRITE_MISS
         else:
