@@ -268,7 +268,8 @@ def create_tools(self):
 
         # Create list of buttons for tag zooming
         self.buttons = [widgets.Button(
-                        description=name, 
+                        description=name,
+                        tooltip=name, 
                         icon='search-plus',
                         layout=widgets.Layout(margin='10px 0px 0px 0px', 
                                               height='40px', 
@@ -332,7 +333,7 @@ def update_zoom_brush(self, *args):
 @debounced(0.5, method=True)
 def zoomSection(self, change):
 
-    rangeData = accessRanges[change.description]    
+    rangeData = accessRanges[change.tooltip]    
 
     xmin = rangeData['startIndex']
     xmax = rangeData['endIndex']
