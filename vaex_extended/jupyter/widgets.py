@@ -19,7 +19,7 @@ class PlotTemplate(v.VuetifyTemplate):
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     template = Unicode('''
 
-<v-app>
+<v-app id="app">
     <v-navigation-drawer
       v-model="model"
       :permanent="type === 'permanent'"
@@ -49,7 +49,7 @@ class PlotTemplate(v.VuetifyTemplate):
       <output-widget />
     </v-navigation-drawer>
 
-    <v-app-bar :clipped-left="clipped" absolute dense>
+    <v-app-bar app :clipped-left="clipped" absolute dense>
       <v-app-bar-nav-icon
         v-if="type !== 'permanent'"
         @click.stop="model = !model"
