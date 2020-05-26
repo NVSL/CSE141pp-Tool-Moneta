@@ -12,7 +12,7 @@ class Plot2dDefault(Plot2dDefault):
                         'main-widget': widgets.VBox([self.backend.widget, self.progress, self.output]),
                         'control-widget': self.control_widget,
                         'output-widget': self.output,
-                        'toolbox': self.backend.widget_tool_basic
+                        'toolbox': self.backend.widget_menubar
                     },
                     model=False
             )

@@ -315,7 +315,16 @@ def create_tools(self):
         pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
-        
+       
+        # Controls to be added to menubar instead of sidebar 
+        self.widget_menubar = v.Layout(children=[
+            v.Layout(pa_1=True, column=False, align_center=True, children=[
+                widgets.VBox([self.panzoom_x, self.panzoom_y]),
+                self.button_action,
+                self.widget_select_nothing,
+                self.widget_reset
+            ])
+        ])
 
         # Create list of buttons for tag zooming
         self.buttons = [widgets.Button(
