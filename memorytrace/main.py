@@ -224,10 +224,10 @@ def read_out_dir():
     logging.info("Checking {}".format(file_name))
     if file_name.startswith('trace_') and file_name.endswith('.hdf5'):
       trace_name = file_name[6:file_name.index('.hdf5')]
-      trace_drop_list.append(trace_name)
       tag_path = os.path.join(dir_path, 'tag_map_' + trace_name + '.csv')
       meta_path = os.path.join(dir_path, 'meta_data_' + trace_name + '.txt')
       if os.path.isfile(tag_path) and os.path.isfile(meta_path):
+        trace_drop_list.append(trace_name)
         trace_map[trace_name] = (os.path.join(dir_path, file_name),
                                  tag_path, meta_path)
         logging.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
