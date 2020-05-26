@@ -18,9 +18,17 @@ WRITE_HIT = 2
 READ_HIT = 1
 
 
+if(load):
+    # hdf5Load and tagmapLoad declared in checkFiles.py depending on user input
+    hdf5Path = hdf5Load
+    tagmapPath = tagmapLoad
+else:
+    hdf5Path = "/setup/converter/outfiles/trace.hdf5"
+    tagmapPath = "/setup/converter/outfiles/tag_map.csv"
 
-df = vaex.open("/setup/converter/outfiles/trace.hdf5")
-tag_map = vaex.open("/setup/converter/outfiles/tag_map.csv")
+
+df = vaex.open(hdf5Path)
+tag_map = vaex.open(tagmapPath)
 numAccesses = df.Address.count()
 
 df['index'] = np.arange(0, numAccesses)
@@ -154,29 +162,46 @@ def updateHitMiss(change):
     df.select('total')  
         
         
-tagButtons = [Checkbox(description=name, value=True, disabled=False, indent=False) for name in namesFromFile]
+tagChecks = [HBox([widgets.Button(
+                                  icon='search-plus',
+                                  tooltip=name,
+                                  layout=Layout(height='35px', 
+                                                width='35px', 
+                                                border='none',
+                                                align_items='center'
+                                                ),
+                                    style={'button_color': 'transparent'}
+                                 ),
 
-rwButtons = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
-             Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
+                    widgets.Checkbox(description=name, 
+                                    value=True, 
+                                    disabled=False, 
+                                    indent=False)
+                  ])
+             for name in namesFromFile]
 
-hmButtons = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
-             Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
-             Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
-hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
-           Label(value="Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
-           Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
+rwChecks = [widgets.Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
+            widgets.Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
+
+hmChecks = [widgets.Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
+            widgets.Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
+            widgets.Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
+
+hmRates = [widgets.Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
+           widgets.Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
+           widgets.Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
     
 for i in range(numTags):
-    tagButtons[i].observe(updateGraph)
+    tagChecks[i].children[1].observe(updateGraph)
     
-for button in rwButtons:
-    button.observe(updateReadWrite)
+for check in rwChecks:
+    check.observe(updateReadWrite)
     
-for button in hmButtons:
-    button.observe(updateHitMiss)
+for check in hmChecks:
+    check.observe(updateHitMiss)
     
-checks = VBox([HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)]),VBox(hmRates)])
+checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
 
 newc = np.ones((11, 4))
 newc[1] = [0, 0.5, 0, 1] # read_hits - 1, .125
@@ -192,7 +217,11 @@ newc[8] = [0.235, 0.350, 0.745, 1] # compulsory write misses - 6, .75
 custom_cmap = ListedColormap(newc)
 
 vaex_extended.vaex_cache_size = int(CACHE_SIZE)*int(BLOCK_SIZE)
-df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, selection=[True], backend='bqplot_v2', tool_select=True)
+plot = df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, selection=[True], backend='bqplot_v2', tool_select=True)
+backend = plot.backend
+
+for i in range(numTags):
+    tagChecks[i].children[0].on_click(backend.zoomSection)
 
 
 

@@ -50,21 +50,25 @@ constexpr int SkipRate    {100};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-const std::string DefaultOutputPath {"./"};
+const std::string DefaultOutputPath {"/setup/converter/outfiles/"};
+
+// Output file formatting
+const std::string TracePrefix   {"trace_"};
+const std::string TraceSuffix   {".hdf5"};
+const std::string TagFilePrefix {"tag_map_"};
+const std::string TagFileSuffix {".csv"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
-static std::string output_path {DefaultOutputPath};
-
-const std::string TagFileName       {"/tag_map.csv"};
+static std::string output_trace_path;
+static std::string output_tagfile_path;
 
 // Macros to track
 const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
 const std::string DUMP_MACRO_END {"DUMP_ACCESS_STOP_TAG"};
 const std::string FLUSH_CACHE    {"FLUSH_CACHE"};
-
 
 // How to record duplicate addr in multiple ranges
 constexpr bool RECORD_ONCE {0};
@@ -297,7 +301,7 @@ public:
 
 HandleHdf5 *hdf_handler; // One for this pintool
 
-struct cache_hash {
+struct cache_hash { // Could improve on this hash function
   inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
     return (uint64_t)k.first;
   }
@@ -336,7 +340,7 @@ static char * buffer3 = new char[BUF_SIZE];
 
 // Command line options for pintool
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "./", "specify output file directory with an absolute path");
+    "o", "default", "specify name of output trace and tag map file");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "m", "0", "specify max lines of output");
@@ -566,7 +570,7 @@ VOID Fini(INT32 code, VOID *v) {
     cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
 
-  std::ofstream map_file (output_path + TagFileName);
+  std::ofstream map_file (output_tagfile_path);
   map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
   for (auto& x : all_tags) {
     TagData* t = x.second;
@@ -687,8 +691,10 @@ int main(int argc, char *argv[]) {
     cerr << "Debugging mode\n";
   }
 
-  // Output file names
-  output_path = KnobOutputFile.Value();
+  // User input
+  output_trace_path = KnobOutputFile.Value();
+  output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
+  output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -707,10 +713,11 @@ int main(int argc, char *argv[]) {
   if (INPUT_DEBUG) {
     cerr << "Max lines of trace: "   << max_lines <<
 	    "\n# of cache entries: " << cache_size <<
-	    "\nCache line size in bytes: " << cache_line << "\n";
+	    "\nCache line size in bytes: " << cache_line << 
+	    "\nOutput trace file at: " << output_trace_path << "\n";
   }
 
-  hdf_handler = new HandleHdf5(output_path + "/trace.hdf5");
+  hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);

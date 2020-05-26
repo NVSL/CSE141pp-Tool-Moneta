@@ -2,7 +2,7 @@ import subprocess
 import os
 from os import path
 import ipywidgets as widgets
-from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label
+from ipywidgets import HBox, VBox, Layout
 from IPython.display import clear_output
 import sys
 import vaex
