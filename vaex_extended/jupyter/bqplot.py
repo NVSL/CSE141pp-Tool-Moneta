@@ -2,6 +2,7 @@ from vaex.jupyter.bqplot import *
 from vaex_extended.utils.decorator import *
 from vaex.jupyter.plot import PlotBase as PlotBase
 import vaex_extended
+import copy
 
 # # alternate wrapper version in case the function should be left alone
 # def fix_image_flipping(func):
@@ -12,10 +13,23 @@ import vaex_extended
 #     return wrapper
 # BqplotBackend.update_image = fix_image_flipping(BqplotBackend.update_image)
 
-
 accessRanges = {}
 
+PAN_ZOOM = "pan/zoom"
+ZOOM_SELECT = 'zoom select'
+SELECT = "select"
 
+@extend_class(BqplotBackend)
+def __init__(self, figure=None, figure_key=None):
+    self._dirty = False
+    self.figure_key = figure_key
+    self.figure = figure
+    self.signal_limits = vaex.events.Signal()
+
+    self._cleanups = []
+    
+    self.dataset_original = None
+    #self.limit_callback = None
 @extend_class(PlotBase)
 def _update_image(self):
     with self.output:
@@ -117,6 +131,20 @@ def _update_image(self):
 
 
 @extend_class(BqplotBackend)
+@debounced(0.5, method=True)
+def _update_limits(self, *args):
+    with self.output:
+        limits = copy.deepcopy(self.limits)
+        limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
+        self.limits = limits
+        left = max(0, int(limits[0][0]))
+        right = max(0, int(limits[0][1]))
+        # print(left, right)
+        #sliced = self.dataset[left:right]
+        #print(len(sliced))
+        
+
+@extend_class(BqplotBackend)
 def update_image(self, rgb_image):
     # corrects error where the image is flipped vertically
     rgb_image = np.flipud(rgb_image) 
@@ -135,24 +163,25 @@ def update_image(self, rgb_image):
 def create_tools(self):
     self.tools = []
     tool_actions = []
-    self.tool_actions_map = tool_actions_map = {u"pan/zoom": self.panzoom}
-    tool_actions.append(u"pan/zoom")
+    self.tool_actions_map = tool_actions_map = dict()
 
     # self.control_widget.set_title(0, "Main")
     self._main_widget = widgets.VBox()
     self._main_widget_1 = widgets.HBox()
     self._main_widget_2 = widgets.HBox()
     if 1:  # tool_select:
+        tool_actions_map[PAN_ZOOM] = self.panzoom
+        tool_actions.append(PAN_ZOOM)
+    
         self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
-        tool_actions_map["zoom select"] = self.zoom_brush
-        tool_actions.append("zoom select")
+        tool_actions_map[ZOOM_SELECT] = self.zoom_brush
+        tool_actions.append(ZOOM_SELECT)
 
-        self.zoom_brush.observe(self.update_zoom_brush, ["selected", "selected_x"])
-        #
+        self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
         
         self.brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="green")
-        tool_actions_map["select"] = self.brush
-        tool_actions.append("select")
+        tool_actions_map[SELECT] = self.brush
+        tool_actions.append(SELECT)
 
         self.brush.observe(self.update_brush, ["selected", "selected_x"])
         # fig.interaction = brush
@@ -173,21 +202,36 @@ def create_tools(self):
         }], children=[
             "Delete selection"
         ])
-        self.button_reset = widgets.Button(description="", icon="refresh")
-        import copy
+        self.button_reset = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['refresh'])
+                                ])
+        self.widget_reset = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_reset
+        }], children=[
+            "Reset Zoom"
+        ])
+        
         self.start_limits = copy.deepcopy(self.limits)
 
         def reset(*args):
-            self.limits = copy.deepcopy(self.start_limits)
-            with self.scale_y.hold_trait_notifications():
-                self.scale_y.min, self.scale_y.max = self.limits[1]
+            (x1, x2), (y1, y2) = self.start_limits
             with self.scale_x.hold_trait_notifications():
-                self.scale_x.min, self.scale_x.max = self.limits[0]
-            self.plot.update_grid()
-        self.button_reset.on_click(reset)
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = x1, x2
+                    self.scale_y.min, self.scale_y.max = y1, y2
+            with self.zoom_brush.hold_trait_notifications():
+                self.zoom_brush.selected_x = None
+                self.zoom_brush.selected_y = None
+            self._update_limits()
 
         self.button_select_nothing.on_event('click', lambda *ignore: self.plot.select_nothing())
         self.tools.append(self.button_select_nothing)
+        
+        self.button_reset.on_event('click', lambda *ignore: reset())
+        self.tools.append(self.button_reset)
+        
         self.modes_names = "replace and or xor subtract".split()
         self.modes_labels = "replace and or xor subtract".split()
         self.button_selection_mode = widgets.Dropdown(description='select', options=self.modes_labels)
@@ -199,7 +243,7 @@ def create_tools(self):
                 name = tool_actions[self.button_action.v_model]
                 self.figure.interaction = tool_actions_map[name]
 
-        tool_actions = ["pan/zoom", 'zoom select',"select"]
+        tool_actions = [PAN_ZOOM, ZOOM_SELECT, SELECT]
         # tool_actions = [("m", "m"), ("b", "b")]
         self.button_action = \
             v.BtnToggle(v_model=0, mandatory=True, multiple=False, children=[
@@ -229,13 +273,13 @@ def create_tools(self):
                                 ])
                             }], children=[
                                 "Square selection"
-                            ]),
-
+                            ])
                     ])
         self.widget_tool_basic = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 self.button_action,
-                self.widget_select_nothing
+                self.widget_select_nothing,
+                self.widget_reset
             ])
         ])
         self.plot.add_control_widget(self.widget_tool_basic)
@@ -254,7 +298,14 @@ def create_tools(self):
                     self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
                 else:
                     self.panzoom = bqplot.PanZoom(scales={})
-            self.figure.interaction = self.panzoom
+            # Update with new panzoom
+            tool_actions_map[PAN_ZOOM] = self.panzoom
+            # Update immediately if in PAN_ZOOM mode
+            name = tool_actions[self.button_action.v_model]
+            if name == PAN_ZOOM:
+              self.figure.interaction = self.panzoom
+            
+
         self.panzoom_x.observe(update_panzoom)
         self.panzoom_y.observe(update_panzoom)
         #self.plot.add_control_widget(self.panzoom_x)
@@ -295,36 +346,33 @@ def create_tools(self):
         # self._main_widget_1.children += (self.button_reset,)
         self._main_widget_1.children += (self.button_action,)
         self._main_widget_1.children += (self.button_select_nothing,)
+        self._main_widget_1.children += (self.button_reset,)
         # self._main_widget_2.children += (self.button_selection_mode,)
     self._main_widget.children = [self._main_widget_1, self._main_widget_2]
     self.control_widget.children += (self._main_widget,)
     self._update_grid_counter = 0  # keep track of t
     self._update_grid_counter_scheduled = 0  # keep track of t
-
-
-
+    
 @extend_class(BqplotBackend)
-@debounced(0.5, method=True)
 def update_zoom_brush(self, *args):
-    with self.output:
-        if not self.zoom_brush.brushing:  # if we ended brushing, reset it
+    # Only update on mouse-up
+    if not self.zoom_brush.brushing:
+        with self.output:
             self.figure.interaction = None
-
-        if self.zoom_brush.selected is not None:
-            (x1, y1), (x2, y2) = self.zoom_brush.selected
-            mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
-
-            with self.scale_x.hold_trait_notifications():
-                self.scale_x.min = min(x1, x2)
-                self.scale_x.max = max(x1, x2)
-            with self.scale_y.hold_trait_notifications():
-                self.scale_y.min = min(y1, y2)
-                self.scale_y.max = max(y1, y2)
-        else:
-            self.dataset.select_nothing()
-        if not self.zoom_brush.brushing:  # but then put it back again so the rectangle is gone,
+            if self.zoom_brush.selected is not None:
+                (x1, y1), (x2, y2) = self.zoom_brush.selected
+                mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
+                # Update limits
+                with self.scale_x.hold_trait_notifications():
+                    with self.scale_y.hold_trait_notifications():
+                        self.scale_x.min, self.scale_x.max = x1, x2
+                        self.scale_y.min, self.scale_y.max = y1, y2
+                self._update_limits()      
             self.figure.interaction = self.zoom_brush
-
+            # Delete selection
+            with self.zoom_brush.hold_trait_notifications():
+                self.zoom_brush.selected_x = None
+                self.zoom_brush.selected_y = None
 
 
 # From the addressRange dictionary, get the metadata corresponding to the button/tag name
