@@ -214,12 +214,112 @@ newc[5] = [1, 0.5, 0, 1] # write_misses - 4, .5
 newc[6] = [0.235, 0.350, 0.745, 1] # compulsory read misses - 5, .625
 newc[8] = [0.235, 0.350, 0.745, 1] # compulsory write misses - 6, .75
 
+# Original colors below
+newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
+#newc[2] = [0, 0.7, 0, 1] # write_hits - 2, .25
+newc[2] = [0, 1, 1, 1] # write_hits - 2, .25
+newc[3] = [0.047, 1, 0, 1] # cache_size
+newc[4] = [1, 1, 0, 1] # read_misses - 3, .375
+#newc[5] = [1, 0, 0.2, 1] # write_misses - 4, .5
+newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
+newc[6] = [0.737, 0.745, 0.235, 1] # compulsory read misses - 5, .625
+newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 custom_cmap = ListedColormap(newc)
 
+def updateReadWrite2(change):
+    if(change.name == 'value'):
+        
+        name = change.owner.description
+        
+        if(re.search('^Reads', name)):
+            targetHit = READ_HIT
+            targetMiss = READ_MISS
+            targetCMiss = COMP_R_MISS
+        else:
+            targetHit = WRITE_HIT
+            targetMiss = WRITE_MISS
+            targetCMiss = COMP_W_MISS
+        
+        if(change.new == True):
+            df.select(df.Access == targetHit, mode='or', name='rw')
+            df.select(df.Access == targetMiss, mode='or', name='rw')
+            df.select(df.Access == targetCMiss, mode='or', name='rw')
+            combineSelections()
+        else:
+            df.select(df.Access == targetHit, mode='subtract', name='rw')
+            df.select(df.Access == targetMiss, mode='subtract', name='rw')
+            df.select(df.Access == targetCMiss, mode='subtract', name='rw')
+            combineSelections()
+    df.select('total')  
+            
+def updateHitMiss2(change):
+    if(change.name == 'value'):
+        
+        name = change.owner.description
+        
+        if(re.search('^Hits', name)):
+            targetRead = READ_HIT
+            targetWrite = WRITE_HIT
+        elif(re.search('^Capacity', name)):
+            targetRead = READ_MISS
+            targetWrite = WRITE_MISS
+        else:
+            targetRead = COMP_R_MISS
+            targetWrite = COMP_W_MISS
+        
+        if(change.new == True):
+            df.select(df.Access == targetRead, mode='or', name='hm')
+            df.select(df.Access == targetWrite, mode='or', name='hm')
+            combineSelections()
+        else:
+            df.select(df.Access == targetRead, mode='subtract', name='hm')
+            df.select(df.Access == targetWrite, mode='subtract', name='hm')
+            combineSelections()
+    df.select('total')  
+from matplotlib.colors import to_rgba
+def updateColorMap(change):
+    if(change.name=='value'):
+        name=change.owner.name
+        if(re.search('^Hits', name)):
+            plot.colormap.colors[1] = to_rgba(change.new,1)
+            plot.colormap.colors[2] = to_rgba(change.new,1)
+        elif(re.search('^Cache', name)):
+            plot.colormap.colors[3] = to_rgba(change.new,1)
+        elif(re.search('^Capacity', name)):
+            plot.colormap.colors[4] = to_rgba(change.new,1)
+            plot.colormap.colors[5] = to_rgba(change.new,1)
+        else:
+            plot.colormap.colors[6] = to_rgba(change.new,1)
+            plot.colormap.colors[8] = to_rgba(change.new,1)
+cb_lyt=widgets.Layout(width='180px')
+cp_lyt=widgets.Layout(width='30px')
+# Read Write custom checkbox
+def RWCheckbox(description, color_value):
+    rwcp = widgets.ColorPicker(concise=True, value=color_value, disabled=False,layout=cp_lyt)
+    rwcp.name=description
+    return HBox([widgets.Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
+                rwcp])
+from matplotlib.colors import to_hex
+rwChecks2 = [widgets.Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=widgets.Layout(width='270px')),
+            widgets.Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=widgets.Layout(width='270px'))]
+hmChecks2 = [RWCheckbox(description="Hits ("+str(hitCount)+")", color_value=to_hex([0, 0.5, 0])),
+            RWCheckbox(description="Capacity Misses ("+str(missCount)+")", color_value=to_hex([1, 0.5, 0])),
+            RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", color_value=to_hex([0.235, 0.350, 0.745]))]
+cacheChecks2 = [RWCheckbox(description="Cache ("+str(int(CACHE_SIZE) * int(BLOCK_SIZE))+" bytes)", color_value=to_hex([0, 0, 0]))]
+checks2 = VBox([VBox(children=[widgets.Label(value='Legend')] + rwChecks2 +  hmChecks2 + cacheChecks2,
+                     layout=widgets.Layout(padding='10px',border='1px solid black')
+                    )])
+for check in rwChecks2:
+    check.observe(updateReadWrite2)
+for check in [hbox.children[0] for hbox in hmChecks2]:
+    check.observe(updateHitMiss2)
+for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
+    colorpicker.observe(updateColorMap)
+    
 vaex_extended.vaex_cache_size = int(CACHE_SIZE)*int(BLOCK_SIZE)
-plot = df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, selection=[True], backend='bqplot_v2', tool_select=True)
-backend = plot.backend
+plot = df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, selection=[True], legend=checks2, type='custom_plot1', backend='bqplot_v2', tool_select=True)
 
+backend = plot.backend
 for i in range(numTags):
     tagChecks[i].children[0].on_click(backend.zoomSection)
 
