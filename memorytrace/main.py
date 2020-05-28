@@ -579,7 +579,7 @@ def generate_plot(trace_name):
 
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
-                 backend='bqplot_v2', tool_select=True, type='custom_plot1')
+                 backend='bqplot_v2', tool_select=True, legend=checks2, type='custom_plot1')
 
   for i in range(numTags):
     tagChecks[i].children[0].on_click(plot.backend.zoomSection)
