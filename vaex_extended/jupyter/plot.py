@@ -11,22 +11,22 @@ class Plot2dDefault(Plot2dDefault):
     #draw_cache = traitlets.Bool(allow_none=True).tag(sync=True)
     def __init__(self, **kwargs):
         super(Plot2dDefault, self).__init__(**kwargs)
-        self.widgetLegend = widgets.Output()
-        with self.widgetLegend:
-            import matplotlib.pyplot as mplplt
-            colors = [[0,0,1,1], [0,1,1,1], [0.047,1,0,1],[1,1,0,1],[1,0,0,1],[0.737,0.745,0.235,1], [0.745,0.309,0.235,1]]
-            f = lambda m,c: mplplt.plot([],[],marker=m, color=c, ls="none")[0]
-            handles = [f("s", colors[i]) for i in range(7)]
-            labels = ["read hits","write hits","read misses","write misses","compulsory read misses","compulsory write misses"]
-            legend = mplplt.legend(handles,labels,loc=1,framealpha=1,frameon=True,prop={"size":20})
-            #def draw_legend(legend, expand=[-10,-10,10,10]):
-            #    fig = legend.figure
-            #    fig.canvas.draw()
-            #    bbox = legend.get_window_extent()
-            #    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
-            #    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
-            #draw_legend(legend)
-            mplplt.gca().set_axis_off()      
+        # self.widgetLegend = widgets.Output()
+        # with self.widgetLegend:
+        #     import matplotlib.pyplot as mplplt
+        #     colors = [[0,0,1,1], [0,1,1,1], [0.047,1,0,1],[1,1,0,1],[1,0,0,1],[0.737,0.745,0.235,1], [0.745,0.309,0.235,1]]
+        #     f = lambda m,c: mplplt.plot([],[],marker=m, color=c, ls="none")[0]
+        #     handles = [f("s", colors[i]) for i in range(7)]
+        #     labels = ["read hits","write hits","read misses","write misses","compulsory read misses","compulsory write misses"]
+        #     legend = mplplt.legend(handles,labels,loc=1,framealpha=1,frameon=True,prop={"size":20})
+        #     #def draw_legend(legend, expand=[-10,-10,10,10]):
+        #     #    fig = legend.figure
+        #     #    fig.canvas.draw()
+        #     #    bbox = legend.get_window_extent()
+        #     #    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+        #     #    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+        #     #draw_legend(legend)
+        #     mplplt.gca().set_axis_off()      
 
         self.legend = widgets.VBox([]) 
         if 'legend' in kwargs:
