@@ -34,7 +34,7 @@ using unordered_map = std::unordered_map<K, V>;
 // Debug vars
 constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
-constexpr bool INPUT_DEBUG {0};
+constexpr bool INPUT_DEBUG {1};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
 
@@ -53,6 +53,7 @@ constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"/setup/converter/outfiles/"};
 
 // Output file formatting
+const std::string FullTracePrefix   {"full_trace_"};
 const std::string TracePrefix   {"trace_"};
 const std::string TraceSuffix   {".hdf5"};
 const std::string TagFilePrefix {"tag_map_"};
@@ -351,6 +352,9 @@ KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
     "l", "0", "specify size of cache line for L1 cache");
 
+KNOB<BOOL> KnobTrackAll(KNOB_MODE_WRITEONCE, "pintool",
+    "f", "0", "Ignores tags, tracks all memory accesses");
+
 VOID flush_cache() {
   if (CACHE_DEBUG) {
     cerr << "Flushing cache\n";
@@ -421,12 +425,16 @@ VOID dump_end_called(VOID * tag) {
 
 // Write id,op,addr to file
 inline VOID write_to_memfile(TagData* t, int op, ADDRINT addr){
-  hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
-  if (t->x_range.first == -1) { // First time accessed
-    t->x_range.first  = curr_lines;
-    t->x_range.second = curr_lines;
-  } else { // Update last access
-    t->x_range.second = curr_lines;
+  if (t) { // Only if running with tags
+    hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
+    if (t->x_range.first == -1) { // First time accessed
+      t->x_range.first  = curr_lines;
+      t->x_range.second = curr_lines;
+    } else { // Update last access
+      t->x_range.second = curr_lines;
+    }
+  } else {
+    hdf_handler->write_data_mem(0, op, addr);
   }
   curr_lines++; // Afterward, for 0-based indexing
   
@@ -493,6 +501,18 @@ VOID RecordMemRead(ADDRINT addr) {
   if (DEBUG) {
     read_insts++;
   }
+  if (KnobTrackAll) {
+    int access_type = add_to_simulated_cache(addr);
+    if (access_type == 0) {
+      write_to_memfile(0, 1, addr); // Hit -> 1
+    } else if (access_type == 1) {
+      write_to_memfile(0, 3, addr); // Capacity miss -> 3
+    } else {
+      write_to_memfile(0, 5, addr); // Compulsory miss -> 5
+    }
+    return;
+  }
+
   bool recorded = false;
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
@@ -501,7 +521,7 @@ VOID RecordMemRead(ADDRINT addr) {
       if (CACHE_DEBUG) {
         if (first_record == 0) {
           first_record = cache_writes;
-          cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+          cerr << "First access (read) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
       int access_type = add_to_simulated_cache(addr);
@@ -517,7 +537,6 @@ VOID RecordMemRead(ADDRINT addr) {
     }
   }
   if (!recorded) { // Outside ranges
-    addr -= addr%cache_line;
     add_to_simulated_cache(addr); // Add original value to cache
   }
 }
@@ -527,6 +546,18 @@ VOID RecordMemWrite(ADDRINT addr) {
   if (DEBUG) {
     read_insts++;
   }
+  if (KnobTrackAll) { // No normalization for address
+    int access_type = add_to_simulated_cache(addr);
+    if (access_type == 0) {
+      write_to_memfile(0, 2, addr); // Hit -> 2
+    } else if (access_type == 1) {
+      write_to_memfile(0, 4, addr); // Capacity miss -> 4
+    } else {
+      write_to_memfile(0, 6, addr); // Compulsory miss -> 6
+    }
+    return;
+  }
+
   bool recorded = false;
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
@@ -535,7 +566,7 @@ VOID RecordMemWrite(ADDRINT addr) {
       if (CACHE_DEBUG) {
         if (first_record == 0) {
           first_record = cache_writes;
-          cerr << "First read to cache at time [" << first_record << "] :" << addr << "\n";
+          cerr << "First access (write) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
       int access_type = add_to_simulated_cache(addr);
@@ -551,7 +582,6 @@ VOID RecordMemWrite(ADDRINT addr) {
     }
   }
   if (!recorded) { // Outside ranges
-    addr -= addr%cache_line;
     add_to_simulated_cache(addr); // Add original value to cache
   }
 }
@@ -568,16 +598,6 @@ VOID Fini(INT32 code, VOID *v) {
   if (CACHE_DEBUG) {
     cerr << "Number of compulsory misses: " << comp_misses << "\n";
     cerr << "Number of capacity misses: " << cap_misses << "\n";
-  }
-
-  std::ofstream map_file (output_tagfile_path);
-  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-  for (auto& x : all_tags) {
-    TagData* t = x.second;
-    map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
-             << t->addr_range.first - t->range_offset << ","
-	     << t->addr_range.second - t->range_offset << ","
-	     << t->x_range.first << "," << t->x_range.second << "\n";
   }
 
   // Updated cache write - Must check if it's in any of the tagged ranges
@@ -601,9 +621,21 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
-  // Close files
-  map_file.flush();
-  map_file.close();
+  if (!KnobTrackAll) { // No tags when tracking everything
+    std::ofstream map_file (output_tagfile_path);
+    map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+    for (auto& x : all_tags) {
+      TagData* t = x.second;
+      map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
+               << t->addr_range.first - t->range_offset << ","
+               << t->addr_range.second - t->range_offset << ","
+               << t->x_range.first << "," << t->x_range.second << "\n";
+    }
+  
+    // Close files
+    map_file.flush();
+    map_file.close();
+  }
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
   // Delete all TagData's
@@ -693,8 +725,12 @@ int main(int argc, char *argv[]) {
 
   // User input
   output_trace_path = KnobOutputFile.Value();
-  output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
-  output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
+  if (!KnobTrackAll) {
+    output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
+    output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
+  } else { // Different name when tracing everything
+    output_trace_path = DefaultOutputPath + "/" + FullTracePrefix + output_trace_path + TraceSuffix;
+  }
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -720,7 +756,9 @@ int main(int argc, char *argv[]) {
   hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
-  IMG_AddInstrumentFunction(FindFunc, 0);
+  if (!KnobTrackAll) {
+    IMG_AddInstrumentFunction(FindFunc, 0);
+  }
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
