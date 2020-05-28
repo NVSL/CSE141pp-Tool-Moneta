@@ -46,6 +46,8 @@ READ_MISS = 3
 WRITE_HIT = 2
 READ_HIT = 1
 
+currentSelection = [1,1,1,1,1,1]
+
 # Custom colormap
 newc = np.ones((11, 4))
 newc[1] = [0, 0.5, 0, 1] # read_hits - 1, .125
@@ -312,7 +314,6 @@ def generate_plot(trace_name):
     df.select("rw", mode='and', name='total')
     df.select("hm", mode='and', name='total')
 
-
   def updateGraph(change):
     if(change.name == 'value'):
 
@@ -333,11 +334,13 @@ def generate_plot(trace_name):
     if(change.name == 'value'):
 
       name = change.owner.description
+      
 
       if(re.search('^Reads', name)):
         targetHit = READ_HIT
         targetMiss = READ_MISS
         targetCMiss = COMP_R_MISS
+
       else:
         targetHit = WRITE_HIT
         targetMiss = WRITE_MISS
@@ -348,16 +351,21 @@ def generate_plot(trace_name):
         df.select(df.Access == targetMiss, mode='or', name='rw')
         df.select(df.Access == targetCMiss, mode='or', name='rw')
         combineSelections()
+
+        currentSelection[targetHit-1] = 1
+        currentSelection[targetMiss-1] = 1
+        currentSelection[targetCMiss-1] = 1
       else:
         df.select(df.Access == targetHit, mode='subtract', name='rw')
         df.select(df.Access == targetMiss, mode='subtract', name='rw')
         df.select(df.Access == targetCMiss, mode='subtract', name='rw')
+        currentSelection[targetHit-1] = 0
+        currentSelection[targetMiss-1] = 0
+        currentSelection[targetCMiss-1] = 0
         combineSelections()
     df.select('total')
 
-
-
-
+        
   def updateHitMiss(change):
     if(change.name == 'value'):
 
@@ -377,10 +385,17 @@ def generate_plot(trace_name):
         df.select(df.Access == targetRead, mode='or', name='hm')
         df.select(df.Access == targetWrite, mode='or', name='hm')
         combineSelections()
+        
+        currentSelection[targetRead-1] = 1
+        currentSelection[targetWrite - 1] = 1
       else:
         df.select(df.Access == targetRead, mode='subtract', name='hm')
         df.select(df.Access == targetWrite, mode='subtract', name='hm')
         combineSelections()
+        
+        currentSelection[targetRead-1] = 0
+        currentSelection[targetWrite - 1] = 0
+        
     df.select('total')
 
 
@@ -414,11 +429,62 @@ def generate_plot(trace_name):
     logging.debug("Reading meta data: {}".format(m_split))
   vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
-  df.plot_widget(df.index, df.Address, what='max(Access)',
+  plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
-                 backend='bqplot_v2', tool_select=True)
+                 backend='bqplot_v2', tool_select=True, type='custom_plot1')
+    
   display(checks)
+
+
+  def selectDF(inDF):
+    if(currentSelection[READ_MISS-1] == 1):
+        inDF.select(inDF.Access == READ_MISS, mode='or')
+    if(currentSelection[READ_HIT-1] == 1):
+        inDF.select(inDF.Access == READ_HIT, mode='or')
+    if(currentSelection[COMP_R_MISS-1] == 1):
+        inDF.select(inDF.Access == COMP_R_MISS, mode='or')
+    if(currentSelection[WRITE_MISS-1] == 1):
+        inDF.select(inDF.Access == WRITE_MISS, mode='or')
+    if(currentSelection[WRITE_HIT-1] == 1):
+        inDF.select(inDF.Access == WRITE_HIT, mode='or')
+    if(currentSelection[COMP_W_MISS-1] == 1):
+        inDF.select(inDF.Access == COMP_W_MISS, mode='or')
+
+    # Create a duplicate plot with current limits as the initial state of plot
+  def indSubPlot(b):
+      dfNew = vaex.from_pandas(df)
+      #intial selection not functioning, diplays all data from original df
+      dfNew.plot_widget(dfNew.index, dfNew.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=True, limits=plot.limits, type='custom_plot1')
+      selectDF(dfNew)
+
+  indSubPlotButton = Button(
+          description='Create Indepenent Subplot',
+          disabled=False,
+          button_style='',
+          layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
+          style={'button_color': 'lightgray'},
+          )
+  indSubPlotButton.on_click(indSubPlot)
+  display(indSubPlotButton)
+
+  def depSubPlot(b):
+      df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=plot.selection, limits=plot.limits,type='custom_plot1')
+
+
+  dSubPlotButton = Button(
+          description='Create Depenent Subplot',
+          disabled=False,
+          button_style='',
+          layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
+          style={'button_color': 'lightgray'},
+          )
+  dSubPlotButton.on_click(depSubPlot)
+  display(dSubPlotButton)
   return
+
+
+
+
 
 def run_load_controls():
   logging.info("Setting up load widgets with handlers")
@@ -459,6 +525,7 @@ def delete_files(trace_name):
 def display_all():
   gen_trace_inputs = gen_trace_controls()
   load_inputs = run_load_controls()
+    
 
   delete_widget = button_factory("Delete Trace", color='salmon')
 
