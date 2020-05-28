@@ -1,4 +1,4 @@
-from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple
+from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple, ColorPicker
 import os
 import re
 import sys
@@ -481,11 +481,6 @@ def generate_plot(trace_name):
     
   checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
 
-  with open(meta_path) as meta_f:
-    mlines = meta_f.readlines()
-    m_split = mlines[0].split()
-    logging.debug("Reading meta data: {}".format(m_split))
-  vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
   def updateReadWrite2(change):
       if(change.name == 'value'):
@@ -552,23 +547,31 @@ def generate_plot(trace_name):
           else:
               plot.colormap.colors[6] = to_rgba(change.new,1)
               plot.colormap.colors[8] = to_rgba(change.new,1)
-  cb_lyt=widgets.Layout(width='180px')
-  cp_lyt=widgets.Layout(width='30px')
+  cb_lyt=Layout(width='180px')
+  cp_lyt=Layout(width='30px')
   # Read Write custom checkbox
   def RWCheckbox(description, color_value):
-      rwcp = widgets.ColorPicker(concise=True, value=color_value, disabled=False,layout=cp_lyt)
+      rwcp = ColorPicker(concise=True, value=color_value, disabled=False,layout=cp_lyt)
       rwcp.name=description
-      return HBox([widgets.Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
+      return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
                   rwcp])
+
+  with open(meta_path) as meta_f:
+    mlines = meta_f.readlines()
+    m_split = mlines[0].split()
+    logging.debug("Reading meta data: {}".format(m_split))
+
+  vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
+
   from matplotlib.colors import to_hex
-  rwChecks2 = [widgets.Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=widgets.Layout(width='270px')),
-              widgets.Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=widgets.Layout(width='270px'))]
+  rwChecks2 = [Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px')),
+              Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px'))]
   hmChecks2 = [RWCheckbox(description="Hits ("+str(hitCount)+")", color_value=to_hex([0, 0.5, 0])),
               RWCheckbox(description="Capacity Misses ("+str(missCount)+")", color_value=to_hex([1, 0.5, 0])),
               RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", color_value=to_hex([0.235, 0.350, 0.745]))]
   cacheChecks2 = [RWCheckbox(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=to_hex([0, 0, 0]))]
-  checks2 = VBox([VBox(children=[widgets.Label(value='Legend')] + rwChecks2 +  hmChecks2 + cacheChecks2,
-                       layout=widgets.Layout(padding='10px',border='1px solid black')
+  checks2 = VBox([VBox(children=[Label(value='Legend')] + rwChecks2 +  hmChecks2 + cacheChecks2,
+                       layout=Layout(padding='10px',border='1px solid black')
                       )])
   for check in rwChecks2:
       check.observe(updateReadWrite2)
@@ -698,6 +701,7 @@ def init_widgets():
     
 def refresh():
   clear_output(wait=True)
+  logging.info("Refreshing")
   display(all_inputs)
 
 def main():

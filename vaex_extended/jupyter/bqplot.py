@@ -284,7 +284,7 @@ def create_tools(self):
         ])
         self.plot.add_control_widget(self.widget_tool_basic)
 
-        control_lyt = widgets.Layout(max_width='30px')
+        control_lyt = widgets.Layout(width='40px')
         self.panzoom_x = control_x = widgets.Checkbox(value=True,description='X',indent=False, layout=control_lyt)
         self.panzoom_y = control_y = widgets.Checkbox(value=True,description='Y',indent=False, layout=control_lyt)
         def update_panzoom(checkbox):
