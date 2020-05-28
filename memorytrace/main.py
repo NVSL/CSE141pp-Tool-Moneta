@@ -1,4 +1,4 @@
-from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, Select
+from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple
 import os
 import re
 import sys
@@ -18,6 +18,7 @@ import logging
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
+    
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,8 +29,8 @@ logger.setLevel(logging.DEBUG)
 # Constants
 WIDGET_DESC_PROP = {'description_width': '150px'}
 WIDGET_LAYOUT = Layout(width='90%')
-BUTTON_LAYOUT = Layout(margin='10px 0 0 0',
-    height='40px', width='90%', border='1px solid black')
+BUTTON_LAYOUT = Layout(margin='15px 15px 0 15px',
+                       height='40px', width='90%', border='1px solid black')
 BUTTON_STYLE = {'button_color': 'lightgray'}
 
 DEFAULT_TRACE_DROP = 'Select a trace to load'
@@ -45,8 +46,6 @@ WRITE_MISS = 4
 READ_MISS = 3
 WRITE_HIT = 2
 READ_HIT = 1
-
-currentSelection = [1,1,1,1,1,1]
 
 # Custom colormap
 newc = np.ones((11, 4))
@@ -66,19 +65,15 @@ custom_cmap = ListedColormap(newc)
 
 
 # Globals
-trace_drop_list = [DEFAULT_TRACE_DROP]
+trace_list = []
 trace_map = dict()
 trace_metadata = dict()
-trace_drop_widget = Dropdown(
-    options=trace_drop_list,
-    value=DEFAULT_TRACE_DROP,
-    description="Trace:",
-    layout=WIDGET_LAYOUT
-    )
+all_inputs = VBox()
+currentSelection = [1,1,1,1,1,1]
 
-select_widget = Select(
+select_widget = SelectMultiple(
     options=[],
-    value=None,
+    value=[],
     description='Trace:',
     layout=WIDGET_LAYOUT
 )
@@ -86,6 +81,7 @@ select_widget = Select(
 df = 0
 tag_map = 0
 curr_trace = ""
+
 
 def button_factory(desc, color='lightgray'):
   return Button(
@@ -95,6 +91,7 @@ def button_factory(desc, color='lightgray'):
           style = {'button_color': color}
          )
 
+
 def input_int_factory(value, description):
   return IntText(
           value=value,
@@ -102,6 +99,7 @@ def input_int_factory(value, description):
           style=WIDGET_DESC_PROP,
           layout=WIDGET_LAYOUT
          )
+
 
 def input_text_factory(value, description):
   return Text(
@@ -120,39 +118,67 @@ def load_pin_controls():
 #  print("hey")
 #  print(dir(b))
 
-def verify_input(c_lines, c_block, m_lines, e_path, o_name):
+
+def verify_input(c_lines, c_block, m_lines, e_file, e_args, o_name):
   logging.info("Verifying pintool arguments")
+
   if (c_lines <= 0 or c_block <= 0 or m_lines <= 0):
-    print("Cache lines, cache block, and maximum lines to output must be > 0")
+    print("Cache lines, cache block, and maximum lines to output must be greater than 0")
     return False
 
-  if (not os.path.isfile(e_path)):
-    print("Executable '{}' not found".format(e_path))
+  if (len(e_file) == 0):
+    print("Error: No executable provided")
     return False
 
   if (len(o_name) == 0):
-    print("Please provide trace name")
+    print("Error: No trace name provided")
     return False
-  # Add executable check
+
+  if not (re.search("^[a-zA-Z0-9_]*$", o_name)):
+    print("Error: Output name can only contain alphanumeric characters and underscore")
+    return False
+
+  if (not os.path.isfile(e_file)):
+    print("Executable '{}' not found".format(e_file))
+    return False
+
+  if(not os.access(e_file, os.X_OK)):
+    print("\"{}\" is not an executable".format(e_file))
+    return False
+
+
+  
+
+
+    
   return True
 
-def run_pintool(c_lines, c_block, m_lines, e_path, o_name):
+
+def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name):
   logging.info("Running pintool")
   global df
   global tag_map
+
   try:
     df.close_files()
     tag_map.close_files()
   except:
     pass
+
   # Temporary fix until Pintool handles double-open error
   if(os.path.isfile(OUTPUT_DIR + "trace_" + o_name + ".hdf5")):
     subprocess.run(["rm", OUTPUT_DIR + "trace_" + o_name + ".hdf5"]);
+  if(os.path.isfile(OUTPUT_DIR + "tag_map_" + o_name + ".csv")):
+    subprocess.run(["rm", OUTPUT_DIR + "tag_map_" + o_name + ".csv"]);
+    
   global curr_trace
   if (o_name == curr_trace):
     curr_trace = ""
     refresh()
-  print("Running {} with Cache Lines={} and Block Size={}B for Number of Lines={} into trace: {}".format(e_path, c_lines, c_block, m_lines, o_name))
+    
+  args_string = "" if len(e_args) == 0 else " " + " ".join(e_args) 
+  print("Running \"{}{}\", Cache Lines={}, and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file, args_string, c_lines, c_block, m_lines, o_name))
+
   args = [
       PIN_DIR,
       "-ifeellucky",
@@ -169,15 +195,17 @@ def run_pintool(c_lines, c_block, m_lines, e_path, o_name):
       "-l",
       str(c_block),
       "--",
-      e_path
+      e_file,
+      *e_args
   ]
   sub_output = subprocess.run(args, capture_output=True)
-  sub_output = sub_output.stderr.decode('utf-8')
-  logging.debug("Raw pintool output: \n{}".format(sub_output))
+  sub_stderr = sub_output.stderr.decode('utf-8')
+  logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
   with open(OUTPUT_DIR + "meta_data_" + o_name + ".txt", 'w') as meta_f:
     meta_f.write(str(c_lines) + " " + str(c_block))
 
   return
+
 
 def gen_trace_controls():
   logging.info("Setting up generate trace widgets with handlers")
@@ -187,22 +215,27 @@ def gen_trace_controls():
   executable_widget = input_text_factory('./Examples/build/sorting', 'Executable Path:')
   trace_out_widget = input_text_factory('baseline', 'Name for Output')
 
-  gen_button = button_factory('Generate Trace', color='darkseagreen')
 
   gen_trace_inputs = VBox([cache_lines_widget,
-                     cache_block_widget,
-                     maximum_lines_widget,
-                     executable_widget,
-                     trace_out_widget,
-                     gen_button],
-                     layout=Layout(width="100%"))
+                           cache_block_widget,
+                           maximum_lines_widget,
+                           executable_widget,
+                           trace_out_widget],
+                           layout=Layout(width="100%"))
 
+  gen_button = button_factory('Generate Trace', color='darkseagreen')
   def gen_trace(_):
+    refresh()
+    exec_inputs = executable_widget.value.split(" ")
+    exec_file = exec_inputs[0]
+    exec_args = exec_inputs[1:]
+    
     widget_vals = [cache_lines_widget.value,
-                    cache_block_widget.value,
-                    maximum_lines_widget.value,
-                    executable_widget.value,
-                    trace_out_widget.value]
+                   cache_block_widget.value,
+                   maximum_lines_widget.value,
+                   exec_file,
+                   exec_args,
+                   trace_out_widget.value]
     #global trace_metadata
     #trace_metadata
     if verify_input(*widget_vals):
@@ -213,34 +246,39 @@ def gen_trace_controls():
     logging.debug("Input Cache lines: {}".format(cache_lines_widget.value))
 
   gen_button.on_click(gen_trace)
-  return gen_trace_inputs
+  return (gen_trace_inputs, gen_button)
 
 def read_out_dir():
   logging.info("Reading outfile directory")
-  global trace_drop_list
+  global trace_list
   global trace_map
-  trace_drop_list = [trace_drop_list[0]]
+  trace_list = []
   trace_map = dict()
   dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
+
   for file_name in file_names:
     logging.info("Checking {}".format(file_name))
-    if file_name.startswith('trace_') and file_name.endswith('.hdf5'):
+    
+    if (file_name.startswith('trace_') and file_name.endswith('.hdf5')):
+        
       trace_name = file_name[6:file_name.index('.hdf5')]
       tag_path = os.path.join(dir_path, 'tag_map_' + trace_name + '.csv')
       meta_path = os.path.join(dir_path, 'meta_data_' + trace_name + '.txt')
-      if os.path.isfile(tag_path) and os.path.isfile(meta_path):
-        trace_drop_list.append(trace_name)
-        trace_map[trace_name] = (os.path.join(dir_path, file_name),
-                                 tag_path, meta_path)
-        logging.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
+    
+      if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
+        print("Warning: Tag Map and/or Metadata file missing for {}. Omitting trace.".format(file_name))
+        continue
+        
+      trace_list.append(trace_name)
+      trace_map[trace_name] = (os.path.join(dir_path, file_name),
+                               tag_path, meta_path)
+      logging.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
 
-  global trace_drop_widget
   global select_widget
-  trace_drop_widget.options = trace_drop_list
-  trace_drop_widget.value = DEFAULT_TRACE_DROP if curr_trace == '' else curr_trace
-  select_widget.options = trace_drop_list[1:]
-  select_widget.value = None if len(trace_drop_list) == 1 else trace_drop_list[1] 
+  select_widget.options = sorted(trace_list, key=str.casefold)
+  select_widget.value = []
 
+    
 def generate_plot(trace_name):
   global df
   global tag_map
@@ -314,6 +352,7 @@ def generate_plot(trace_name):
     df.select("rw", mode='and', name='total')
     df.select("hm", mode='and', name='total')
 
+
   def updateGraph(change):
     if(change.name == 'value'):
 
@@ -334,13 +373,11 @@ def generate_plot(trace_name):
     if(change.name == 'value'):
 
       name = change.owner.description
-      
 
-      if(re.search('^Reads', name)):
+      if(name.startswith("Reads")):
         targetHit = READ_HIT
         targetMiss = READ_MISS
         targetCMiss = COMP_R_MISS
-
       else:
         targetHit = WRITE_HIT
         targetMiss = WRITE_MISS
@@ -351,30 +388,33 @@ def generate_plot(trace_name):
         df.select(df.Access == targetMiss, mode='or', name='rw')
         df.select(df.Access == targetCMiss, mode='or', name='rw')
         combineSelections()
-
+        
         currentSelection[targetHit-1] = 1
         currentSelection[targetMiss-1] = 1
         currentSelection[targetCMiss-1] = 1
+        
       else:
         df.select(df.Access == targetHit, mode='subtract', name='rw')
         df.select(df.Access == targetMiss, mode='subtract', name='rw')
         df.select(df.Access == targetCMiss, mode='subtract', name='rw')
+        combineSelections()
+        
         currentSelection[targetHit-1] = 0
         currentSelection[targetMiss-1] = 0
         currentSelection[targetCMiss-1] = 0
-        combineSelections()
+        
     df.select('total')
 
-        
+
   def updateHitMiss(change):
     if(change.name == 'value'):
 
       name = change.owner.description
 
-      if(re.search('^Hits', name)):
+      if(name.startswith("Hits")):
         targetRead = READ_HIT
         targetWrite = WRITE_HIT
-      elif(re.search('^Capacity', name)):
+      elif(name.startswith("Capacity")):
         targetRead = READ_MISS
         targetWrite = WRITE_MISS
       else:
@@ -388,10 +428,11 @@ def generate_plot(trace_name):
         
         currentSelection[targetRead-1] = 1
         currentSelection[targetWrite - 1] = 1
+        
       else:
         df.select(df.Access == targetRead, mode='subtract', name='hm')
         df.select(df.Access == targetWrite, mode='subtract', name='hm')
-        combineSelections()
+        combineSelections()  
         
         currentSelection[targetRead-1] = 0
         currentSelection[targetWrite - 1] = 0
@@ -399,29 +440,46 @@ def generate_plot(trace_name):
     df.select('total')
 
 
-  tagButtons = [Checkbox(description=name, value=True, disabled=False, indent=False) for name in namesFromFile]
+  tagChecks = [HBox([Button(
+                           icon='search-plus',
+                           tooltip=name,
+                           layout=Layout(height='35px', 
+                                         width='35px', 
+                                         border='none',
+                                         align_items='center'
+                                         ),
+                                    style={'button_color': 'transparent'}
+                           ),
 
-  rwButtons = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
-               Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
+                    Checkbox(description=name, 
+                                     value=True, 
+                                     disabled=False, 
+                                     indent=False)
+                    ])
+               for name in namesFromFile]
 
-  hmButtons = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
-               Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
-               Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
+
+  rwChecks = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
+              Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
+
+  hmChecks = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
+              Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
+              Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
   hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
-             Label(value="Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
+             Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
              Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
-
+    
   for i in range(numTags):
-    tagButtons[i].observe(updateGraph)
-
-  for button in rwButtons:
-    button.observe(updateReadWrite)
-
-  for button in hmButtons:
-    button.observe(updateHitMiss)
-
-  checks = VBox([HBox([VBox(tagButtons), VBox(rwButtons), VBox(hmButtons)]),VBox(hmRates)])
+    tagChecks[i].children[1].observe(updateGraph)
+    
+  for check in rwChecks:
+    check.observe(updateReadWrite)
+    
+  for check in hmChecks:
+    check.observe(updateHitMiss)
+    
+  checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
 
   with open(meta_path) as meta_f:
     mlines = meta_f.readlines()
@@ -432,9 +490,12 @@ def generate_plot(trace_name):
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
                  backend='bqplot_v2', tool_select=True, type='custom_plot1')
+
+  for i in range(numTags):
+    tagChecks[i].children[0].on_click(plot.backend.zoomSection)
+    
     
   display(checks)
-
 
   def selectDF(inDF):
     if(currentSelection[READ_MISS-1] == 1):
@@ -480,79 +541,81 @@ def generate_plot(trace_name):
           )
   dSubPlotButton.on_click(depSubPlot)
   display(dSubPlotButton)
+
   return
 
 
-
-
-
-def run_load_controls():
-  logging.info("Setting up load widgets with handlers")
-  read_out_dir()
-  global trace_drop_widget
+def run_load_button():
   load_button = button_factory('Load Trace', color='lightblue')
-  load_inputs = VBox([trace_drop_widget,
-                load_button],
-                layout=Layout(width="100%", justify_content="space-between"))
-
   def prepare_trace(_):
-    if trace_drop_widget.value == DEFAULT_TRACE_DROP:
-      print("Please pick a trace")
+    refresh()
+    if len(select_widget.value) == 0:
+      print("Error: No trace selected")
       return
-    generate_plot(trace_drop_widget.value)
+    
+    if len(select_widget.value) > 1:
+      print("Error: Multiple traces selected, cannot load multiple traces")
+      return
+    generate_plot(select_widget.value[0])
 
   load_button.on_click(prepare_trace)
-  return load_inputs
+  return load_button
+
 
 def delete_files(trace_name):
   logging.info("Deleting files for {}".format(trace_name))
   trace_path, tag_path, meta_path = trace_map[trace_name]
-  subprocess.run(["rm", trace_path]) # Should error check
-  subprocess.run(["rm", tag_path])
-  subprocess.run(["rm", meta_path])
-  trace_drop_list.remove(trace_name)
-  trace_drop_widget.options = trace_drop_list
-  global curr_trace
-  logging.debug("Change current trace? {} == {}".format(trace_name, curr_trace))
-  if (trace_name == curr_trace):
-    curr_trace = ""
-    trace_drop_widget.value = DEFAULT_TRACE_DROP
-    refresh()
-  elif (curr_trace != ""):
-    trace_drop_widget.value = curr_trace
-
-
-def display_all():
-  gen_trace_inputs = gen_trace_controls()
-  load_inputs = run_load_controls()
     
-
-  delete_widget = button_factory("Delete Trace", color='salmon')
-
+  global curr_trace
+  if (trace_name == curr_trace):
+    refresh()
+    
+  if(os.path.isfile(trace_path)):
+    subprocess.run(["rm", trace_path])
+  if(os.path.isfile(tag_path)):
+    subprocess.run(["rm", tag_path])
+  if(os.path.isfile(meta_path)):
+    subprocess.run(["rm", meta_path])
+    
+  read_out_dir()
+    
+def del_trace_button():
+  del_button = button_factory("Delete Trace", color='salmon')
   def delete_trace(_):
     logging.info("Deleting {}".format(select_widget.value))
-    conv_list = list(select_widget.options)
-    if (len(conv_list) == 0):
-      return
-    delete_files(select_widget.value)
-    select_widget.options = trace_drop_list[1:]
+    for selection in select_widget.value:
+        delete_files(selection)
 
-  delete_widget.on_click(delete_trace)
+  del_button.on_click(delete_trace)
+  return del_button
+    
+def init_widgets():
+  gen_trace_inputs, gen_button = gen_trace_controls()
+  load_button = run_load_button()
+  del_button = del_trace_button()
 
-  del_inputs = VBox([select_widget, delete_widget],
-      layout=Layout(width="100%", justify_content="space-between"))
-  all_inputs = HBox([gen_trace_inputs, load_inputs, del_inputs],
+  trace_widgets = HBox([gen_trace_inputs, select_widget],
                     layout=Layout(justify_content="space-around"))
+
+  buttons = HBox([gen_button, load_button, del_button])
+
+  global all_inputs
+  all_inputs = VBox([trace_widgets, buttons],
+                    layout=Layout(justify_content="space-around")
+                   )
 
   display(all_inputs)
 
+    
 def refresh():
   clear_output(wait=True)
-  display_all()
+  display(all_inputs)
 
 def main():
   logging.info("Setting up widgets")
-  display_all()
+  init_widgets()
+  read_out_dir()
+
 
 if __name__ == '__main__':
   main()
