@@ -3,6 +3,8 @@ FROM jupyter/scipy-notebook:dc9744740e12
 USER root
 RUN apt-get update -y
 RUN apt-get install -y vim
+RUN apt-get install -y less
+RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
 
 WORKDIR /setup
