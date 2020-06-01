@@ -486,7 +486,8 @@ def generate_plot(trace_name):
               Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
-  hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
+  hmRates = [Label(value="Total Trace Stats"),
+             Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
              Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
              Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
     
