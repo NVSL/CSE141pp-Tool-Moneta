@@ -470,7 +470,31 @@ def generate_plot(trace_name):
         currentSelection[targetWrite - 1] = 0
         
     df.select('total')
-
+  
+  def getCurrentView(self, frame):
+    curView = frame[frame.index >= int(plot.limits[0][0])]
+    curView = curView[curView.index <= int(plot.limits[0][1])+1]
+    curView = curView[curView.Address >= int(plot.limits[1][0])]
+    curView = curView[curView.Address <= int(plot.limits[1][1])+1]
+    
+    return curView
+    
+  def updateStats(self):
+    curReadHits = getCurrentView(self,read_hits)
+    curWriteHits = getCurrentView(self,write_hits)
+    curReadMisses = getCurrentView(self,read_misses)
+    curWriteMisses = getCurrentView(self,write_misses)
+    curCompReadMisses = getCurrentView(self,comp_read_misses)
+    curCompWriteMisses = getCurrentView(self,comp_write_misses)
+    
+    hitCount = curReadHits.count() + curWriteHits.count()
+    missCount = curReadMisses.count() + curWriteMisses.count()
+    compMissCount = curCompReadMisses.count() + curCompWriteMisses.count()
+    totalCount = hitCount + missCount + compMissCount
+    
+    currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
+    currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
+    currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
 
   if tag_path:
     tagChecks = [HBox([Button(
@@ -499,10 +523,24 @@ def generate_plot(trace_name):
               Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
-  hmRates = [Label(value="Total Trace Stats"),
+  hmRates = [Label(value="Total Trace Stats:", layout=Layout(width='200px')),
              Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
              Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
              Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
+
+  currentHitRate = Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%")
+  currentCapMissRate = Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%")
+  currentCompMissRate = Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")
+  currentHmRates = [Label(value="Trace Stats for Current View:", layout=Layout(width='200px')),
+             currentHitRate, currentCapMissRate, currentCompMissRate]
+  
+  refreshRatesButton = Button(
+          description='Refresh Stats',
+          disabled=False,
+          button_style='',
+          layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
+          style={'button_color': 'lightgray'},
+          )
     
   if tag_path:
     for i in range(numTags):
@@ -513,11 +551,13 @@ def generate_plot(trace_name):
     
   for check in hmChecks:
     check.observe(updateHitMiss)
+  
+  refreshRatesButton.on_click(updateStats)
     
   if tag_path:
-    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
   else:
-    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
 
 
   def updateReadWrite2(change):
@@ -650,7 +690,7 @@ def generate_plot(trace_name):
       selectDF(dfNew)
 
   indSubPlotButton = Button(
-          description='Create Indepenent Subplot',
+          description='Create Independent Subplot',
           disabled=False,
           button_style='',
           layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
