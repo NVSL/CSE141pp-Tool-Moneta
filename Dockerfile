@@ -3,6 +3,8 @@ FROM jupyter/scipy-notebook:dc9744740e12
 USER root
 RUN apt-get update -y
 RUN apt-get install -y vim
+RUN apt-get install -y less
+RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
 
 WORKDIR /setup
@@ -17,6 +19,7 @@ RUN rm pintool.tar.gz
 # Make directories for pintool executable and outfiles
 RUN mkdir /setup/converter
 RUN mkdir /setup/converter/outfiles
+ADD Setup/pin_macros.h /setup/pin_macros.h
 ADD Setup/trace_tool.so /setup/converter
 ADD Setup/vaex_extended_setup /setup/vaex_extended
 

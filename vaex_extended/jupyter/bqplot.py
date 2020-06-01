@@ -192,16 +192,6 @@ def create_tools(self):
         #    self.dataset.signal_selection_changed.disconnect(callback=callback)
         # self._cleanups.append(cleanup)
 
-        self.button_select_nothing = v.Btn(icon=True, v_on='tooltip.on', children=[
-                                    v.Icon(children=['delete'])
-                                ])
-        self.widget_select_nothing = v.Tooltip(bottom=True, v_slots=[{
-            'name': 'activator',
-            'variable': 'tooltip',
-            'children': self.button_select_nothing
-        }], children=[
-            "Delete selection"
-        ])
         self.button_reset = v.Btn(icon=True, v_on='tooltip.on', children=[
                                     v.Icon(children=['refresh'])
                                 ])
@@ -226,8 +216,6 @@ def create_tools(self):
                 self.zoom_brush.selected_y = None
             self._update_limits()
 
-        self.button_select_nothing.on_event('click', lambda *ignore: self.plot.select_nothing())
-        self.tools.append(self.button_select_nothing)
         
         self.button_reset.on_event('click', lambda *ignore: reset())
         self.tools.append(self.button_reset)
@@ -243,7 +231,7 @@ def create_tools(self):
                 name = tool_actions[self.button_action.v_model]
                 self.figure.interaction = tool_actions_map[name]
 
-        tool_actions = [PAN_ZOOM, ZOOM_SELECT, SELECT]
+        tool_actions = [PAN_ZOOM, ZOOM_SELECT]
         # tool_actions = [("m", "m"), ("b", "b")]
         self.button_action = \
             v.BtnToggle(v_model=0, mandatory=True, multiple=False, children=[
@@ -264,27 +252,17 @@ def create_tools(self):
                                 ])
                             }], children=[
                                 "Zoom to selection"
-                            ]),
-                           v.Tooltip(bottom=True, v_slots=[{
-                                'name': 'activator',
-                                'variable': 'tooltip',
-                                'children': v.Btn(v_on='tooltip.on', children=[
-                                    v.Icon(children=['crop_free'])
-                                ])
-                            }], children=[
-                                "Square selection"
                             ])
                     ])
         self.widget_tool_basic = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 self.button_action,
-                self.widget_select_nothing,
                 self.widget_reset
             ])
         ])
         self.plot.add_control_widget(self.widget_tool_basic)
 
-        control_lyt = widgets.Layout(max_width='30px')
+        control_lyt = widgets.Layout(width='40px')
         self.panzoom_x = control_x = widgets.Checkbox(value=True,description='X',indent=False, layout=control_lyt)
         self.panzoom_y = control_y = widgets.Checkbox(value=True,description='Y',indent=False, layout=control_lyt)
         def update_panzoom(checkbox):
@@ -315,7 +293,15 @@ def create_tools(self):
         pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
-        
+       
+        # Controls to be added to menubar instead of sidebar 
+        self.widget_menubar = v.Layout(children=[
+            v.Layout(pa_1=True, column=False, align_center=True, children=[
+                widgets.VBox([self.panzoom_x, self.panzoom_y]),
+                self.button_action,
+                self.widget_reset
+            ])
+        ])
 
         # Create list of buttons for tag zooming
         self.buttons = [widgets.Button(
@@ -345,7 +331,6 @@ def create_tools(self):
             tools = []
         # self._main_widget_1.children += (self.button_reset,)
         self._main_widget_1.children += (self.button_action,)
-        self._main_widget_1.children += (self.button_select_nothing,)
         self._main_widget_1.children += (self.button_reset,)
         # self._main_widget_2.children += (self.button_selection_mode,)
     self._main_widget.children = [self._main_widget_1, self._main_widget_2]

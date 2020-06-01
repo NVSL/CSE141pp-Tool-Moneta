@@ -18,7 +18,6 @@ class PlotTemplate(v.VuetifyTemplate):
     button_text = Unicode('menu').tag(sync=True)
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     template = Unicode('''
-
 <v-app>
     <v-navigation-drawer
       v-model="model"
@@ -71,7 +70,7 @@ class PlotTemplate(v.VuetifyTemplate):
 
 
     </v-app-bar>
-    <v-content>
+    <v-content class="mt-12">
           <main-widget/>
     </v-content>
 </v-app>
