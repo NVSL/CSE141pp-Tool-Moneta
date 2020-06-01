@@ -11,8 +11,8 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('/setup/') # For master branch
-#sys.path.append('../') # For dev branch
+#sys.path.append('/setup/') # For master branch
+sys.path.append('../') # For dev branch
 
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
