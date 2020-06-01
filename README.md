@@ -38,25 +38,29 @@ winpty docker exec -it memtrace bash
 ```
 
 # Program Tagging Usage
-Copy these two lines below the `#include` statements at the top of your code file:
+Add `#include "/setup/pin_macros.h"` to the top of your code. Note that the include contains the full path to the header file. By default, the file is located in `/setup/pin_macros.h`. The following three functions will be used to tag your code:
+
 ```
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START_TAG(const char* tag, int* begin, int* end) {}
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP_TAG(const char* tag) {}
+void DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
+void DUMP_ACCESS_STOP_TAG(const char* tag)
+void FLUSH_CACHE()
 ```
+
+
 #### Parameters:
 **tag:** A string name to identify the trace  
-**begin:** The address of the first element of the data structure (Array Example: `&arr[0]`)  
-**end:** The address of the last element of the data structure (Array Example: `&arr[arr.size()-1]`)  
+**begin:** The address of the first element of the data structure (Vector Example: `&arr[0]`)  
+**end:** The address of the last element of the data structure (Vector Example: `&arr[arr.size()-1]`)  
   
-Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you want to trace. Examples can be found in `memorytrace/Examples/src`.
+Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you want to trace. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache. Examples can be found in `memorytrace/Examples/src`.
 
 # Memory Trace Tool Usage
 
-You should be in the `memorytrace` directory. If not, `cd` to the directory
+The Dockerfile should, by default, put you in the `memorytrace` directory whenever you run the container. If not, `cd` to the directory
 ```
 cd ~/work/memorytrace/
 ```
-Run the notebook.  
+Run the notebook.
 **Note:** `vaex.plot_widget` only works for Jupyter notebook.
 ```
 jupyter notebook --allow-root
@@ -66,14 +70,61 @@ You should see two links appear. Go to your preferred web browser and paste the 
 ```
 http://127.0.0.1:8888/?token=...
 ```
-You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press `Run`.
-![](https://i.gyazo.com/0537edfe66db0d05d5d7e013a8d95b56.png "Memory Trace Tool")
+**Note:** If you are using Docker Toolbox as your docker environment, you will also have to replace 127.0.0.1 with 192.168.99.100 to access the link.
+```
+http://192.168.99.100:8888/?token=...
+```
+
+You should see a file called `MemoryTracer.ipynb`. This is the notebook that you will need to open.
+
+# Generating a Trace
+
+After opening `MemoryTracer.ipynb`, select the first cell and press `Shift+Enter`. 
+
+You should see input boxes appear like below.
+![](https://i.gyazo.com/03f415e4aa6f258b41a6d7c4fa62f3f3.png "Memory Trace Tool")
 <br/>
 
 **Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)  
-**Lines to Output:** The maximum number of memory accesses to record. Larger numbers will take longer to run. (Default: 100,000,000)  
 **Block Size:** The size of each cache line. (Default: 64 Bytes)  
+**Lines to Output:** The maximum number of memory accesses to record. Larger numbers will take longer to run. (Default: 100,000,000)  
 **Executable Path:** Path to the executable to trace (Default: "./Examples/build/sorting")  
+**Name for Output:** Name to save the trace as (Default: "Baseline")  
+**Trace Everything:** Trace all memory accesses in the program  
+
+Input your desired values and press `Generate Trace`. This will create a trace in the box using the name you specified. All files related to the trace can be found in the `/setup/converter/outfiles` directory.
+
+If **Trace Everything** is enabled, the name of your trace can be found with parentheses surrounding it indicating that it's a full trace.
+
+# Analyzing a Trace
+
+From the box on the right, select your desired trace and press `Load Trace`.
+
+If this is tagged trace and there are tags or it's full trace, a plot should display.
+
+The plot plots all data points in the trace with time/index on the x-axis and memory address on the y-axis
+
+The top menubar contains zooming controls. From left to right:  
+x,y checkboxes - When enabled, allows panning and zooming in the corresponding directions (Both means normal zooming/panning)  
+Pan & Zoom     - When selected, allows panning and zooming  
+Zoom to Selection - When selected, zooms to window chosen by click and drag  
+Square Selection  - When selected, only displays points in window chosen by click and drag  
+Delete Selection  - When selected, display all points
+Reset Zoom        - Move window back to original limits determined by all data in trace
+
+Legend contains checkboxes to turn on/off corresponding points  
+The frequency of each type of access is display near each point  
+
+The green line on the left depicts the cache size - a product of cache lines * block size  
+
+A list of checkboxes follow to turn on/off certain tags/data structures in the trace  
+With zoom to selection buttons next to each to display the minimum window containing all accesses to said data structure  
+
+TODO
+
+# Deleting a Trace
+
+From the box on the right, select the traces you want to delete. Note that you can select multiple traces by holding `Shift` or `Ctrl` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
 
 ## For Devs Only
 
