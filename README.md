@@ -66,6 +66,10 @@ You should see two links appear. Go to your preferred web browser and paste the 
 ```
 http://127.0.0.1:8888/?token=...
 ```
+**Note:** If you are using Docker Toolbox as your docker environment, you will also have to replace 127.0.0.1 with 192.168.99.100 to access the link, with 8888 being the port you specified. It should look something like this.
+```
+http://192.168.99.100:8888/?token=...
+```
 You should see a file called "LinkedSelectors.ipynb". Open the file, select the first cell and press `Shift+Enter`. You should see input boxes appear like below. Input your desired values and press `Run`.
 ![](https://i.gyazo.com/0537edfe66db0d05d5d7e013a8d95b56.png "Memory Trace Tool")
 <br/>
