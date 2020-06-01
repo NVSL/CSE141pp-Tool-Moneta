@@ -49,8 +49,8 @@ void FLUSH_CACHE()
 
 #### Parameters:
 **tag:** A string name to identify the trace  
-**begin:** The address of the first element of the data structure (Array Example: `&arr[0]`)  
-**end:** The address of the last element of the data structure (Array Example: `&arr[arr.size()-1]`)  
+**begin:** The address of the first element of the data structure (Vector Example: `&arr[0]`)  
+**end:** The address of the last element of the data structure (Vector Example: `&arr[arr.size()-1]`)  
   
 Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you want to trace. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache. Examples can be found in `memorytrace/Examples/src`.
 
@@ -70,7 +70,7 @@ You should see two links appear. Go to your preferred web browser and paste the 
 ```
 http://127.0.0.1:8888/?token=...
 ```
-You should see a file called `MemoryTracer.ipynb`. This is the file that you will need to open.
+You should see a file called `MemoryTracer.ipynb`. This is the notebook that you will need to open.
 
 # Generating a Trace
 
@@ -84,20 +84,42 @@ You should see input boxes appear like below.
 **Block Size:** The size of each cache line. (Default: 64 Bytes)  
 **Lines to Output:** The maximum number of memory accesses to record. Larger numbers will take longer to run. (Default: 100,000,000)  
 **Executable Path:** Path to the executable to trace (Default: "./Examples/build/sorting")  
-**Name for Output:** Name to save the trace as (Default: "Baseline")
-**Trace Everything:** Trace all memory accesses in the program 
+**Name for Output:** Name to save the trace as (Default: "Baseline")  
+**Trace Everything:** Trace all memory accesses in the program  
 
 Input your desired values and press `Generate Trace`. This will create a trace in the box using the name you specified. All files related to the trace can be found in the `/setup/converter/outfiles` directory.
+
+If **Trace Everything** is enabled, the name of your trace can be found with parentheses surrounding it indicating that it's a full trace.
 
 # Analyzing a Trace
 
 From the box on the right, select your desired trace and press `Load Trace`.
 
+If this is tagged trace and there are tags or it's full trace, a plot should display.
+
+The plot plots all data points in the trace with time/index on the x-axis and memory address on the y-axis
+
+The top menubar contains zooming controls. From left to right:  
+x,y checkboxes - When enabled, allows panning and zooming in the corresponding directions (Both means normal zooming/panning)  
+Pan & Zoom     - When selected, allows panning and zooming  
+Zoom to Selection - When selected, zooms to window chosen by click and drag  
+Square Selection  - When selected, only displays points in window chosen by click and drag  
+Delete Selection  - When selected, display all points
+Reset Zoom        - Move window back to original limits determined by all data in trace
+
+Legend contains checkboxes to turn on/off corresponding points  
+The frequency of each type of access is display near each point  
+
+The green line on the left depicts the cache size - a product of cache lines * block size  
+
+A list of checkboxes follow to turn on/off certain tags/data structures in the trace  
+With zoom to selection buttons next to each to display the minimum window containing all accesses to said data structure  
+
 TODO
 
 # Deleting a Trace
 
-From the box on the right, select the traces you want to delete. Note that you can select multiple traces by holding `Shift` or `Ctrl` while clicking. Pressing `Delete Trace` will permanently remove all files related to the selected traces.
+From the box on the right, select the traces you want to delete. Note that you can select multiple traces by holding `Shift` or `Ctrl` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
 
 ## For Devs Only
 

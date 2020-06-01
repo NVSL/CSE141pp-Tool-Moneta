@@ -5,6 +5,7 @@ import sys
 import vaex
 import vaex.jupyter
 import vaex.jupyter.plot
+import argparse
 import subprocess
 import numpy as np
 from matplotlib.colors import ListedColormap
@@ -23,8 +24,16 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-#logging.disable(logging.CRITICAL) # To disable logger
 
+parser = argparse.ArgumentParser(description='Display and control UI.')
+parser.add_argument('-r', action='store_true',
+                    help='When enabled, refresh to minimize cell output')
+parser.add_argument('-log', action='store_true',
+                    help='When enabled, Show debug/info logging')
+args = parser.parse_args()
+
+if not args.log:
+  logging.disable(logging.CRITICAL) # To disable logger
 
 # Constants
 WIDGET_DESC_PROP = {'description_width': '150px'}
@@ -227,7 +236,8 @@ def gen_trace_controls():
 
   gen_button = button_factory('Generate Trace', color='darkseagreen')
   def gen_trace(_):
-    #refresh() # Is this needed
+    if args.r:
+      refresh()
     exec_inputs = executable_widget.value.split(" ")
     exec_file = exec_inputs[0]
     exec_args = exec_inputs[1:]
@@ -312,6 +322,9 @@ def generate_plot(trace_name):
   num_accesses = df.Address.count()
   df['index'] = np.arange(0, num_accesses)
 
+  if len(tag_map.columns['Tag_Name']) == 0:
+    print("No tags in file")
+    return
   if tag_path:
     #Set up name-tag mapping
     namesFromFile = (tag_map.Tag_Name.values).tolist()
@@ -665,7 +678,8 @@ def generate_plot(trace_name):
 def run_load_button():
   load_button = button_factory('Load Trace', color='lightblue')
   def prepare_trace(_):
-    #refresh() # Is this needed?
+    if args.r:
+      refresh()
     if len(select_widget.value) == 0:
       print("Error: No trace selected")
       return
