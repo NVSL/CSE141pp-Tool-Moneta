@@ -167,7 +167,7 @@ $(OBJDIR)%.failed:
 
 TOOL_CXXFLAGS += -I/usr/include/hdf5/serial
 TOOL_LPATHS += -L/usr/lib/x86_64-linux-gnu/hdf5/serial
-TOOL_LIBS += -lhdf5
+TOOL_LIBS += -lhdf5 -lhdf5_cpp
 
 # Build the intermediate object file.
 $(OBJDIR)%$(OBJ_SUFFIX): %.cpp

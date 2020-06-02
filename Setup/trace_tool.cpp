@@ -34,7 +34,7 @@ using unordered_map = std::unordered_map<K, V>;
 // Debug vars
 constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
-constexpr bool INPUT_DEBUG {1};
+constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
 
@@ -50,7 +50,7 @@ constexpr int SkipRate    {100};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-const std::string DefaultOutputPath {"/setup/converter/outfiles/"};
+const std::string DefaultOutputPath {"/setup/converter/outfiles"};
 
 // Output file formatting
 const std::string FullTracePrefix   {"full_trace_"};
@@ -398,7 +398,7 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     TagData *old_tag = all_tags[str_tag];
     if (old_tag->addr_range.first != begin || // Must be same range
       old_tag->addr_range.second != end) {
-      cerr << "1 - Error: Tag redefined - Tag can't map to different ranges\n"
+      cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
               "Exiting Program...\n";
       PIN_ExitApplication(0);
     }

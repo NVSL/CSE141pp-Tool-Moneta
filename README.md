@@ -70,6 +70,11 @@ You should see two links appear. Go to your preferred web browser and paste the 
 ```
 http://127.0.0.1:8888/?token=...
 ```
+**Note:** If you are using Docker Toolbox as your docker environment, you will also have to replace 127.0.0.1 with 192.168.99.100 to access the link.
+```
+http://192.168.99.100:8888/?token=...
+```
+
 You should see a file called `MemoryTracer.ipynb`. This is the notebook that you will need to open.
 
 # Generating a Trace
