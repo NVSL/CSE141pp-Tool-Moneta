@@ -552,6 +552,7 @@ def generate_plot(trace_name):
   for check in hmChecks:
     check.observe(updateHitMiss)
   
+  
   refreshRatesButton.on_click(updateStats)
     
   if tag_path:
@@ -661,6 +662,8 @@ def generate_plot(trace_name):
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
                  backend='bqplot_v2', tool_select=True, legend=checks2, type='custom_plot1')
+  plot.backend.scale_x.observe(updateStats)
+  plot.backend.scale_y.observe(updateStats)
 
   if tag_path:
     for i in range(numTags):
