@@ -47,8 +47,8 @@ Now we can use the library in a pintool:
 ```
 
 ### pin_makefile.unix.config
-We use Pin 2.14. To use hdf5 in the pintool, the file specifies the change based on this article,
-> https://chunkaichang.com/tool/pin-notes/.
+We use Pin 2.14. To use hdf5 in the pintool, the file specifies the change based on this article:
+> https://chunkaichang.com/tool/pin-notes/
 
 ### requirements.txt
 A list of library requirements to be downloaded by docker upon creation of the image.
