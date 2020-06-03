@@ -399,7 +399,7 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     if (old_tag->addr_range.first != begin || // Must be same range
       old_tag->addr_range.second != end) {
       cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
-              "Exiting Program...\n";
+              "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
     }
     old_tag->active = true;

@@ -211,6 +211,11 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   sub_output = subprocess.run(args, capture_output=True)
   sub_stderr = sub_output.stderr.decode('utf-8')
   logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
+
+
+  if sub_stderr.startswith("Error"):
+    print(sub_stderr)
+
   meta_prefix = "full_meta_data_" if is_full_trace else "meta_data_"
   with open(OUTPUT_DIR + meta_prefix + o_name + ".txt", 'w') as meta_f:
     meta_f.write(str(c_lines) + " " + str(c_block))
