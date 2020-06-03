@@ -47,17 +47,17 @@ Now we can use the library in a pintool:
 ```
 
 ### pin_makefile.unix.config
-We use Pin 2.14. To use hdf5 in the pintool, the file specifies the change based on this article:
+We use Pin 2.14 to use hdf5 in the pintool. This file specifies the change needed to allow link libraries based on:
 > https://chunkaichang.com/tool/pin-notes/
 
 ### requirements.txt
 A list of library requirements to be downloaded by docker upon creation of the image.
 
 ### trace_tool.cpp
-The main pintool called by ~/work/memorytrace/main.py to generate the data for the trace.
+The main pintool source file to generate the data for the trace.
 
 ### trace_tool.so
-Compiled version of pintool to be moved to appropriate directory upon creation of image.
+Compiled version of pintool called by ~/work/memorytrace/main.py to be moved to appropriate directory upon creation of image.
 
 ### vaex_extended_setup/
 Directory contains changes to vanilla vaex.  
