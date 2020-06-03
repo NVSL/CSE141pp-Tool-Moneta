@@ -5,7 +5,7 @@
 There are 2 setup directories that are of importance: the root directory `/setup/` and the relative directory `../Setup/`. Likewise, there are
 3 vaex\_extended directories of importance: `/setup/vaex-extended`, `../Setup/vaex_extended_setup`, and `../vaex_extended`. Note that the default current directory will be the `~/work/memorytrace` directory.  
   
-**FUTURE TODO:** Pick a better naming scheme for these directories so we don't need this README anymore.
+**FUTURE TODO:** Pick a better naming scheme for these directories so we don't need this part of the README anymore.
 
 #### ../Setup vs  /setup/
 
