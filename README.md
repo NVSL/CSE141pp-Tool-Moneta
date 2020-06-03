@@ -1,7 +1,6 @@
 # CSE142/L MemoryTrace
 
-See https://github.com/NVSL/CSE141pp-Explorer/blob/master/README.md
- for original tutorials.
+Generate and visualize billions of memory accesses with this project built on PIN and HDF5.
 
 ## Getting Started
 
