@@ -37,3 +37,6 @@ This directory contains all the Pin source files and the main executable to run 
 * Disable sidebar in plot
 * Adjust y-scale to display all the digits of y addresses instead of 1.4e13
 * Zoom on click using maximum and minimum y address at that x index
+
+# Developers
+* Amithab Arumugam
