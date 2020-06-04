@@ -5,7 +5,6 @@
 There are 2 setup directories that are of importance: the root directory `/setup/` and the relative directory `../Setup/`. Likewise, there are
 3 vaex\_extended directories of importance: `/setup/vaex-extended`, `../Setup/vaex_extended_setup`, and `../vaex_extended`. Note that the default current directory will be the `~/work/memorytrace` directory.  
   
-**FUTURE TODO:** Pick a better naming scheme for these directories so we don't need this part of the README anymore.
 
 #### ../Setup vs  /setup/
 
@@ -37,6 +36,8 @@ This directory contains all the Pin source files and the main executable to run 
 * Disable sidebar in plot
 * Adjust y-scale to display all the digits of y addresses instead of 1.4e13
 * Zoom on click using maximum and minimum y address at that x index
+* Pick a better naming scheme for our setup/vaex_extended folders
 
 # Developers
 * Amithab Arumugam
+* Sam Liu
