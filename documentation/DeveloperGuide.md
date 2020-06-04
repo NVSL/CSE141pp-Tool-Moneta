@@ -37,21 +37,21 @@ To run the pintool from the command line:
       * More info: https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/group__PIN__CONTROL.html#ga8cf4aca0b0bdbc7fc0ae965883d8e3c2
 *	The values that were passed in as flags to the command line are checked and default values are set if none are specified or if they are out of bounds. 
       *	If debug mode is on, then these values are printed to std err
- *	Two hdf5 files are created: 
-      *	trace.hdf5 tracks the accesses with tagged addresses and the type of access (Read, Write, Hit, Miss)
-      *	cache.hdf5 tracks all of the accesses, regardless if it was tagged to see what fills up the cache
+ *	One hdf5 file is created: 
+      *	[full_]trace_[OUTPUT_NAME].hdf5 tracks the accesses with tagged addresses and the type of access [Read, Write] x [Hit, Capacity Miss, Compulsory Miss]
+      * If it's a tagged trace, a tag_map_[OUTPUT_NAME].csv file is created storing info for each tag
+      *	Functionality to create a cache.hdf5 file with the state of the cache before the program finished exists but is unused
  *	IMG_AddInstrumentFunction() registers the specified FindFunc method as a call back when loading an image
-      *	FindFunc is used to locate the Start and Stop macros that are in the student’s executable so pin knows when to start and stop tracking memory accesses.
-      *	Set max output?
+      *	FindFunc is used to locate the Start, Stop and Flush macros that are in the student’s executable so pin knows when to start and stop tracking memory accesses and flush the cache.
       *	Info on IMG API: https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/group__IMG__BASIC__API.html#ga494869187b5d94d7dd346bc9ff49642f
  *	INS_AddInstrumentFunction() is where we specify what to do for each instruction via Instruction method. Here we specify to the pintool if the instruction is a read, then call RecordMemRead. If it is a write, then call RecordMemWrite.
       *	Both Record methods take in the address of the memory access and determine if this access was a hit or a miss based off of the simulated cache. They both then call the method write_to_memfile which adds the access and its information to a buffer that will be written to the hdf5 file (more on HDF5 later).
       *	More on INS API: https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/group__INS__INST__API.html
  *	PIN_AddFiniFunction() specifies a function which is to be run right before the end of the pintool run. In this case, the function Fini is passed in, meaning Fini will be run right before the program terminates. 
-      *	Fini first creates the tag_map.csv which logs what tag number maps to which tag name that was specified by the student. This is important for plotting the data and associating the different accesses to specific data structures. 
-      *	The write buffer with any remaining accesses is flushed to the hdf5 output files and the files are closed. 
- *	After all of this is specified, we start instrumentation with Pin using PIN_StartProgram(). While Pin is running, it refers to the above functions to check what it is supposed to tracking. 
-      *	Pin has many other functionalities and more examples of what pin can do can be found out /setup/pintool/source/tools/ManualExamples. Look through the .cpp files to see more examples. 
+      *	Fini first creates the tag_map_[OUTPUT_NAME].csv which logs what tag number maps to which tag name that was specified by the student. This is important for plotting the data and associating the different accesses to specific data structures. 
+      *	The write buffer with any remaining accesses is flushed to the hdf5 output file and the file is closed. 
+ *	Using PIN_StartProgram(), the executable starts running while instrumentation is added based on the above specifications.
+      *	Pin has many other functionalities and more examples of what pin can do can be found in `/setup/pintool/source/tools/`. Look through the .cpp files to see more examples. For example, `/setup/pintool/source/Memory/` contains an implementation of a data cache.
 
 ## HDF5:
 * Using HDF5 file format is much more efficient than writing to a typical csv file. Since we are writing large sets of data, efficiency is very important. It is faster to write to hdf5 and more importantly, faster for the Vaex library to open hdf5 files. Because we are using hdf5, Vaex can open and process millions of lines of data in seconds. 
