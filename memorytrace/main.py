@@ -602,26 +602,33 @@ def generate_plot(trace_name):
 
   vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
-  from matplotlib.colors import to_hex
-  rwChecks2 = [Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px')),
-              Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px'))]
-  hmChecks2 = [RWCheckbox(description="Hits ("+str(hitCount)+")", color_value=to_hex([0, 0.5, 0])),
-              RWCheckbox(description="Capacity Misses ("+str(missCount)+")", color_value=to_hex([1, 0.5, 0])),
-              RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", color_value=to_hex([0.235, 0.350, 0.745]))]
-  cacheChecks2 = [RWCheckbox(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=to_hex([0, 0, 0]))]
-  checks2 = VBox([VBox(children=[Label(value='Legend')] + rwChecks2 +  hmChecks2 + cacheChecks2,
-                       layout=Layout(padding='10px',border='1px solid black')
-                      )])
-  for check in rwChecks2:
-      check.observe(updateReadWrite2)
-  for check in [hbox.children[0] for hbox in hmChecks2]:
-      check.observe(updateHitMiss2)
-  for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
-      colorpicker.observe(updateColorMap)
+  import matplotlib.pyplot as plt
+  import ipywidgets as widgets
 
+  colors = [[0.047, 1, 0, 1], [0, 0, 1, 1], [0, 1, 1, 1], [1, 1, 0, 1], [1, 0, 0, 1], [0.737, 0.745, 0.235, 1], [0.745, 0.309, 0.235, 1]]
+  f = lambda m,c: plt.plot([],[],marker=m, color=c, ls="none")[0]
+  handles = [f("s", colors[i]) for i in range(7)]
+  labels = ["Cache", "Read Hits", "Write Hits", "Read Misses", "Write Misses", "Compulsory Read Misses", "Compulsory Write Misses"]
+  legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=True, prop={"size":15})
+  def export_legend(legend, filename="legend.png", expand=[-10,-10,10,10]):
+    fig  = legend.figure
+    fig.canvas.draw()
+    bbox  = legend.get_window_extent()
+    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+    fig.savefig(filename, dpi="figure", bbox_inches=bbox)
+    
+  simple_legend = widgets.Output()
+  with simple_legend:
+     export_legend(legend)
+     plt.gca().set_axis_off()
+     plt.show()
+
+        
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
-                 backend='bqplot_v2', tool_select=True, legend=checks2, type='custom_plot1')
+                 backend='bqplot_v2', tool_select=True, legend=simple_legend, type='custom_plot1')
+#replace simple_legend with checks2 for dev branch's legend
 
   if tag_path:
     for i in range(numTags):
