@@ -46,9 +46,9 @@ You should see a file called `MemoryTracer.ipynb`. This is the notebook that you
 
 After setup is complete, you can run an example from the "Examples" directory. The examples must be first compiled by running `make`. The resulting executables are stored in the `Examples/build` directory. As an example, if we wanted to compile `sorting.cpp` in `Examples/src/sorting.cpp`, we can run `make sorting` and the resulting executable will be stored as `Examples/build/sorting`.
 
-Once compiliation is done, open up the notebook with the command mentioned in the previous section to generate and load the trace (more on this in the following sections).
+Once compiliation is done, open up the notebook with the command mentioned in the previous section to generate and load the trace.
 
-# Generating a Trace
+### Generating a Trace
 
 After opening `MemoryTracer.ipynb`, select the first cell and press `Shift+Enter`. 
 
@@ -67,7 +67,7 @@ Input your desired values and press `Generate Trace`. This will create a trace i
 
 If **Trace Everything** is enabled, the name of your trace can be found with parentheses surrounding it indicating that it's a full trace.
 
-# Analyzing a Trace
+### Analyzing a Trace
 
 From the box on the right, select your desired trace and press `Load Trace`.
 
@@ -95,6 +95,6 @@ The Zoom to Selection buttons next to each checkbox displays the minimum window 
 **Generate Independent Subplot:** Copies the current plot window into a new plot (created below the original), NOT affected by the checkboxes  
 **Generate Dependent Subplot:** Copies the current plot window into a new plot (created below the original), affected by the checkboxes
 
-# Deleting a Trace
+### Deleting a Trace
 
 From the box on the right, select the traces you want to delete. Note that you can select multiple traces by holding `Shift` or `Ctrl` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
