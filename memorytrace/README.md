@@ -85,27 +85,29 @@ If **Trace Everything** is enabled, the name of your trace can be found with par
 
 From the box on the right, select your desired trace and press `Load Trace`.
 
-If this is tagged trace and there are tags or it's full trace, a plot should display.
+If this is tagged trace and there are tags or it's full trace, a plot should display, like the one below (Legend needs to be updated):
+![](https://i.gyazo.com/07a79dfa731c778448546884985febfc.png "Sample Plot")
 
 The plot plots all data points in the trace with time/index on the x-axis and memory address on the y-axis
 
 The top menubar contains zooming controls. From left to right:  
-x,y checkboxes - When enabled, allows panning and zooming in the corresponding directions (Both means normal zooming/panning)  
-Pan & Zoom     - When selected, allows panning and zooming  
-Zoom to Selection - When selected, zooms to window chosen by click and drag  
-Square Selection  - When selected, only displays points in window chosen by click and drag  
-Delete Selection  - When selected, display all points
-Reset Zoom        - Move window back to original limits determined by all data in trace
+**x,y checkboxes:** When enabled, allows panning and zooming in the corresponding directions (Both means normal zooming/panning)  
+**Pan & Zoom:** When selected, allows panning and zooming  
+**Zoom to Selection:** When selected, zooms to window chosen by click and drag  
+**Reset Zoom:** Move window back to original limits determined by all data in trace
 
 Legend contains checkboxes to turn on/off corresponding points  
 The frequency of each type of access is display near each point  
 
 The green line on the left depicts the cache size - a product of cache lines * block size  
 
-A list of checkboxes follow to turn on/off certain tags/data structures in the trace  
-With zoom to selection buttons next to each to display the minimum window containing all accesses to said data structure  
+A list of checkboxes allow you to turn on/off certain tags/data structures/access types in the trace.  
 
-TODO
+The Zoom to Selection buttons next to each checkbox displays the minimum window containing all accesses to said data structure  
+
+**Refresh Stats:** (WIP) Recalulates and displays the Hit/Miss rate stats for the current plot window.  
+**Generate Independent Subplot:** Copies the current plot window into a new plot (created below the original), NOT affected by the checkboxes  
+**Generate Dependent Subplot:** Copies the current plot window into a new plot (created below the original), affected by the checkboxes
 
 # Deleting a Trace
 
