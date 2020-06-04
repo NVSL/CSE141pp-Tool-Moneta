@@ -30,4 +30,10 @@ These two lines tell the Notebook where to look to find the files for BqplotBack
 
 This directory contains all the Pin source files and the main executable to run the Pin program itself.
 
-
+# TODO
+* Fix refresh stats to respond quickly on pan and zoom or with a button
+* Custom plot widget name
+* Fix legend to include checkboxes and all the data structures with their zoom to selection buttons
+* Disable sidebar in plot
+* Adjust y-scale to display all the digits of y addresses instead of 1.4e13
+* Zoom on click using maximum and minimum y address at that x index
