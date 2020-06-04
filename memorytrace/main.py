@@ -268,6 +268,7 @@ def gen_trace_controls():
   return (gen_trace_inputs, gen_button)
 
 def read_out_dir():
+  """Reads output directory to fill up select widget with traces"""
   logging.info("Reading outfile directory")
   global trace_list
   global trace_map
@@ -311,6 +312,7 @@ def read_out_dir():
 
     
 def generate_plot(trace_name):
+  """Plots interactive widget with all other UI controls for user interaction"""
   global df
   global tag_map
   global curr_trace
@@ -791,6 +793,7 @@ def init_widgets():
 
     
 def refresh():
+  """Clears Jupyter notebook's cell output and displays inputs again"""
   clear_output(wait=True)
   logging.info("Refreshing")
   display(all_inputs)
