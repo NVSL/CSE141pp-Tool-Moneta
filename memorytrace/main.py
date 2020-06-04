@@ -119,10 +119,10 @@ def input_int_factory(value, description):
          )
 
 
-def input_text_factory(value, description):
+def input_text_factory(placeholder, description):
   return Text(
-          value=value,
-          placeholder='',
+          value='',
+          placeholder=placeholder,
           description=description,
           style=WIDGET_DESC_PROP,
           layout=WIDGET_LAYOUT
@@ -226,8 +226,8 @@ def gen_trace_controls():
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
   maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
-  executable_widget = input_text_factory('./Examples/build/sorting', 'Executable Path:')
-  trace_out_widget = input_text_factory('baseline', 'Name for Output')
+  executable_widget = input_text_factory('e.g. ./Examples/build/sorting', 'Executable Path:')
+  trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output')
 
   full_trace = Checkbox(description="Trace everything (Ignore tags)?",
                         value=False, indent=False)
