@@ -8,26 +8,25 @@
 6.	Student is able to analyze their program by interacting with the plot and selecting what type of accesses they want to examine and for which data structures.
 
 ## The Pintool – How to Run and Modify:
-* The pintool is run from the runPintool.py script. This file verifies the user input from the notebook is valid, then runs the pintool via command line with the following command format:
-`$ /setup/pintool/pin.sh -ifeellucky -injection child -t /setup/converter/trace_tool.so -o /setup/converter/outfiles -c CACHE_SIZE -m NUM_LINES -l BLOCK_SIZE -- EXECUTABLE`
+* To compile the pintool, navigate to the ManualExamples directory under pintool:  
+`cd /setup/pintool/source/tools/ManualExamples/`  
+  * Here given the `pintool.cpp` file is in the same directory, run:  
+  `make obj-intel64/pintool.so TARGET=intel64`.  
+  Create an obj-intel64 directory if needed.
+  * The output pintool.so should be in `obj-intel64/pintool.so`.  
+* The pintool is run from main.py.
+To run the pintool from the command line:
+`$ /setup/pintool/pin.sh -ifeellucky -injection child -t path/to/pintool.so -c CACHE_SIZE -m NUM_LINES -l BLOCK_SIZE -o OUTPUT_NAME -f IS_FULL_TRACE -- EXECUTABLE`
+* Note: in the Dockerfile, “pin” is set as an alias for “/setup/pintool/pin.sh -ifeellucky -injection child” in the ~./bashrc file
+* Run this to get the help message:
+`pin -t path/to/pintool.so -h -- EXECUTABLE`
   * The first argument is the path to the executable pin.sh. This is standard with PIN and is what will run the precompiled CSE142 version pintool. 
-  * The next two flags -ifeellucky and -injection child allow the version of PIN in the docker image to run with newer versions of Linux. We are using an older version of PIN, therefore not including these flags will raise an error about an incompatible version of Linux.
-  * The -t flag specifies the path to the CSE142 version of the pintool in the form of a compiled shared library. In order to run the tool, this .so file must already be compiled. The specified library, trace_tool.so, is what specifies to PIN which memory access to track and outputs all collected data to an HDF5 file. 
-  * The -o flag specifies the directory that the output files should go. For, all outputs are directed to /setup/converter/outfiles so that the subsequent python scripts can locate and load the output files into Vaex. 
-  * The following flags (-c, -m, -l) are set by the user in the notebook or a developer can add the inputs directly if running from the command line.
-  * Following –- should be the absolute path to the student’s precompiled executable. (A developer can also specify the relative path to the executable from /setup/pintool/ , but it is best to stick with absolute paths.)
-  * Note: in the Dockerfile, “pin” is set as an alias for “/setup/pintool/pin.sh -ifeellucky -injection child” in the ~./bashrc file so if running from command line, the following command is equivalent to the command above:
-`$ pin -t /setup/converter/trace_tool.so -o /setup/converter/outfiles -c CACHE_SIZE -m NUM_LINES -l BLOCK_SIZE -- EXECUTABLE`
-
-* The file that trace_tool.so is built from can be found at CSE141pp-Tool-MemoryTrace/Setup/trace_tool.cpp
-  * To edit this file then convert it to a .so, first copy the .cpp to /setup/pintool/source/tools/ManualExamples/ 
-  * Run the following commands:
-```
-$make     
-$make obj-intel64/trace_tool.so TARGET=intel64
-$cp obj-intel64/trace_tool.so /setup/converter
-```
-  *	You can now use the command from above to execute the pintool with the updated .so file
+  * The next two flags `-ifeellucky` and `-injection child` allow the version of PIN in the docker image to run with newer versions of Linux. We are using an older version of PIN, therefore not including these flags will raise an error about an incompatible version of Linux.
+  * The `-t` flag specifies the path to the CSE142 version of the pintool in the form of a compiled shared library. In order to run the tool, this .so file must already be compiled. The specified library, trace_tool.so, is what specifies to PIN which memory access to track and outputs all collected data to an HDF5 file. 
+  * The following flags (`-c`, `-m`, `-l`) are set by the user in the notebook or a developer can add the inputs directly if running from the command line.
+  * The `-o` flag specifies the output name to identify the trace by the user and main.py.
+  * `-f 1` indicates to the tool that a full trace is being performed. `-f 0` means a tagged trace is done.
+  * Following `–-` should be the absolute path to the student’s precompiled executable. (A developer can also specify the relative path to the executable from /setup/pintool/ , but it is best to stick with absolute paths.)
 
 ## The Pintool – What Is It Doing:
 * Intel’s PIN allows a user to instrument a program to analyze many aspects of the execution. We are using a subset of PIN’s functionality in order to track memory accesses throughout a student’s executable. For more information about PIN, visit https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/ for a User Guide. 
