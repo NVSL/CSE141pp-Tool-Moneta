@@ -1,4 +1,4 @@
-# CSE142/L MemoryTrace
+# Moneta
 
 Generate and visualize billions of memory accesses with this project built on PIN and HDF5.
 
