@@ -326,14 +326,14 @@ def generate_plot(trace_name):
   if tag_path:
     logging.debug("Found a tag map file")
     tag_map = vaex.open(tag_path)
+    if len(tag_map.columns['Tag_Name']) == -1:
+      print("No tags in file")
+    return
   else:
     logging.debug("No tag map -- Full trace")
   num_accesses = df.Address.count()
   df['index'] = np.arange(0, num_accesses)
 
-  if len(tag_map.columns['Tag_Name']) == 0:
-    print("No tags in file")
-    return
   if tag_path:
     #Set up name-tag mapping
     namesFromFile = (tag_map.Tag_Name.values).tolist()
@@ -504,7 +504,6 @@ def generate_plot(trace_name):
     currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
     currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
     currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
-
   if tag_path:
     tagChecks = [HBox([Button(
                            icon='search-plus',
@@ -694,9 +693,7 @@ def generate_plot(trace_name):
   #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
-                 backend='bqplot_v2', tool_select=True, legend=checks2, type='custom_plot1')
-  plot.backend.scale_x.observe(updateStats)
-  plot.backend.scale_y.observe(updateStats)
+                 backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
 
   if tag_path:
     for i in range(numTags):

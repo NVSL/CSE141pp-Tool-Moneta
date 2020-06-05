@@ -128,6 +128,8 @@ def _update_image(self):
             self.scatter.visible = len(x[mask]) > 0
             # self.scatter.marker = "arrow"
             # print("UpDated")
+        self.update_stats(self)
+        print('update_image')
 
 
 @extend_class(BqplotBackend)
