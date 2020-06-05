@@ -110,3 +110,11 @@ from vaex_extended.utils.decorator import *
 ```
 Additionally, for bqplot backends, Vaex currently flips the image.  Fix this by added `np.flipud` to
 `BqplotBackend.update_image` as detailed in the example above.
+
+## How to Access the Backend
+
+`df.plot_widget` will return a plot object, which has a `backend` element of type BqplotBackend. To access all the functions and variables of the BqplotBackend, all you need to do is save the result of `plot_widget` to a variable:
+```
+plot = df.plot_widget(...)
+backend = plot.backend
+```

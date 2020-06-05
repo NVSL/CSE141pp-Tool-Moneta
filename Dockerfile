@@ -19,6 +19,7 @@ RUN rm pintool.tar.gz
 # Make directories for pintool executable and outfiles
 RUN mkdir /setup/converter
 RUN mkdir /setup/converter/outfiles
+ADD Setup/pin_macros.h /setup/pin_macros.h
 ADD Setup/trace_tool.so /setup/converter
 ADD Setup/vaex_extended_setup /setup/vaex_extended
 

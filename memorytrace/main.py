@@ -5,12 +5,15 @@ import sys
 import vaex
 import vaex.jupyter
 import vaex.jupyter.plot
+import argparse
 import subprocess
 import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('../')
+#sys.path.append('/setup/') # For master branch
+sys.path.append('../') # For dev branch
+
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
@@ -23,8 +26,16 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-#logging.disable(logging.CRITICAL) # To disable logger
 
+parser = argparse.ArgumentParser(description='Display and control UI.')
+parser.add_argument('-r', action='store_true',
+                    help='When enabled, refresh to minimize cell output')
+parser.add_argument('-log', action='store_true',
+                    help='When enabled, Show debug/info logging')
+args = parser.parse_args()
+
+if not args.log:
+  logging.disable(logging.CRITICAL) # To disable logger
 
 # Constants
 WIDGET_DESC_PROP = {'description_width': '150px'}
@@ -108,10 +119,10 @@ def input_int_factory(value, description):
          )
 
 
-def input_text_factory(value, description):
+def input_text_factory(placeholder, description):
   return Text(
-          value=value,
-          placeholder='',
+          value='',
+          placeholder=placeholder,
           description=description,
           style=WIDGET_DESC_PROP,
           layout=WIDGET_LAYOUT
@@ -200,6 +211,11 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   sub_output = subprocess.run(args, capture_output=True)
   sub_stderr = sub_output.stderr.decode('utf-8')
   logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
+
+
+  if sub_stderr.startswith("Error"):
+    print(sub_stderr)
+
   meta_prefix = "full_meta_data_" if is_full_trace else "meta_data_"
   with open(OUTPUT_DIR + meta_prefix + o_name + ".txt", 'w') as meta_f:
     meta_f.write(str(c_lines) + " " + str(c_block))
@@ -210,8 +226,8 @@ def gen_trace_controls():
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
   maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
-  executable_widget = input_text_factory('./Examples/build/sorting', 'Executable Path:')
-  trace_out_widget = input_text_factory('baseline', 'Name for Output')
+  executable_widget = input_text_factory('e.g. ./Examples/build/sorting', 'Executable Path:')
+  trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output')
 
   full_trace = Checkbox(description="Trace everything (Ignore tags)?",
                         value=False, indent=False)
@@ -227,7 +243,8 @@ def gen_trace_controls():
 
   gen_button = button_factory('Generate Trace', color='darkseagreen')
   def gen_trace(_):
-    #refresh() # Is this needed
+    if args.r:
+      refresh()
     exec_inputs = executable_widget.value.split(" ")
     exec_file = exec_inputs[0]
     exec_args = exec_inputs[1:]
@@ -251,6 +268,7 @@ def gen_trace_controls():
   return (gen_trace_inputs, gen_button)
 
 def read_out_dir():
+  """Reads output directory to fill up select widget with traces"""
   logging.info("Reading outfile directory")
   global trace_list
   global trace_map
@@ -294,6 +312,7 @@ def read_out_dir():
 
     
 def generate_plot(trace_name):
+  """Plots interactive widget with all other UI controls for user interaction"""
   global df
   global tag_map
   global curr_trace
@@ -312,6 +331,9 @@ def generate_plot(trace_name):
   num_accesses = df.Address.count()
   df['index'] = np.arange(0, num_accesses)
 
+  if len(tag_map.columns['Tag_Name']) == 0:
+    print("No tags in file")
+    return
   if tag_path:
     #Set up name-tag mapping
     namesFromFile = (tag_map.Tag_Name.values).tolist()
@@ -457,7 +479,31 @@ def generate_plot(trace_name):
         currentSelection[targetWrite - 1] = 0
         
     df.select('total')
-
+  
+  def getCurrentView(self, frame):
+    curView = frame[frame.index >= int(plot.limits[0][0])]
+    curView = curView[curView.index <= int(plot.limits[0][1])+1]
+    curView = curView[curView.Address >= int(plot.limits[1][0])]
+    curView = curView[curView.Address <= int(plot.limits[1][1])+1]
+    
+    return curView
+    
+  def updateStats(self):
+    curReadHits = getCurrentView(self,read_hits)
+    curWriteHits = getCurrentView(self,write_hits)
+    curReadMisses = getCurrentView(self,read_misses)
+    curWriteMisses = getCurrentView(self,write_misses)
+    curCompReadMisses = getCurrentView(self,comp_read_misses)
+    curCompWriteMisses = getCurrentView(self,comp_write_misses)
+    
+    hitCount = curReadHits.count() + curWriteHits.count()
+    missCount = curReadMisses.count() + curWriteMisses.count()
+    compMissCount = curCompReadMisses.count() + curCompWriteMisses.count()
+    totalCount = hitCount + missCount + compMissCount
+    
+    currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
+    currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
+    currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
 
   if tag_path:
     tagChecks = [HBox([Button(
@@ -486,9 +532,24 @@ def generate_plot(trace_name):
               Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
-  hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
+  hmRates = [Label(value="Total Trace Stats:", layout=Layout(width='200px')),
+             Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
              Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
              Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
+
+  currentHitRate = Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%")
+  currentCapMissRate = Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%")
+  currentCompMissRate = Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")
+  currentHmRates = [Label(value="Trace Stats for Current View:", layout=Layout(width='200px')),
+             currentHitRate, currentCapMissRate, currentCompMissRate]
+  
+  refreshRatesButton = Button(
+          description='Refresh Stats',
+          disabled=False,
+          button_style='',
+          layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
+          style={'button_color': 'lightgray'},
+          )
     
   if tag_path:
     for i in range(numTags):
@@ -499,11 +560,14 @@ def generate_plot(trace_name):
     
   for check in hmChecks:
     check.observe(updateHitMiss)
+  
+  
+  refreshRatesButton.on_click(updateStats)
     
   if tag_path:
-    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
   else:
-    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
 
 
   def updateReadWrite2(change):
@@ -607,6 +671,8 @@ def generate_plot(trace_name):
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
                  backend='bqplot_v2', tool_select=True, legend=checks2, type='custom_plot1')
+  plot.backend.scale_x.observe(updateStats)
+  plot.backend.scale_y.observe(updateStats)
 
   if tag_path:
     for i in range(numTags):
@@ -636,7 +702,7 @@ def generate_plot(trace_name):
       selectDF(dfNew)
 
   indSubPlotButton = Button(
-          description='Create Indepenent Subplot',
+          description='Create Independent Subplot',
           disabled=False,
           button_style='',
           layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
@@ -665,7 +731,8 @@ def generate_plot(trace_name):
 def run_load_button():
   load_button = button_factory('Load Trace', color='lightblue')
   def prepare_trace(_):
-    #refresh() # Is this needed?
+    if args.r:
+      refresh()
     if len(select_widget.value) == 0:
       print("Error: No trace selected")
       return
@@ -726,6 +793,7 @@ def init_widgets():
 
     
 def refresh():
+  """Clears Jupyter notebook's cell output and displays inputs again"""
   clear_output(wait=True)
   logging.info("Refreshing")
   display(all_inputs)
