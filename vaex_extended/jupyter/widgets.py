@@ -3,7 +3,8 @@ from vaex.jupyter.widgets import *
 class PlotTemplate(v.VuetifyTemplate):
     show_output = Bool(False).tag(sync=True)
     new_output = Bool(False).tag(sync=True)
-    title = Unicode('Moneta').tag(sync=True)
+    default_title = Unicode('Moneta')
+    title = default_title.tag(sync=True)
 
     drawer = Bool(True).tag(sync=True)
     clipped = Bool(False).tag(sync=True)
@@ -65,9 +66,9 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-text-field v-show="edit_title" @input="function(val) {title = val}"
         dense placeholder="Plot Title" :value=title
         filled append-icon='check' height='12px'
-        @click:append="function() {edit_title = false; if (title === '') title = 'Vaex'}"
+        @click:append="function() {edit_title = false; if (title === '') title = default_title}"
         @keydown="function (e) {if (e.keyCode == 13 || e.keyCode == 27) \
-          {edit_title = false; if (title === '') title = 'Vaex'}}"
+          {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
       <v-spacer></v-spacer>
       <toolbox/>      
