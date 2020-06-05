@@ -34,9 +34,8 @@ class Plot2dDefault(Plot2dDefault):
         if 'legend' in kwargs:
             self.legend = kwargs.get('legend')
         if 'update_stats' in kwargs:
-            self.update_stats = kwargs.get('update_stats')
-            setattr(self.__class__, 'update_stats', kwargs.get('update_stats'))
-            print('update_stats given to widget')
+            #self.update_stats = kwargs.get('update_stats')
+            setattr(self.__class__, '_update_stats', kwargs.get('update_stats'))
         else:
             self.update_stats = lambda *args, **kwargs: None
         self.widget = PlotTemplate_v2(components={
@@ -48,10 +47,11 @@ class Plot2dDefault(Plot2dDefault):
                     },
                     model=False
             )
-
-
+    @debounced(0.3, method=True)
+    def update_stats(self):
+        self._update_stats()
     def _update_image(self):
-        self.update_stats(self)
+        self.update_stats()
         with self.output:
             grid = self.get_grid().copy()  # we may modify inplace
             if self.smooth_pre:
@@ -148,5 +148,4 @@ class Plot2dDefault(Plot2dDefault):
                 self.scatter.visible = len(x[mask]) > 0
                 # self.scatter.marker = "arrow"
                 # print("UpDated")
-    
     
