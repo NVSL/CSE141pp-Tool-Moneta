@@ -328,7 +328,7 @@ def generate_plot(trace_name):
     tag_map = vaex.open(tag_path)
     if len(tag_map.columns['Tag_Name']) == -1:
       print("No tags in file")
-    return
+      return
   else:
     logging.debug("No tag map -- Full trace")
   num_accesses = df.Address.count()
@@ -694,7 +694,6 @@ def generate_plot(trace_name):
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
-
   if tag_path:
     for i in range(numTags):
       tagChecks[i].children[0].on_click(plot.backend.zoomSection)
