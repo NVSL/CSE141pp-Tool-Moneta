@@ -457,7 +457,7 @@ VOID dump_end_called(VOID * tag) {
 }
 
 // Write id,op,addr to file
-inline VOID write_to_memfile(TagData* t, int op, ADDRINT addr){
+VOID write_to_memfile(TagData* t, int op, ADDRINT addr){
   if (t) { // Only if running with tags
     hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
     if (t->x_range.first == -1) { // First time accessed
