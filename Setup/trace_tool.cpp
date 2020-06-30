@@ -54,10 +54,11 @@ const std::string DefaultOutputPath {"/setup/converter/outfiles"};
 
 // Output file formatting
 const std::string FullTracePrefix   {"full_trace_"};
-const std::string TracePrefix   {"trace_"};
-const std::string TraceSuffix   {".hdf5"};
-const std::string TagFilePrefix {"tag_map_"};
-const std::string TagFileSuffix {".csv"};
+const std::string TracePrefix       {"trace_"};
+const std::string TraceSuffix       {".hdf5"};
+const std::string FullTagFilePrefix {"full_tag_map_"};
+const std::string TagFilePrefix     {"tag_map_"};
+const std::string TagFileSuffix     {".csv"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -106,6 +107,9 @@ pintool::unordered_map<std::string, TagData*> all_tags;
 static ADDRINT free_block = 0; // State for normalized accesses
 
 static ADDRINT max_range = 0;
+
+std::vector<ADDRINT> before_main;
+static bool reached_main {false};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -364,6 +368,35 @@ VOID flush_cache() {
   accesses.clear();
 }
 
+VOID halt_layout_calc() {
+  std::cerr << "Size of main trace: " << before_main.size() << "\n";
+  reached_main = true;
+  ADDRINT lower_stack;
+  ADDRINT upper_heap;
+  ADDRINT max_diff = 0;
+  std::sort(before_main.begin(), before_main.end());
+  for (int i = 1; i < before_main.size(); i++) {
+    ADDRINT curr_diff = before_main[i] - before_main[i-1];
+    if (curr_diff > max_diff) {
+      max_diff = curr_diff;
+      upper_heap = before_main[i-1];
+      lower_stack = before_main[i];
+    }
+  }
+  ADDRINT lower_heap = before_main.front();
+  ADDRINT upper_stack = before_main.back();
+
+  std::ofstream map_file (output_tagfile_path);
+  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+  map_file << "Stack,0," << lower_stack << "," << upper_stack <<
+    "0," << curr_lines << "\n";
+  map_file << "Heap,1," << lower_heap << "," << upper_heap <<
+    "0," << curr_lines << "\n";
+
+  map_file.flush();
+  map_file.close();
+}
+
 VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
   char* s = (char *)tag;
   string str_tag (s);
@@ -503,6 +536,10 @@ VOID RecordMemRead(ADDRINT addr) {
   }
   if (KnobTrackAll) {
     int access_type = add_to_simulated_cache(addr);
+    if (!reached_main) {
+      before_main.push(addr);
+    }
+    int weight = 5; // Compulsory miss -> 5
     if (access_type == 0) {
       write_to_memfile(0, 1, addr); // Hit -> 1
     } else if (access_type == 1) {
@@ -548,6 +585,9 @@ VOID RecordMemWrite(ADDRINT addr) {
   }
   if (KnobTrackAll) { // No normalization for address
     int access_type = add_to_simulated_cache(addr);
+    if (!reached_main) {
+      before_main.push(addr);
+    }
     if (access_type == 0) {
       write_to_memfile(0, 2, addr); // Hit -> 2
     } else if (access_type == 1) {
@@ -706,6 +746,12 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
+  rtn = RTN_FindByName(img, "main");
+  if (RTN_Valid(rtn)) {
+    RTN_Open(rtn);
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)halt_layout_calc);
+    RTN_Close(rtn);
+  }
 }
 
 INT32 Usage() {
@@ -729,6 +775,7 @@ int main(int argc, char *argv[]) {
     output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
   } else { // Different name when tracing everything
+    output_tagfile_path = DefaultOutputPath + "/" + FullTagFilePrefix + output_trace_path + TagFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + FullTracePrefix + output_trace_path + TraceSuffix;
   }
   UINT64 in_output_limit = KnobMaxOutput.Value();

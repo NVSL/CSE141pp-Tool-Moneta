@@ -294,15 +294,16 @@ def read_out_dir():
       logging.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
     elif (file_name.startswith('full_trace_') and file_name.endswith('.hdf5')):
       trace_name = file_name[11:file_name.index('.hdf5')]
+      tag_path = os.path.join(dir_path, 'full_tag_map_' + trace_name + '.csv')
       meta_path = os.path.join(dir_path, 'full_meta_data_' + trace_name + '.txt')
-      if (not os.path.isfile(meta_path)):
-        print("Warning: Metadata file missing for {}. Omitting full trace.".format(file_name))
+      if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
+        print("Warning: Tag Map and/or Metadata file missing for {}. Omitting full trace.".format(file_name))
         continue
 
       trace_list.append("(" + trace_name + ")")
       trace_map["(" + trace_name + ")"] = (os.path.join(dir_path, file_name),
-                               None, meta_path)
-      logging.debug("Trace: {}, Meta: {}".format("(" + trace_name + ")", meta_path))
+                               tag_path, meta_path)
+      logging.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
     
         
 
