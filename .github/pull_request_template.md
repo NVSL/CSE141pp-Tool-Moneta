@@ -1,6 +1,7 @@
 ## Description:
 
 *Please describe the changes in this pull request*  
+
 ***Example**: fixes hit rate bug becoming `NaN` when there are no data points in the viewport*  
 ***Example**: Implements 3rd bullet point(the so and so) of Sprint 9*
 
