@@ -506,6 +506,8 @@ def generate_plot(trace_name):
     currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
     currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
     currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+  tagChecks = []
+  tagChecksBox = []
   if tag_path:
     tagChecks = [HBox([
                     Checkbox(description=name, 
@@ -526,7 +528,7 @@ def generate_plot(trace_name):
                     ],layout=Layout(min_height='35px'))
 
                 for name in namesFromFile]
-
+    tagChecksBox = [Label(value='Data Sets'), VBox(tagChecks, layout=Layout(max_height='210px', overflow_y = 'auto'))]
 
   rwChecks = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
@@ -673,7 +675,7 @@ def generate_plot(trace_name):
               RWCheckbox(description="Capacity Misses ("+str(missCount)+")", primary_color=newc[4], secondary_color=newc[5]),
               RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", primary_color=newc[6], secondary_color=newc[8])]
   cacheChecks2 = [CacheLabel(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=newc[3])]
-  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + [Label(value='Data Sets'),VBox(tagChecks,layout=Layout(max_height='210px', overflow_y = 'auto'))],
+  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox,
                        layout=Layout(padding='10px',border='1px solid black')
                       )])
   for check in rwChecks2:
