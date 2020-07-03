@@ -628,17 +628,21 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
+          newc = np.ones((11,4))
           name=change.owner.name
-          if(re.search('^Hits', name)):
+          if(re.search('^Read Hits', name)):
               newc[1] = to_rgba(change.new,1)
+          if(re.search('^Write Hits', name)):
               newc[2] = to_rgba(change.new,1)
-          elif(re.search('^Cache', name)):
+          if(re.search('^Cache', name)):
               newc[3] = to_rgba(change.new,1)
-          elif(re.search('^Capacity', name)):
+          if(re.search('^Read Capacity', name)):
               newc[4] = to_rgba(change.new,1)
+          if(re.search('^Write Capacity', name)):
               newc[5] = to_rgba(change.new,1)
-          else:
+          if(re.search('^Read Compulsory Miss', name)):
               newc[6] = to_rgba(change.new,1)
+          if(re.search('^Write Compulsory Miss', name)):
               newc[8] = to_rgba(change.new,1)
           plot.colormap = ListedColormap(newc)
           plot.backend.plot._update_image()
@@ -650,8 +654,8 @@ def generate_plot(trace_name):
   def RWCheckbox(description, primary_color, secondary_color):
       rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
       wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
-      rcp.name=description
-      wcp.name=description
+      rcp.name= "Read " + description
+      wcp.name= "Write " + description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
                   rcp, wcp])
 
@@ -684,7 +688,7 @@ def generate_plot(trace_name):
       check.observe(updateReadWrite2)
   for check in [hbox.children[0] for hbox in hmChecks2]:
       check.observe(updateHitMiss2)
-  for colorpicker in [hbox.children[1] for hbox in hmChecks2] + [hbox.children[1] for hbox in cacheChecks2]:
+  for colorpicker in [hbox.children[1] for hbox in hmChecks2] + [hbox.children[2] for hbox in hmChecks2] + [hbox.children[1] for hbox in cacheChecks2]:
       colorpicker.observe(updateColorMap)
    
   #Code for simple_legend
