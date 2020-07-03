@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('../moneta_files') 
+sys.path.append('../moneta_files/') 
 
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
@@ -47,7 +47,7 @@ DEFAULT_TRACE_DROP = 'Select a trace to load'
 
 PIN_DIR  = "../moneta_files/pintool_files/pintool/pin.sh"
 TOOL_DIR = "../moneta_files/pintool_files/trace_tool.so"
-OUTPUT_DIR = "../moneta_files/outfiles"
+OUTPUT_DIR = "../moneta_files/outfiles/"
 
 #Enumerations
 COMP_W_MISS = 6
