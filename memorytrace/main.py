@@ -529,7 +529,7 @@ def generate_plot(trace_name):
                     ],layout=Layout(min_height='35px'))
 
                 for name in namesFromFile]
-    tagChecksBox = [Label(value='Data Sets'), VBox(tagChecks, layout=Layout(max_height='210px', overflow_y = 'auto'))]
+    tagChecksBox = [Label(value='Data Structures'), VBox(tagChecks, layout=Layout(max_height='210px', overflow_y = 'auto'))]
 
   rwChecks = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
