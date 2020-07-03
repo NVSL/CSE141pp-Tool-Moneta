@@ -45,7 +45,7 @@ static int cache_writes {0};
 static int first_record {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
-constexpr int SkipRate    {100};
+constexpr int SkipRate  {100};
 
 // Constant Vars for User input
 constexpr ADDRINT DefaultMaximumLines   {100000000};
@@ -109,6 +109,8 @@ static ADDRINT free_block = 0; // State for normalized accesses
 
 static ADDRINT max_range = 0;
 
+constexpr int MAIN_LIMIT {400000};
+
 std::vector<std::pair<ADDRINT, int>> before_main;
 static bool reached_main {false};
 ADDRINT lower_stack;
@@ -125,9 +127,9 @@ int last_acc_heap  {0};
  */
 
 // Output Columns
-const std::string TagColumn         {"Tag"};
-const std::string AccessColumn      {"Access"};
-const std::string AddressColumn     {"Address"};
+const std::string TagColumn     {"Tag"};
+const std::string AccessColumn  {"Access"};
+const std::string AddressColumn {"Address"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -405,39 +407,41 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
 
 
 VOID halt_layout_calc() {
-  std::cerr << "Size of main trace: " << before_main.size() << "\n";
-  reached_main = true;
-  ADDRINT max_diff = 0;
-  //std::sort(before_main.begin(), before_main.end());
-  std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
-    return left.first < right.first;
-  });
+  if (!reached_main) { // Should only be called once
+    std::cerr << "Size of main trace: " << before_main.size() << "\n";
+    reached_main = true;
+    ADDRINT max_diff = 0;
+    //std::sort(before_main.begin(), before_main.end());
+    std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
+      return left.first < right.first;
+    });
 
 
-  for (size_t i = 1; i < before_main.size(); i++) {
-    ADDRINT curr_diff = before_main[i].first - before_main[i-1].first;
-    if (curr_diff > max_diff) {
-      max_diff = curr_diff;
-      upper_heap = before_main[i-1].first;
-      lower_stack = before_main[i].first;
+    for (size_t i = 1; i < before_main.size(); i++) {
+      ADDRINT curr_diff = before_main[i].first - before_main[i-1].first;
+      if (curr_diff > max_diff) {
+        max_diff = curr_diff;
+        upper_heap = before_main[i-1].first;
+        lower_stack = before_main[i].first;
+      }
     }
-  }
-  lower_heap = before_main.front().first;
-  upper_stack = before_main.back().first;
-  //std::cerr << "lower heap and upper stack: " << lower_heap << " " << upper_stack << "\n";
+    lower_heap = before_main.front().first;
+    upper_stack = before_main.back().first;
+    //std::cerr << "lower heap and upper stack: " << lower_heap << " " << upper_stack << "\n";
 
-  /*for (int i = 0; i < 10; i++) {
-    std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
-  }*/
-  for (std::pair<ADDRINT, int> accesses: before_main) {
-    if (accesses.first <= upper_heap) {
-      write_to_memfile(0, accesses.second, accesses.first, false);
-    } else {
-      write_to_memfile(0, accesses.second, accesses.first, true);
+    /*for (int i = 0; i < 10; i++) {
+      std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
+    }*/
+    for (std::pair<ADDRINT, int> accesses: before_main) {
+      if (accesses.first <= upper_heap) {
+        write_to_memfile(0, accesses.second, accesses.first, false);
+      } else {
+        write_to_memfile(0, accesses.second, accesses.first, true);
+      }
     }
+    last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
+    last_acc_heap = before_main.size();
   }
-  last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
-  last_acc_heap = before_main.size();
 
 }
 
@@ -561,6 +565,9 @@ VOID RecordMemRead(ADDRINT addr) {
     int access_type = 2*add_to_simulated_cache(addr)+1;
     if (!reached_main) {
       before_main.push_back({addr, access_type});
+      if (before_main.size() == MAIN_LIMIT) {
+        halt_layout_calc();
+      }
     } else {
       bool is_stack = false;
       if (addr >= lower_stack) {
@@ -625,6 +632,9 @@ VOID RecordMemWrite(ADDRINT addr) {
     int access_type = 2*add_to_simulated_cache(addr) + 2;
     if (!reached_main) {
       before_main.push_back({addr, access_type});
+      if (before_main.size() == MAIN_LIMIT) {
+        halt_layout_calc();
+      }
     } else {
       bool is_stack = false;
       if (addr >= lower_stack) {
