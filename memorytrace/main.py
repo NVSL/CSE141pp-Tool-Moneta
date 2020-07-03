@@ -647,8 +647,8 @@ def generate_plot(trace_name):
   # Read Write custom checkbox
   
   def RWCheckbox(description, primary_color, secondary_color):
-      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
-      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
+      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=True,layout=cp_lyt)
+      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=True,layout=cp_lyt)
       rcp.name=description
       wcp.name=description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
@@ -656,7 +656,7 @@ def generate_plot(trace_name):
 
 
   def CacheLabel(description, color_value):
-      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=False,layout=cp_lyt)
+      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=True,layout=cp_lyt)
       ccp.name=description
       #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
       return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
