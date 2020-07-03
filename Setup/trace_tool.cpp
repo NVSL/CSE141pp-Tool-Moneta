@@ -119,6 +119,8 @@ ADDRINT lower_heap;
 ADDRINT upper_heap;
 int last_acc_stack {0};
 int last_acc_heap  {0};
+int first_acc_stack {-1};
+int first_acc_heap {-1};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -432,15 +434,23 @@ VOID halt_layout_calc() {
     /*for (int i = 0; i < 10; i++) {
       std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
     }*/
-    for (std::pair<ADDRINT, int> accesses: before_main) {
-      if (accesses.first <= upper_heap) {
-        write_to_memfile(0, accesses.second, accesses.first, false);
+    for (size_t i = 0; i < before_main.size(); i++) {
+      if (before_main[i].first <= upper_heap) {
+        if (first_acc_heap == -1) {
+          first_acc_heap = i;
+        }
+        last_acc_heap = i;
+        write_to_memfile(0, before_main[i].second, before_main[i].first, false);
       } else {
-        write_to_memfile(0, accesses.second, accesses.first, true);
+        if (first_acc_stack == -1) {
+          first_acc_stack = i;
+        }
+        last_acc_stack = i;
+        write_to_memfile(0, before_main[i].second, before_main[i].first, true);
       }
     }
-    last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
-    last_acc_heap = before_main.size();
+    //last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
+    //last_acc_heap = before_main.size();
   }
 
 }
@@ -740,12 +750,15 @@ VOID Fini(INT32 code, VOID *v) {
     map_file.flush();
     map_file.close();
   } else {
+    if (!reached_main) {
+      halt_layout_calc();
+    }
     std::ofstream map_file (output_tagfile_path);
     map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
     map_file << "Stack,0," << lower_stack << "," << upper_stack <<
-      ",0," << last_acc_stack << "\n";
+      "," << first_acc_stack << "," << last_acc_stack << "\n";
     map_file << "Heap,1," << lower_heap << "," << upper_heap <<
-      ",0," << last_acc_heap << "\n";
+      "," << first_acc_heap  << "," << last_acc_heap << "\n";
     
     map_file.flush();
     map_file.close();
