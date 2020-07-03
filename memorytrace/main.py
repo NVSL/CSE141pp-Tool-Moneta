@@ -628,23 +628,23 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
-          newc = np.ones((11,4))
+          newcmap = newc
           name=change.owner.name
           if(re.search('^Read Hits', name)):
-              newc[1] = to_rgba(change.new,1)
+              newcmap[1] = to_rgba(change.new,1)
           if(re.search('^Write Hits', name)):
-              newc[2] = to_rgba(change.new,1)
+              newcmap[2] = to_rgba(change.new,1)
           if(re.search('^Cache', name)):
-              newc[3] = to_rgba(change.new,1)
+              newcmap[3] = to_rgba(change.new,1)
           if(re.search('^Read Capacity', name)):
-              newc[4] = to_rgba(change.new,1)
+              newcmap[4] = to_rgba(change.new,1)
           if(re.search('^Write Capacity', name)):
-              newc[5] = to_rgba(change.new,1)
+              newcmap[5] = to_rgba(change.new,1)
           if(re.search('^Read Compulsory Miss', name)):
-              newc[6] = to_rgba(change.new,1)
+              newcmap[6] = to_rgba(change.new,1)
           if(re.search('^Write Compulsory Miss', name)):
-              newc[8] = to_rgba(change.new,1)
-          plot.colormap = ListedColormap(newc)
+              newcmap[8] = to_rgba(change.new,1)
+          plot.colormap = ListedColormap(newcmap)
           plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
