@@ -330,7 +330,7 @@ def generate_plot(trace_name):
   if tag_path:
     logging.debug("Found a tag map file")
     tag_map = vaex.open(tag_path)
-    if len(tag_map.columns['Tag_Name']) == -1:
+    if len(tag_map.columns['Tag_Name']) == 0:
       print("No tags in file")
       return
   else:
