@@ -587,7 +587,7 @@ VOID RecordMemRead(ADDRINT addr) {
         // heap
         is_stack = false;
       } else {
-        // rearange to 2*addr < lower_stack + upper_heap?
+        // rearrange to 2*addr < lower_stack + upper_heap?
         if (addr - upper_heap < lower_stack - addr) {
           // heap
           is_stack = false;
