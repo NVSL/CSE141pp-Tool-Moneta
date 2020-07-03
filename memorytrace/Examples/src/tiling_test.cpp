@@ -16,7 +16,10 @@ int main(int argc, char *argv[]){
     if(argc > 1){
         TILE_SIZE = stoi(argv[1]);
     }
-    cout << TILE_SIZE << endl;
+
+    if(TILE_SIZE < 1){
+        TILE_SIZE = 1;
+    }
 
     vector<vector<int>> scale(SIZE, vector<int> (SIZE));
     vector<int> values(SIZE2);
