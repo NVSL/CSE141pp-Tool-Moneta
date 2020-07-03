@@ -11,8 +11,8 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('/setup/') # For master branch
-#sys.path.append('../') # For dev branch
+#sys.path.append('/setup/') # For master branch
+sys.path.append('../') # For dev branch
 
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
@@ -73,12 +73,15 @@ newc[8] = [0.235, 0.350, 0.745, 1] # compulsory write misses - 6, .75
 # Original colors below
 newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
 #newc[2] = [0, 0.7, 0, 1] # write_hits - 2, .25
-newc[2] = [0, 1, 1, 1] # write_hits - 2, .25
+#newc[2] = [0, 1, 1, 1] # write_hits - 2, .25
+newc[2] = [0, 153/255, 204/255, 1] # write_hits - 2, .25
 newc[3] = [0.047, 1, 0, 1] # cache_size
-newc[4] = [1, 1, 0, 1] # read_misses - 3, .375
+#newc[4] = [1, 1, 0, 1] # read_misses - 3, .375
+newc[4] = [1, .5, 0, 1] # read_misses - 3, .375
 #newc[5] = [1, 0, 0.2, 1] # write_misses - 4, .5
 newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
-newc[6] = [0.737, 0.745, 0.235, 1] # compulsory read misses - 5, .625
+#newc[6] = [0.737, 0.745, 0.235, 1] # compulsory read misses - 5, .625
+newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
 newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 custom_cmap = ListedColormap(newc)
 
@@ -119,10 +122,10 @@ def input_int_factory(value, description):
          )
 
 
-def input_text_factory(value, description):
+def input_text_factory(placeholder, description):
   return Text(
-          value=value,
-          placeholder='',
+          value='',
+          placeholder=placeholder,
           description=description,
           style=WIDGET_DESC_PROP,
           layout=WIDGET_LAYOUT
@@ -211,6 +214,11 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   sub_output = subprocess.run(args, capture_output=True)
   sub_stderr = sub_output.stderr.decode('utf-8')
   logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
+
+
+  if sub_stderr.startswith("Error"):
+    print(sub_stderr)
+
   meta_prefix = "full_meta_data_" if is_full_trace else "meta_data_"
   with open(OUTPUT_DIR + meta_prefix + o_name + ".txt", 'w') as meta_f:
     meta_f.write(str(c_lines) + " " + str(c_block))
@@ -221,8 +229,8 @@ def gen_trace_controls():
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
   maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
-  executable_widget = input_text_factory('./Examples/build/sorting', 'Executable Path:')
-  trace_out_widget = input_text_factory('baseline', 'Name for Output')
+  executable_widget = input_text_factory('e.g. ./Examples/build/sorting', 'Executable Path:')
+  trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output')
 
   full_trace = Checkbox(description="Trace everything (Ignore tags)?",
                         value=False, indent=False)
@@ -263,6 +271,7 @@ def gen_trace_controls():
   return (gen_trace_inputs, gen_button)
 
 def read_out_dir():
+  """Reads output directory to fill up select widget with traces"""
   logging.info("Reading outfile directory")
   global trace_list
   global trace_map
@@ -306,6 +315,7 @@ def read_out_dir():
 
     
 def generate_plot(trace_name):
+  """Plots interactive widget with all other UI controls for user interaction"""
   global df
   global tag_map
   global curr_trace
@@ -319,14 +329,14 @@ def generate_plot(trace_name):
   if tag_path:
     logging.debug("Found a tag map file")
     tag_map = vaex.open(tag_path)
+    if len(tag_map.columns['Tag_Name']) == -1:
+      print("No tags in file")
+      return
   else:
     logging.debug("No tag map -- Full trace")
   num_accesses = df.Address.count()
   df['index'] = np.arange(0, num_accesses)
 
-  if len(tag_map.columns['Tag_Name']) == 0:
-    print("No tags in file")
-    return
   if tag_path:
     #Set up name-tag mapping
     namesFromFile = (tag_map.Tag_Name.values).tolist()
@@ -472,10 +482,41 @@ def generate_plot(trace_name):
         currentSelection[targetWrite - 1] = 0
         
     df.select('total')
-
-
+  
+  def getCurrentView(self, frame):
+    curView = frame[frame.index >= int(plot.limits[0][0])]
+    curView = curView[curView.index <= int(plot.limits[0][1])+1]
+    curView = curView[curView.Address >= int(plot.limits[1][0])]
+    curView = curView[curView.Address <= int(plot.limits[1][1])+1]
+    
+    return curView
+    
+  def updateStats(self):
+    curReadHits = getCurrentView(self,read_hits)
+    curWriteHits = getCurrentView(self,write_hits)
+    curReadMisses = getCurrentView(self,read_misses)
+    curWriteMisses = getCurrentView(self,write_misses)
+    curCompReadMisses = getCurrentView(self,comp_read_misses)
+    curCompWriteMisses = getCurrentView(self,comp_write_misses)
+    
+    hitCount = curReadHits.count() + curWriteHits.count()
+    missCount = curReadMisses.count() + curWriteMisses.count()
+    compMissCount = curCompReadMisses.count() + curCompWriteMisses.count()
+    totalCount = hitCount + missCount + compMissCount
+    
+    currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
+    currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
+    currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+  tagChecks = []
+  tagChecksBox = []
   if tag_path:
-    tagChecks = [HBox([Button(
+    tagChecks = [HBox([
+                    Checkbox(description=name, 
+                                     value=True, 
+                                     disabled=False, 
+                                     indent=False,
+                                     layout=Layout(width='150px')),
+                    Button(
                            icon='search-plus',
                            tooltip=name,
                            layout=Layout(height='35px', 
@@ -484,15 +525,11 @@ def generate_plot(trace_name):
                                          align_items='center'
                                          ),
                                     style={'button_color': 'transparent'}
-                           ),
+                            )
+                    ],layout=Layout(min_height='35px'))
 
-                    Checkbox(description=name, 
-                                     value=True, 
-                                     disabled=False, 
-                                     indent=False)
-                    ])
-               for name in namesFromFile]
-
+                for name in namesFromFile]
+    tagChecksBox = [Label(value='Data Structures'), VBox(tagChecks, layout=Layout(max_height='210px', overflow_y = 'auto'))]
 
   rwChecks = [Checkbox(description="Reads ("+str(readCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Writes ("+str(writeCount)+")", value=True, disabled=False, indent=False)]
@@ -501,24 +538,42 @@ def generate_plot(trace_name):
               Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
               Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
 
-  hmRates = [Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
+  hmRates = [Label(value="Total Trace Stats:", layout=Layout(width='200px')),
+             Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%"),
              Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%"),
              Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")]
+
+  currentHitRate = Label(value="Hit Rate: "+f"{hitCount*100/df.count():.2f}"+"%")
+  currentCapMissRate = Label(value="Capacity Miss Rate: "+f"{missCount*100/df.count():.2f}"+"%")
+  currentCompMissRate = Label(value="Compulsory Miss Rate: "+f"{compMissCount*100/df.count():.2f}"+"%")
+  currentHmRates = [Label(value="Trace Stats for Current View:", layout=Layout(width='200px')),
+             currentHitRate, currentCapMissRate, currentCompMissRate]
+  
+  refreshRatesButton = Button(
+          description='Refresh Stats',
+          disabled=False,
+          button_style='',
+          layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
+          style={'button_color': 'lightgray'},
+          )
     
   if tag_path:
     for i in range(numTags):
-      tagChecks[i].children[1].observe(updateGraph)
+      tagChecks[i].children[0].observe(updateGraph)
     
   for check in rwChecks:
     check.observe(updateReadWrite)
     
   for check in hmChecks:
     check.observe(updateHitMiss)
+  
+  
+  refreshRatesButton.on_click(updateStats)
     
   if tag_path:
-    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
   else:
-    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]),VBox(hmRates)])
+    checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
 
 
   def updateReadWrite2(change):
@@ -586,14 +641,25 @@ def generate_plot(trace_name):
           else:
               plot.colormap.colors[6] = to_rgba(change.new,1)
               plot.colormap.colors[8] = to_rgba(change.new,1)
-  cb_lyt=Layout(width='180px')
+  cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
+  
   # Read Write custom checkbox
-  def RWCheckbox(description, color_value):
-      rwcp = ColorPicker(concise=True, value=color_value, disabled=False,layout=cp_lyt)
-      rwcp.name=description
+  
+  def RWCheckbox(description, primary_color, secondary_color):
+      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=True,layout=cp_lyt)
+      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=True,layout=cp_lyt)
+      rcp.name=description
+      wcp.name=description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
-                  rwcp])
+                  rcp, wcp])
+
+
+  def CacheLabel(description, color_value):
+      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=True,layout=cp_lyt)
+      ccp.name=description
+      #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
+      return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
 
   with open(meta_path) as meta_f:
     mlines = meta_f.readlines()
@@ -602,37 +668,55 @@ def generate_plot(trace_name):
 
   vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
-  import matplotlib.pyplot as plt
-  import ipywidgets as widgets
+  from matplotlib.colors import to_hex
+  legendLabel = HBox([Label(value='Legend',layout=cb_lyt), Label(value='R',layout=cp_lyt), Label(value='W',layout=cp_lyt)])
+  rwChecks2 = [Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px')),
+              Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px'))]
+  hmChecks2 = [RWCheckbox(description="Hits ("+str(hitCount)+")", primary_color=newc[1], secondary_color=newc[2]),
+              RWCheckbox(description="Capacity Misses ("+str(missCount)+")", primary_color=newc[4], secondary_color=newc[5]),
+              RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", primary_color=newc[6], secondary_color=newc[8])]
+  cacheChecks2 = [CacheLabel(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=newc[3])]
+  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox,
+                       layout=Layout(padding='10px',border='1px solid black')
+                      )])
+  for check in rwChecks2:
+      check.observe(updateReadWrite2)
+  for check in [hbox.children[0] for hbox in hmChecks2]:
+      check.observe(updateHitMiss2)
+  for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
+      colorpicker.observe(updateColorMap)
+   
+  #Code for simple_legend
+  #import matplotlib.pyplot as plt
+  #import ipywidgets as widgets
 
-  colors = [[0.047, 1, 0, 1], [0, 0, 1, 1], [0, 1, 1, 1], [1, 1, 0, 1], [1, 0, 0, 1], [0.737, 0.745, 0.235, 1], [0.745, 0.309, 0.235, 1]]
-  f = lambda m,c: plt.plot([],[],marker=m, color=c, ls="none")[0]
-  handles = [f("s", colors[i]) for i in range(7)]
-  labels = ["Cache", "Read Hits", "Write Hits", "Read Misses", "Write Misses", "Compulsory Read Misses", "Compulsory Write Misses"]
-  legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=True, prop={"size":15})
-  def export_legend(legend, filename="legend.png", expand=[-10,-10,10,10]):
-    fig  = legend.figure
-    fig.canvas.draw()
-    bbox  = legend.get_window_extent()
-    bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
-    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
-    fig.savefig(filename, dpi="figure", bbox_inches=bbox)
+  #colors = [[0.047, 1, 0, 1], [0, 0, 1, 1], [0, 1, 1, 1], [1, 1, 0, 1], [1, 0, 0, 1], [0.737, 0.745, 0.235, 1], [0.745, 0.309, 0.235, 1]]
+  #f = lambda m,c: plt.plot([],[],marker=m, color=c, ls="none")[0]
+  #handles = [f("s", colors[i]) for i in range(7)]
+  #labels = ["Cache", "Read Hits", "Write Hits", "Read Misses", "Write Misses", "Compulsory Read Misses", "Compulsory Write Misses"]
+  #legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=True, prop={"size":15})
+  #def export_legend(legend, filename="legend.png", expand=[-10,-10,10,10]):
+  #  fig  = legend.figure
+  #  fig.canvas.draw()
+  #  bbox  = legend.get_window_extent()
+  #  bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
+  #  bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
+  #  fig.savefig(filename, dpi="figure", bbox_inches=bbox)
     
-  simple_legend = widgets.Output()
-  with simple_legend:
-     export_legend(legend)
-     plt.gca().set_axis_off()
-     plt.show()
-
-        
+  #simple_legend = widgets.Output()
+  #with simple_legend:
+  #   export_legend(legend)
+  #   plt.gca().set_axis_off()
+  #   plt.show()
+  
+  #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
-                 backend='bqplot_v2', tool_select=True, legend=simple_legend, type='custom_plot1')
-#replace simple_legend with checks2 for dev branch's legend
+                 backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
 
   if tag_path:
     for i in range(numTags):
-      tagChecks[i].children[0].on_click(plot.backend.zoomSection)
+      tagChecks[i].children[1].on_click(plot.backend.zoomSection)
         
   display(checks)
 
@@ -658,7 +742,7 @@ def generate_plot(trace_name):
       selectDF(dfNew)
 
   indSubPlotButton = Button(
-          description='Create Indepenent Subplot',
+          description='Create Independent Subplot',
           disabled=False,
           button_style='',
           layout= Layout(margin='10px 10px 0px 10px', width='200px', height='40px', border='1px solid black', flex='1'),
@@ -749,6 +833,7 @@ def init_widgets():
 
     
 def refresh():
+  """Clears Jupyter notebook's cell output and displays inputs again"""
   clear_output(wait=True)
   logging.info("Refreshing")
   display(all_inputs)

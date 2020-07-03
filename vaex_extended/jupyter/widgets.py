@@ -3,7 +3,8 @@ from vaex.jupyter.widgets import *
 class PlotTemplate(v.VuetifyTemplate):
     show_output = Bool(False).tag(sync=True)
     new_output = Bool(False).tag(sync=True)
-    title = Unicode('Vaex').tag(sync=True)
+    default_title = Unicode('Moneta')
+    title = default_title.tag(sync=True)
 
     drawer = Bool(True).tag(sync=True)
     clipped = Bool(False).tag(sync=True)
@@ -17,6 +18,7 @@ class PlotTemplate(v.VuetifyTemplate):
     items = List(['red', 'green', 'purple']).tag(sync=True)
     button_text = Unicode('menu').tag(sync=True)
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
+    edit_title = Bool(False).tag(sync=True)
     template = Unicode('''
 <v-app>
     <v-navigation-drawer
@@ -49,24 +51,38 @@ class PlotTemplate(v.VuetifyTemplate):
     </v-navigation-drawer>
 
     <v-app-bar :clipped-left="clipped" absolute dense>
-      <v-app-bar-nav-icon
+      <v-app-bar-nav-icon v-show="false"
         v-if="type !== 'permanent'"
         @click.stop="model = !model"
       ></v-app-bar-nav-icon>
-      <v-toolbar-title>{{title}} </v-toolbar-title>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on }">
+          <v-toolbar-title v-on="on" v-show="edit_title == false"
+            @click="function() {edit_title = true}"
+          >{{title}}</v-toolbar-title>
+        </template>
+        <span>Edit title</span>
+      </v-tooltip>
+      <v-text-field v-show="edit_title" @input="function(val) {title = val}"
+        dense placeholder="Plot Title" :value=title
+        filled append-icon='check' height='12px'
+        @click:append="function() {edit_title = false; if (title === '') title = default_title}"
+        @keydown="function (e) {if (e.keyCode == 13 || e.keyCode == 27) \
+          {edit_title = false; if (title === '') title = default_title}}"
+      ></v-text-field>
       <v-spacer></v-spacer>
       <toolbox/>      
       <v-spacer></v-spacer>
 
 
-    <v-btn icon @click.stop="show_output = !show_output; new_output=false">
-      <v-badge color="red" overlap>
-        <template v-slot:badge v-if="new_output">
-          <span>!</span>
-        </template>
-            <v-icon>error_outline</v-icon>
-      </v-badge>
-    </v-btn>
+      <v-btn icon @click.stop="show_output = !show_output; new_output=false">
+        <v-badge color="red" overlap>
+          <template v-slot:badge v-if="new_output">
+            <span>!</span>
+          </template>
+          <v-icon>error_outline</v-icon>
+        </v-badge>
+      </v-btn>
 
 
     </v-app-bar>
