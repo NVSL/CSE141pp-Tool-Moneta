@@ -23,7 +23,6 @@ RUN rm moneta_pintool.tar.gz
 
 ENV PIN_ROOT=${DIR_PINTOOL_FILES}/pintool
 
-
 # Fix PIN compilation: https://chunkaichang.com/tool/pin-notes/
 COPY moneta_files/pintool_files/pin_makefile.unix.config ${PIN_ROOT}/source/tools/Config/makefile.unix.config
 # Use HDF5 library with Pintool
@@ -35,9 +34,12 @@ COPY moneta_files/setup/requirements.txt ${DIR_SETUP}/
 WORKDIR ${DIR_SETUP}
 RUN pip install -r requirements.txt
 
+ENV MONETA_PORT=8888
+
 # Create aliases for Pin and Moneta
+
 RUN echo "alias pin=\"${PIN_ROOT}/pin.sh -ifeellucky -injection child\"" >> ~/.bashrc
-RUN echo "alias moneta=\"jupyter notebook --allow-root ${DIR_MONETA_TOOL}\"" >> ~/.bashrc
+RUN echo "alias moneta=\"jupyter notebook --allow-root ${DIR_MONETA_TOOL} --port=${MONETA_PORT}\"" >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA_TOOL}
 
