@@ -1,6 +1,6 @@
 
 alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'
-alias moneta="jupyter notebook --allow-root --port=${MONETA_PORT} ~/work/moneta_tool"
+alias moneta="jupyter notebook --allow-root --port=${MONETA_PORT} ~/work/moneta"
 
 config_git () {
     git update-index --assume-unchanged moneta_files/pintool_files/moneta_pintool.tar.gz 
