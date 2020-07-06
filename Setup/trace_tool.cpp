@@ -8,6 +8,7 @@
 #include <set>
 #include <unordered_set>
 #include <unordered_map>
+#include <algorithm>
 #include <assert.h>
 
 #include "pin.H"   // Pin
@@ -44,7 +45,7 @@ static int cache_writes {0};
 static int first_record {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
-constexpr int SkipRate    {100};
+constexpr int SkipRate  {100};
 
 // Constant Vars for User input
 constexpr ADDRINT DefaultMaximumLines   {100000000};
@@ -54,10 +55,11 @@ const std::string DefaultOutputPath {"/setup/converter/outfiles"};
 
 // Output file formatting
 const std::string FullTracePrefix   {"full_trace_"};
-const std::string TracePrefix   {"trace_"};
-const std::string TraceSuffix   {".hdf5"};
-const std::string TagFilePrefix {"tag_map_"};
-const std::string TagFileSuffix {".csv"};
+const std::string TracePrefix       {"trace_"};
+const std::string TraceSuffix       {".hdf5"};
+const std::string FullTagFilePrefix {"full_tag_map_"};
+const std::string TagFilePrefix     {"tag_map_"};
+const std::string TagFileSuffix     {".csv"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -107,6 +109,19 @@ static ADDRINT free_block = 0; // State for normalized accesses
 
 static ADDRINT max_range = 0;
 
+constexpr int MAIN_LIMIT {400000};
+
+std::vector<std::pair<ADDRINT, int>> before_main;
+static bool reached_main {false};
+ADDRINT lower_stack;
+ADDRINT upper_stack;
+ADDRINT lower_heap;
+ADDRINT upper_heap;
+int last_acc_stack {0};
+int last_acc_heap  {0};
+int first_acc_stack {-1};
+int first_acc_heap {-1};
+
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
 /*
@@ -114,9 +129,9 @@ static ADDRINT max_range = 0;
  */
 
 // Output Columns
-const std::string TagColumn         {"Tag"};
-const std::string AccessColumn      {"Access"};
-const std::string AddressColumn     {"Address"};
+const std::string TagColumn     {"Tag"};
+const std::string AccessColumn  {"Access"};
+const std::string AddressColumn {"Address"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -364,6 +379,82 @@ VOID flush_cache() {
   accesses.clear();
 }
 
+
+// Write id,op,addr to file
+VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
+  if (t) { // Only if running with tags
+    hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
+    if (t->x_range.first == -1) { // First time accessed
+      t->x_range.first  = curr_lines;
+      t->x_range.second = curr_lines;
+    } else { // Update last access
+      t->x_range.second = curr_lines;
+    }
+  } else {
+    if (is_stack) {
+      hdf_handler->write_data_mem(0, op, addr);
+      last_acc_stack = curr_lines;
+    } else {
+      hdf_handler->write_data_mem(1, op, addr);
+      last_acc_heap = curr_lines;
+    }
+  }
+  curr_lines++; // Afterward, for 0-based indexing
+  
+  if(curr_lines >= max_lines) { // If reached file size limit, exit
+    PIN_ExitApplication(0);
+  }
+}
+
+
+
+VOID halt_layout_calc() {
+  if (!reached_main) { // Should only be called once
+    std::cerr << "Size of main trace: " << before_main.size() << "\n";
+    reached_main = true;
+    ADDRINT max_diff = 0;
+    //std::sort(before_main.begin(), before_main.end());
+    std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
+      return left.first < right.first;
+    });
+
+
+    for (size_t i = 1; i < before_main.size(); i++) {
+      ADDRINT curr_diff = before_main[i].first - before_main[i-1].first;
+      if (curr_diff > max_diff) {
+        max_diff = curr_diff;
+        upper_heap = before_main[i-1].first;
+        lower_stack = before_main[i].first;
+      }
+    }
+    lower_heap = before_main.front().first;
+    upper_stack = before_main.back().first;
+    //std::cerr << "lower heap and upper stack: " << lower_heap << " " << upper_stack << "\n";
+
+    /*for (int i = 0; i < 10; i++) {
+      std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
+    }*/
+    for (size_t i = 0; i < before_main.size(); i++) {
+      if (before_main[i].first <= upper_heap) {
+        if (first_acc_heap == -1) {
+          first_acc_heap = i;
+        }
+        last_acc_heap = i;
+        write_to_memfile(0, before_main[i].second, before_main[i].first, false);
+      } else {
+        if (first_acc_stack == -1) {
+          first_acc_stack = i;
+        }
+        last_acc_stack = i;
+        write_to_memfile(0, before_main[i].second, before_main[i].first, true);
+      }
+    }
+    //last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
+    //last_acc_heap = before_main.size();
+  }
+
+}
+
 VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
   char* s = (char *)tag;
   string str_tag (s);
@@ -423,27 +514,6 @@ VOID dump_end_called(VOID * tag) {
     }*/
 }
 
-// Write id,op,addr to file
-inline VOID write_to_memfile(TagData* t, int op, ADDRINT addr){
-  if (t) { // Only if running with tags
-    hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
-    if (t->x_range.first == -1) { // First time accessed
-      t->x_range.first  = curr_lines;
-      t->x_range.second = curr_lines;
-    } else { // Update last access
-      t->x_range.second = curr_lines;
-    }
-  } else {
-    hdf_handler->write_data_mem(0, op, addr);
-  }
-  curr_lines++; // Afterward, for 0-based indexing
-  
-  if(curr_lines >= max_lines) { // If reached file size limit, exit
-    PIN_ExitApplication(0);
-  }
-}
-
-
 /*
  * Returns: a value based on hit, miss, or compulsory miss
  * 0 - hit
@@ -502,14 +572,36 @@ VOID RecordMemRead(ADDRINT addr) {
     read_insts++;
   }
   if (KnobTrackAll) {
-    int access_type = add_to_simulated_cache(addr);
-    if (access_type == 0) {
-      write_to_memfile(0, 1, addr); // Hit -> 1
-    } else if (access_type == 1) {
-      write_to_memfile(0, 3, addr); // Capacity miss -> 3
+    int access_type = 2*add_to_simulated_cache(addr)+1;
+    if (!reached_main) {
+      before_main.push_back({addr, access_type});
+      if (before_main.size() == MAIN_LIMIT) {
+        halt_layout_calc();
+      }
     } else {
-      write_to_memfile(0, 5, addr); // Compulsory miss -> 5
+      bool is_stack = false;
+      if (addr >= lower_stack) {
+        // stack
+        is_stack = true;
+      } else if (addr <= upper_heap) {
+        // heap
+        is_stack = false;
+      } else {
+        // rearrange to 2*addr < lower_stack + upper_heap?
+        if (addr - upper_heap < lower_stack - addr) {
+          // heap
+          is_stack = false;
+          upper_heap = addr;
+        } else {
+          is_stack = true;
+          lower_stack = addr;
+        }
+      }
+      write_to_memfile(0, access_type, addr, is_stack);
     }
+    // Hit -> 1
+    // Capacity miss -> 3
+    // Compulsory miss -> 5
     return;
   }
 
@@ -527,11 +619,11 @@ VOID RecordMemRead(ADDRINT addr) {
       int access_type = add_to_simulated_cache(addr);
       addr -= t->range_offset; // Transform
       if (access_type == 0) {
-        write_to_memfile(t, 1, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
+        write_to_memfile(t, 1, addr, false); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
       } else if (access_type == 1) {
-        write_to_memfile(t, 3, addr); // Capacity miss -> 3
+        write_to_memfile(t, 3, addr, false); // Capacity miss -> 3
       } else {
-        write_to_memfile(t, 5, addr); // Compulsory miss -> 5
+        write_to_memfile(t, 5, addr, false); // Compulsory miss -> 5
       }
       if (RECORD_ONCE) break;
     }
@@ -547,14 +639,36 @@ VOID RecordMemWrite(ADDRINT addr) {
     read_insts++;
   }
   if (KnobTrackAll) { // No normalization for address
-    int access_type = add_to_simulated_cache(addr);
-    if (access_type == 0) {
-      write_to_memfile(0, 2, addr); // Hit -> 2
-    } else if (access_type == 1) {
-      write_to_memfile(0, 4, addr); // Capacity miss -> 4
+    int access_type = 2*add_to_simulated_cache(addr) + 2;
+    if (!reached_main) {
+      before_main.push_back({addr, access_type});
+      if (before_main.size() == MAIN_LIMIT) {
+        halt_layout_calc();
+      }
     } else {
-      write_to_memfile(0, 6, addr); // Compulsory miss -> 6
+      bool is_stack = false;
+      if (addr >= lower_stack) {
+        // stack
+        is_stack = true;
+      } else if (addr <= upper_heap) {
+        // heap
+        is_stack = false;
+      } else {
+        // rearange to 2*addr < lower_stack + upper_heap?
+        if (addr - upper_heap < lower_stack - addr) {
+          // heap
+          is_stack = false;
+          upper_heap = addr;
+        } else {
+          is_stack = true;
+          lower_stack = addr;
+        }
+      }
+      write_to_memfile(0, access_type, addr, is_stack);
     }
+    // Hit -> 2
+    // Capacity miss -> 4
+    // Compulsory miss -> 6
     return;
   }
 
@@ -572,11 +686,11 @@ VOID RecordMemWrite(ADDRINT addr) {
       int access_type = add_to_simulated_cache(addr);
       addr -= t->range_offset; // Transform
       if (access_type == 0) {
-        write_to_memfile(t, 2, addr); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
+        write_to_memfile(t, 2, addr, false); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
       } else if (access_type == 1) {
-        write_to_memfile(t, 4, addr); // Capacity miss -> 3
+        write_to_memfile(t, 4, addr, false); // Capacity miss -> 3
       } else {
-        write_to_memfile(t, 6, addr); // Compulsory miss -> 5
+        write_to_memfile(t, 6, addr, false); // Compulsory miss -> 5
       }
       if (RECORD_ONCE) break;
     }
@@ -633,6 +747,19 @@ VOID Fini(INT32 code, VOID *v) {
     }
   
     // Close files
+    map_file.flush();
+    map_file.close();
+  } else {
+    if (!reached_main) {
+      halt_layout_calc();
+    }
+    std::ofstream map_file (output_tagfile_path);
+    map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+    map_file << "Stack,0," << lower_stack << "," << upper_stack <<
+      "," << first_acc_stack << "," << last_acc_stack << "\n";
+    map_file << "Heap,1," << lower_heap << "," << upper_heap <<
+      "," << first_acc_heap  << "," << last_acc_heap << "\n";
+    
     map_file.flush();
     map_file.close();
   }
@@ -708,6 +835,15 @@ VOID FindFunc(IMG img, VOID *v) {
 	}
 }
 
+VOID FindMain(IMG img, VOID *v) {
+  RTN rtn = RTN_FindByName(img, "main");
+  if (RTN_Valid(rtn)) {
+    RTN_Open(rtn);
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)halt_layout_calc, IARG_END);
+    RTN_Close(rtn);
+  }
+}
+
 INT32 Usage() {
   std::cerr << "Tracks memory accesses and instruction pointers between dump accesses" << std::endl;
   std::cerr << std::endl << KNOB_BASE::StringKnobSummary() << std::endl;
@@ -729,6 +865,7 @@ int main(int argc, char *argv[]) {
     output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
   } else { // Different name when tracing everything
+    output_tagfile_path = DefaultOutputPath + "/" + FullTagFilePrefix + output_trace_path + TagFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + FullTracePrefix + output_trace_path + TraceSuffix;
   }
   UINT64 in_output_limit = KnobMaxOutput.Value();
@@ -758,6 +895,8 @@ int main(int argc, char *argv[]) {
   // Add instrumentation
   if (!KnobTrackAll) {
     IMG_AddInstrumentFunction(FindFunc, 0);
+  } else {
+    IMG_AddInstrumentFunction(FindMain, 0);
   }
   INS_AddInstrumentFunction(Instruction, 0);
   
