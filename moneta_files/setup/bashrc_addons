@@ -1,0 +1,25 @@
+
+alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'
+alias moneta="jupyter notebook --allow-root --port=${MONETA_PORT} ~/work/moneta_tool"
+
+config_git () {
+    git update-index --assume-unchanged moneta_files/pintool_files/moneta_pintool.tar.gz 
+    git config core.autocrlf input
+}
+
+config_port () {
+    read -p "Enter Your Docker Port Number: " port
+
+    if ! [[ ${port} =~ ^[0-9]+$ ]] ; then
+        echo "Invalid Port: ${port} is not a number";
+        exit 1
+    fi
+
+    export MONETA_PORT=${port}
+    echo "Port Set To: ${port}"
+}
+
+config () {
+    config_git
+    config_port
+}

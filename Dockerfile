@@ -37,9 +37,8 @@ RUN pip install -r requirements.txt
 ENV MONETA_PORT=8888
 
 # Create aliases for Pin and Moneta
-
-RUN echo "alias pin=\"${PIN_ROOT}/pin.sh -ifeellucky -injection child\"" >> ~/.bashrc
-RUN echo "alias moneta=\"jupyter notebook --allow-root ${DIR_MONETA_TOOL} --port=${MONETA_PORT}\"" >> ~/.bashrc
+COPY moneta_files/setup/bashrc_addons ${DIR_SETUP}/
+RUN cat bashrc_addons >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA_TOOL}
 
