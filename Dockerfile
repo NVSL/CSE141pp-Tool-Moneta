@@ -7,7 +7,7 @@ RUN apt-get install -y less
 RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
 
-ARG DIR_MONETA_TOOL=/home/jovyan/work/moneta_tool
+ARG DIR_MONETA=/home/jovyan/work/moneta
 ARG DIR_MONETA_FILES=/home/jovyan/work/moneta_files
 ARG DIR_PINTOOL_FILES=${DIR_MONETA_FILES}/pintool_files
 ARG DIR_SETUP=${DIR_MONETA_FILES}/setup
@@ -40,5 +40,5 @@ ENV MONETA_PORT=8888
 COPY moneta_files/setup/bashrc_addons ${DIR_SETUP}/
 RUN cat bashrc_addons >> ~/.bashrc
 
-WORKDIR ${DIR_MONETA_TOOL}
+WORKDIR ${DIR_MONETA}
 

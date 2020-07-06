@@ -16,6 +16,7 @@ config_port () {
     fi
 
     export MONETA_PORT=${port}
+    source ~/.bashrc
     echo "Port Set To: ${port}"
 }
 
