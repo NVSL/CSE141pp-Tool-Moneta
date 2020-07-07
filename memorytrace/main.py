@@ -13,7 +13,6 @@ from IPython.display import clear_output
 
 #sys.path.append('/setup/') # For master branch
 sys.path.append('../') # For dev branch
-
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
@@ -629,34 +628,40 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
+          newcmap = np.copy(newc)
           name=change.owner.name
-          if(re.search('^Hits', name)):
-              plot.colormap.colors[1] = to_rgba(change.new,1)
-              plot.colormap.colors[2] = to_rgba(change.new,1)
-          elif(re.search('^Cache', name)):
-              plot.colormap.colors[3] = to_rgba(change.new,1)
-          elif(re.search('^Capacity', name)):
-              plot.colormap.colors[4] = to_rgba(change.new,1)
-              plot.colormap.colors[5] = to_rgba(change.new,1)
-          else:
-              plot.colormap.colors[6] = to_rgba(change.new,1)
-              plot.colormap.colors[8] = to_rgba(change.new,1)
+          if(re.search('^Read Hits', name)):
+              newcmap[1] = to_rgba(change.new,1)
+          if(re.search('^Write Hits', name)):
+              newcmap[2] = to_rgba(change.new,1)
+          if(re.search('^Cache', name)):
+              newcmap[3] = to_rgba(change.new,1)
+          if(re.search('^Read Capacity', name)):
+              newcmap[4] = to_rgba(change.new,1)
+          if(re.search('^Write Capacity', name)):
+              newcmap[5] = to_rgba(change.new,1)
+          if(re.search('^Read Compulsory Miss', name)):
+              newcmap[6] = to_rgba(change.new,1)
+          if(re.search('^Write Compulsory Miss', name)):
+              newcmap[8] = to_rgba(change.new,1)
+          plot.colormap = ListedColormap(newcmap)
+          plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
   
   # Read Write custom checkbox
   
   def RWCheckbox(description, primary_color, secondary_color):
-      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=True,layout=cp_lyt)
-      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=True,layout=cp_lyt)
-      rcp.name=description
-      wcp.name=description
+      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
+      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
+      rcp.name= "Read " + description
+      wcp.name= "Write " + description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
                   rcp, wcp])
 
 
   def CacheLabel(description, color_value):
-      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=True,layout=cp_lyt)
+      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=False,layout=cp_lyt)
       ccp.name=description
       #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
       return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
@@ -683,7 +688,7 @@ def generate_plot(trace_name):
       check.observe(updateReadWrite2)
   for check in [hbox.children[0] for hbox in hmChecks2]:
       check.observe(updateHitMiss2)
-  for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
+  for colorpicker in [hbox.children[1] for hbox in hmChecks2] + [hbox.children[2] for hbox in hmChecks2] + [hbox.children[1] for hbox in cacheChecks2]:
       colorpicker.observe(updateColorMap)
    
   #Code for simple_legend
