@@ -581,15 +581,12 @@ VOID RecordMemRead(ADDRINT addr) {
     } else {
       bool is_stack = false;
       if (addr >= lower_stack) {
-        // stack
         is_stack = true;
       } else if (addr <= upper_heap) {
-        // heap
         is_stack = false;
       } else {
         // rearrange to 2*addr < lower_stack + upper_heap?
         if (addr - upper_heap < lower_stack - addr) {
-          // heap
           is_stack = false;
           upper_heap = addr;
         } else {
@@ -599,9 +596,6 @@ VOID RecordMemRead(ADDRINT addr) {
       }
       write_to_memfile(0, access_type, addr, is_stack);
     }
-    // Hit -> 1
-    // Capacity miss -> 3
-    // Compulsory miss -> 5
     return;
   }
 
@@ -616,15 +610,9 @@ VOID RecordMemRead(ADDRINT addr) {
           cerr << "First access (read) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
-      int access_type = add_to_simulated_cache(addr);
+      int access_type = 2*add_to_simulated_cache(addr)+1;
       addr -= t->range_offset; // Transform
-      if (access_type == 0) {
-        write_to_memfile(t, 1, addr, false); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
-      } else if (access_type == 1) {
-        write_to_memfile(t, 3, addr, false); // Capacity miss -> 3
-      } else {
-        write_to_memfile(t, 5, addr, false); // Compulsory miss -> 5
-      }
+      write_to_memfile(t, access_type, addr, false);
       if (RECORD_ONCE) break;
     }
   }
@@ -648,15 +636,12 @@ VOID RecordMemWrite(ADDRINT addr) {
     } else {
       bool is_stack = false;
       if (addr >= lower_stack) {
-        // stack
         is_stack = true;
       } else if (addr <= upper_heap) {
-        // heap
         is_stack = false;
       } else {
         // rearange to 2*addr < lower_stack + upper_heap?
         if (addr - upper_heap < lower_stack - addr) {
-          // heap
           is_stack = false;
           upper_heap = addr;
         } else {
@@ -666,9 +651,6 @@ VOID RecordMemWrite(ADDRINT addr) {
       }
       write_to_memfile(0, access_type, addr, is_stack);
     }
-    // Hit -> 2
-    // Capacity miss -> 4
-    // Compulsory miss -> 6
     return;
   }
 
@@ -683,15 +665,9 @@ VOID RecordMemWrite(ADDRINT addr) {
           cerr << "First access (write) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
-      int access_type = add_to_simulated_cache(addr);
+      int access_type = 2*add_to_simulated_cache(addr)+2;
       addr -= t->range_offset; // Transform
-      if (access_type == 0) {
-        write_to_memfile(t, 2, addr, false); // Hit -> 1 // Opposite of this: Higher numbers for hits // Higher numbers of reads
-      } else if (access_type == 1) {
-        write_to_memfile(t, 4, addr, false); // Capacity miss -> 3
-      } else {
-        write_to_memfile(t, 6, addr, false); // Compulsory miss -> 5
-      }
+      write_to_memfile(t, access_type, addr, false);
       if (RECORD_ONCE) break;
     }
   }
