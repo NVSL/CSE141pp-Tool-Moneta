@@ -32,11 +32,11 @@ using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
-constexpr bool DEBUG {0};
+constexpr bool DEBUG {1};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
-constexpr bool CACHE_DEBUG {0};
+constexpr bool CACHE_DEBUG {1};
 
 static int read_insts = 0;
 // Cache debug
@@ -44,7 +44,7 @@ static int cache_writes {0};
 static int first_record {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
-constexpr int SkipRate    {100};
+constexpr int SkipRate    {10000};
 
 // Constant Vars for User input
 constexpr ADDRINT DefaultMaximumLines   {100000000};
@@ -468,7 +468,7 @@ int add_to_simulated_cache(ADDRINT addr) {
     inorder_acc.push_front(addr); // Add to list and set
     accesses.insert(std::make_pair(addr, inorder_acc.begin()));
     all_accesses.insert(addr);
-    if (CACHE_DEBUG) {
+    if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
       cerr << cache_writes << "th write (comp miss): " << addr << "\n";
     }
     return 2;
@@ -484,7 +484,9 @@ int add_to_simulated_cache(ADDRINT addr) {
   } // Not in cache, move to front - Capacity miss
   if (CACHE_DEBUG) {
     cap_misses++;
-    cerr << cache_writes << "th write (cap miss): " << addr << "\n";
+    if (cache_writes%SkipRate == 0) {
+      cerr << cache_writes << "th write (cap miss): " << addr << "\n";
+    }
   }
   if (accesses.size() >= cache_size) { // Evict
     accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
@@ -500,6 +502,9 @@ int add_to_simulated_cache(ADDRINT addr) {
 VOID RecordMemRead(ADDRINT addr) {
   if (DEBUG) {
     read_insts++;
+    if (read_insts%10000==0) {
+      std::cerr << "Read insts: " << read_insts << "\n";
+    }
   }
   if (KnobTrackAll) {
     int access_type = add_to_simulated_cache(addr);
@@ -636,11 +641,20 @@ VOID Fini(INT32 code, VOID *v) {
     map_file.flush();
     map_file.close();
   }
+  if (DEBUG) {
+    std::cerr << "Done writing to tag map\n";
+  }
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
+  if (DEBUG) {
+    std::cerr << "Deleted handler\n";
+  }
   // Delete all TagData's
   for (auto& x : all_tags) {
     delete x.second;
+  }
+  if (DEBUG) {
+    std::cerr << "Reached end of fini\n";
   }
 }
 
