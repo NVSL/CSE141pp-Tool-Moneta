@@ -32,11 +32,11 @@ using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
-constexpr bool DEBUG {1};
+constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
-constexpr bool CACHE_DEBUG {1};
+constexpr bool CACHE_DEBUG {0};
 
 static int read_insts = 0;
 // Cache debug
