@@ -73,6 +73,13 @@ const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
 const std::string DUMP_MACRO_END {"DUMP_ACCESS_STOP_TAG"};
 const std::string FLUSH_CACHE    {"FLUSH_CACHE"};
 
+// Access type
+enum { 
+  READ_HIT=1, WRITE_HIT,
+  READ_CAP_MISS, WRITE_CAP_MISS,
+  READ_COMP_MISS, WRITE_COMP_MISS 
+};
+
 // How to record duplicate addr in multiple ranges
 constexpr bool RECORD_ONCE {0};
 
@@ -566,13 +573,22 @@ int add_to_simulated_cache(ADDRINT addr) {
 
 }
 
+int translate_cache(int access_type, bool read) {
+  if (access_type == 0) {
+    return read ? READ_HIT : WRITE_HIT;
+  } else if(access_type == 1) {
+    return read ? READ_CAP_MISS : WRITE_CAP_MISS;
+  }
+  return read ? READ_COMP_MISS : WRITE_COMP_MISS;
+}
+
 // Write address if in the range of the active tags as read to hdf5
 VOID RecordMemRead(ADDRINT addr) {
   if (DEBUG) {
     read_insts++;
   }
   if (KnobTrackAll) {
-    int access_type = 2*add_to_simulated_cache(addr)+1;
+    int access_type = translate_cache(add_to_simulated_cache(addr), true);
     if (!reached_main) {
       before_main.push_back({addr, access_type});
       if (before_main.size() == MAIN_LIMIT) {
@@ -610,7 +626,7 @@ VOID RecordMemRead(ADDRINT addr) {
           cerr << "First access (read) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
-      int access_type = 2*add_to_simulated_cache(addr)+1;
+      int access_type = translate_cache(add_to_simulated_cache(addr), true);
       addr -= t->range_offset; // Transform
       write_to_memfile(t, access_type, addr, false);
       if (RECORD_ONCE) break;
@@ -627,7 +643,7 @@ VOID RecordMemWrite(ADDRINT addr) {
     read_insts++;
   }
   if (KnobTrackAll) { // No normalization for address
-    int access_type = 2*add_to_simulated_cache(addr) + 2;
+    int access_type = translate_cache(add_to_simulated_cache(addr), false);
     if (!reached_main) {
       before_main.push_back({addr, access_type});
       if (before_main.size() == MAIN_LIMIT) {
@@ -665,7 +681,7 @@ VOID RecordMemWrite(ADDRINT addr) {
           cerr << "First access (write) to cache at time [" << first_record << "] :" << addr << "\n";
         }
       }
-      int access_type = 2*add_to_simulated_cache(addr)+2;
+      int access_type = translate_cache(add_to_simulated_cache(addr), false);
       addr -= t->range_offset; // Transform
       write_to_memfile(t, access_type, addr, false);
       if (RECORD_ONCE) break;
