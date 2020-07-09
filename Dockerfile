@@ -12,16 +12,12 @@ ARG DIR_MONETA_FILES=/home/jovyan/work/moneta_files
 ARG DIR_PINTOOL_FILES=${DIR_MONETA_FILES}/pintool_files
 ARG DIR_SETUP=${DIR_MONETA_FILES}/setup
 
-
-
-WORKDIR ${DIR_PINTOOL_FILES}
+WORKDIR /
 
 # Install pintool and COPY to PATH
-COPY moneta_files/pintool_files/moneta_pintool.tar.gz /home/jovyan/work/moneta_files/pintool_files/
-RUN tar -xzf moneta_pintool.tar.gz
-RUN rm moneta_pintool.tar.gz
+ADD moneta_files/pintool_files/moneta_pintool.tar.gz /
 
-ENV PIN_ROOT=${DIR_PINTOOL_FILES}/pintool
+ENV PIN_ROOT=/pintool
 
 # Fix PIN compilation: https://chunkaichang.com/tool/pin-notes/
 COPY moneta_files/pintool_files/pin_makefile.unix.config ${PIN_ROOT}/source/tools/Config/makefile.unix.config
@@ -36,6 +32,7 @@ RUN pip install -r requirements.txt
 
 # Create aliases for Pin and Moneta
 COPY moneta_files/setup/bashrc_aliases ${DIR_SETUP}/
+RUN sed -i 's/\r$//' bashrc_aliases
 RUN cat bashrc_aliases >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA}
