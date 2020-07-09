@@ -80,6 +80,11 @@ enum {
   READ_COMP_MISS, WRITE_COMP_MISS 
 };
 
+// Cache Access type
+enum {
+  HIT, CAP_MISS, COMP_MISS
+};
+
 // How to record duplicate addr in multiple ranges
 constexpr bool RECORD_ONCE {0};
 
@@ -548,7 +553,7 @@ int add_to_simulated_cache(ADDRINT addr) {
     if (CACHE_DEBUG) {
       cerr << cache_writes << "th write (comp miss): " << addr << "\n";
     }
-    return 2;
+    return COMP_MISS;
   }
 
   auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
@@ -557,7 +562,7 @@ int add_to_simulated_cache(ADDRINT addr) {
     if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
       cerr << cache_writes << "th write (Hit): " << addr << "\n";
     }
-    return 0;
+    return HIT;
   } // Not in cache, move to front - Capacity miss
   if (CACHE_DEBUG) {
     cap_misses++;
@@ -569,7 +574,7 @@ int add_to_simulated_cache(ADDRINT addr) {
   }
   inorder_acc.push_front(addr); // Add to list and set
   accesses.insert(std::make_pair(addr, inorder_acc.begin()));
-  return 1;
+  return CAP_MISS;
 
 }
 
