@@ -45,7 +45,7 @@ BUTTON_STYLE = {'button_color': 'lightgray'}
 
 DEFAULT_TRACE_DROP = 'Select a trace to load'
 
-PIN_DIR  = "/pintool/pin.sh"
+PIN_DIR  = "/pin/pin.sh"
 TOOL_DIR = "../.setup/trace_tool.so"
 OUTPUT_DIR = "./.output/"
 
