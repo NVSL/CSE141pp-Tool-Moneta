@@ -51,7 +51,7 @@ constexpr int SkipRate  {100};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-const std::string DefaultOutputPath {"/setup/converter/outfiles"};
+const std::string DefaultOutputPath {"/home/jovyan/work/moneta_files/outfiles"};
 
 // Output file formatting
 const std::string FullTracePrefix   {"full_trace_"};

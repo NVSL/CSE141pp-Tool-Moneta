@@ -17,7 +17,7 @@ ARG DIR_SETUP=${DIR_MONETA_FILES}/setup
 WORKDIR ${DIR_PINTOOL_FILES}
 
 # Install pintool and COPY to PATH
-COPY moneta_files/pintool_files/moneta_pintool.tar.gz /home/jovyan/work/moneta_files/pintool_files
+COPY moneta_files/pintool_files/moneta_pintool.tar.gz /home/jovyan/work/moneta_files/pintool_files/
 RUN tar -xzf moneta_pintool.tar.gz
 RUN rm moneta_pintool.tar.gz
 
@@ -34,11 +34,9 @@ COPY moneta_files/setup/requirements.txt ${DIR_SETUP}/
 WORKDIR ${DIR_SETUP}
 RUN pip install -r requirements.txt
 
-ENV MONETA_PORT=8888
-
 # Create aliases for Pin and Moneta
-COPY moneta_files/setup/bashrc_addons ${DIR_SETUP}/
-RUN cat bashrc_addons >> ~/.bashrc
+COPY moneta_files/setup/bashrc_aliases ${DIR_SETUP}/
+RUN cat bashrc_aliases >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA}
 
