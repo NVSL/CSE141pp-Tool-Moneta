@@ -6,6 +6,7 @@ RUN apt-get install -y vim
 RUN apt-get install -y less
 RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
+RUN apt-get install -y screen
 
 ARG DIR_MONETA=/home/jovyan/work/moneta
 ARG DIR_MONETA_FILES=/home/jovyan/work/moneta_files
