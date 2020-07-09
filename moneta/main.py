@@ -11,8 +11,8 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('../moneta_files/') 
-
+#sys.path.append('/setup/') # For master branch
+sys.path.append('../') # For dev branch
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
@@ -45,9 +45,9 @@ BUTTON_STYLE = {'button_color': 'lightgray'}
 
 DEFAULT_TRACE_DROP = 'Select a trace to load'
 
-PIN_DIR  = "../moneta_files/pintool_files/pintool/pin.sh"
-TOOL_DIR = "../moneta_files/pintool_files/trace_tool.so"
-OUTPUT_DIR = "../moneta_files/outfiles/"
+PIN_DIR  = "/setup/pintool/pin.sh"
+TOOL_DIR = "/setup/converter/trace_tool.so"
+OUTPUT_DIR = "/setup/converter/outfiles/"
 
 #Enumerations
 COMP_W_MISS = 6
@@ -296,15 +296,16 @@ def read_out_dir():
       logging.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
     elif (file_name.startswith('full_trace_') and file_name.endswith('.hdf5')):
       trace_name = file_name[11:file_name.index('.hdf5')]
+      tag_path = os.path.join(dir_path, 'full_tag_map_' + trace_name + '.csv')
       meta_path = os.path.join(dir_path, 'full_meta_data_' + trace_name + '.txt')
-      if (not os.path.isfile(meta_path)):
-        print("Warning: Metadata file missing for {}. Omitting full trace.".format(file_name))
+      if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
+        print("Warning: Tag Map and/or Metadata file missing for {}. Omitting full trace.".format(file_name))
         continue
 
       trace_list.append("(" + trace_name + ")")
       trace_map["(" + trace_name + ")"] = (os.path.join(dir_path, file_name),
-                               None, meta_path)
-      logging.debug("Trace: {}, Meta: {}".format("(" + trace_name + ")", meta_path))
+                               tag_path, meta_path)
+      logging.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
     
         
 
@@ -328,7 +329,7 @@ def generate_plot(trace_name):
   if tag_path:
     logging.debug("Found a tag map file")
     tag_map = vaex.open(tag_path)
-    if len(tag_map.columns['Tag_Name']) == -1:
+    if len(tag_map.columns['Tag_Name']) == 0:
       print("No tags in file")
       return
   else:
@@ -628,34 +629,40 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
+          newcmap = np.copy(newc)
           name=change.owner.name
-          if(re.search('^Hits', name)):
-              plot.colormap.colors[1] = to_rgba(change.new,1)
-              plot.colormap.colors[2] = to_rgba(change.new,1)
-          elif(re.search('^Cache', name)):
-              plot.colormap.colors[3] = to_rgba(change.new,1)
-          elif(re.search('^Capacity', name)):
-              plot.colormap.colors[4] = to_rgba(change.new,1)
-              plot.colormap.colors[5] = to_rgba(change.new,1)
-          else:
-              plot.colormap.colors[6] = to_rgba(change.new,1)
-              plot.colormap.colors[8] = to_rgba(change.new,1)
+          if(re.search('^Read Hits', name)):
+              newcmap[1] = to_rgba(change.new,1)
+          if(re.search('^Write Hits', name)):
+              newcmap[2] = to_rgba(change.new,1)
+          if(re.search('^Cache', name)):
+              newcmap[3] = to_rgba(change.new,1)
+          if(re.search('^Read Capacity', name)):
+              newcmap[4] = to_rgba(change.new,1)
+          if(re.search('^Write Capacity', name)):
+              newcmap[5] = to_rgba(change.new,1)
+          if(re.search('^Read Compulsory Miss', name)):
+              newcmap[6] = to_rgba(change.new,1)
+          if(re.search('^Write Compulsory Miss', name)):
+              newcmap[8] = to_rgba(change.new,1)
+          plot.colormap = ListedColormap(newcmap)
+          plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
   
   # Read Write custom checkbox
   
   def RWCheckbox(description, primary_color, secondary_color):
-      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=True,layout=cp_lyt)
-      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=True,layout=cp_lyt)
-      rcp.name=description
-      wcp.name=description
+      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
+      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
+      rcp.name= "Read " + description
+      wcp.name= "Write " + description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
                   rcp, wcp])
 
 
   def CacheLabel(description, color_value):
-      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=True,layout=cp_lyt)
+      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=False,layout=cp_lyt)
       ccp.name=description
       #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
       return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
@@ -682,7 +689,7 @@ def generate_plot(trace_name):
       check.observe(updateReadWrite2)
   for check in [hbox.children[0] for hbox in hmChecks2]:
       check.observe(updateHitMiss2)
-  for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
+  for colorpicker in [hbox.children[1] for hbox in hmChecks2] + [hbox.children[2] for hbox in hmChecks2] + [hbox.children[1] for hbox in cacheChecks2]:
       colorpicker.observe(updateColorMap)
    
   #Code for simple_legend
