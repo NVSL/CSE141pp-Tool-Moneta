@@ -579,9 +579,9 @@ int add_to_simulated_cache(ADDRINT addr) {
 }
 
 int translate_cache(int access_type, bool read) {
-  if (access_type == 0) {
+  if (access_type == HIT) {
     return read ? READ_HIT : WRITE_HIT;
-  } else if(access_type == 1) {
+  } else if(access_type == CAP_MISS) {
     return read ? READ_CAP_MISS : WRITE_CAP_MISS;
   }
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
