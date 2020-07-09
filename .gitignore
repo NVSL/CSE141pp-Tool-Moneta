@@ -2,8 +2,7 @@
 **/__pycache__/
 **/*.py[cod]
 moneta/Examples/build/*
-moneta_files/pintool_files/pintool
-moneta_files/outfiles/*
+moneta/.output/*
 
 # IPython checkpoints
 .ipynb_checkpoints
