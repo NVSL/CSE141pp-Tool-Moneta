@@ -218,10 +218,6 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   if sub_stderr.startswith("Error"):
     print(sub_stderr)
 
-  meta_prefix = "full_meta_data_" if is_full_trace else "meta_data_"
-  with open(OUTPUT_DIR + meta_prefix + o_name + ".txt", 'w') as meta_f:
-    meta_f.write(str(c_lines) + " " + str(c_block))
-
 
 def gen_trace_controls():
   logging.info("Setting up generate trace widgets with handlers")
@@ -329,8 +325,8 @@ def generate_plot(trace_name):
   if tag_path:
     logging.debug("Found a tag map file")
     tag_map = vaex.open(tag_path)
-    if len(tag_map.columns['Tag_Name']) == 0:
-      print("No tags in file")
+    if len(tag_map.columns['Tag_Name']) == 2:
+      print("No tags beside stack and heap in file")
       return
   else:
     logging.debug("No tag map -- Full trace")
