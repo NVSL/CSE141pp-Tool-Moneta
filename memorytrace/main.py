@@ -629,7 +629,7 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
-          newcmap = np.copy(newc)
+          newcmap = np.copy(plot.colormap.colors)
           name=change.owner.name
           if(re.search('^Read Hits', name)):
               newcmap[1] = to_rgba(change.new,1)
