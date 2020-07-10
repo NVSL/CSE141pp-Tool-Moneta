@@ -98,18 +98,16 @@ static int curr_id {2}; // Reserved for stack and heap
 
 struct TagData {
   const std::pair<ADDRINT, ADDRINT> addr_range; // Read only
-  const ADDRINT range_offset;
   const std::string tag_name;
   const int id;
   bool active;                 // R/W
   std::pair<int, int> x_range;
   
-  TagData(std::string tn, ADDRINT low, ADDRINT hi, ADDRINT ro) : 
+  TagData(std::string tn, ADDRINT low, ADDRINT hi) : 
 	  addr_range({low, hi}),
-	  range_offset(ro),
 	  tag_name(tn), 
 	  id(curr_id++),
-	  active {1},
+	  active {true},
           x_range({-1, -1}) {}
   // Default destructor
 };
@@ -120,9 +118,6 @@ typedef pair<ADDRINT, ADDRINT> AddressRange;
 pintool::unordered_map<std::string, TagData*> all_tags;
 //pintool::unordered_map<string
 
-static ADDRINT free_block = 0; // State for normalized accesses
-
-static ADDRINT max_range = 0;
 
 constexpr int MAIN_LIMIT {400000};
 
@@ -450,18 +445,21 @@ VOID halt_layout_calc() {
       std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
     }*/
     for (size_t i = 0; i < before_main.size(); i++) {
+      bool is_stack = false;
       if (before_main[i].first <= upper_heap) {
         if (first_acc_heap == -1) {
           first_acc_heap = i;
         }
         last_acc_heap = i;
-        write_to_memfile(0, before_main[i].second, before_main[i].first, false);
       } else {
         if (first_acc_stack == -1) {
           first_acc_stack = i;
         }
         last_acc_stack = i;
-        write_to_memfile(0, before_main[i].second, before_main[i].first, true);
+        is_stack = true;
+      }
+      if (KnobTrackAll) {
+        write_to_memfile(0, before_main[i].second, before_main[i].first, is_stack);
       }
     }
     //last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
@@ -484,16 +482,8 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
       cerr << "Range: " << begin << ", " << end << "\n";
     }
 
-    TagData *new_tag = new TagData(str_tag, begin, end, begin-free_block);
+    TagData *new_tag = new TagData(str_tag, begin, end);
     all_tags[str_tag] = new_tag;
-    free_block+= end-begin;
-    free_block+= cache_line - free_block%cache_line; // Move to next cache_line for each new tag
-
-    max_range = std::max(max_range, free_block);
-
-    if (DEBUG) {
-      cerr << "Free_block: " << free_block << " range: " << new_tag->range_offset  << "\n";
-    }
 
   } else { // Reuse tag
     if (DEBUG) {
@@ -666,39 +656,27 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
-  if (!KnobTrackAll) { // No tags when tracking everything
-    std::ofstream map_file (output_tagfile_path);
-    map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-    for (auto& x : all_tags) {
-      TagData* t = x.second;
-      map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
-               << t->addr_range.first - t->range_offset << ","
-               << t->addr_range.second - t->range_offset << ","
-               << t->x_range.first << "," << t->x_range.second << "\n";
-    }
-  
-    // Close files
-    map_file.flush();
-    map_file.close();
-  } else {
-    if (!reached_main) {
-      halt_layout_calc();
-    }
-    std::ofstream map_file (output_tagfile_path);
-    map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-    map_file << "Stack,0," << lower_stack << "," << upper_stack <<
-      "," << first_acc_stack << "," << last_acc_stack << "\n";
-    map_file << "Heap,1," << lower_heap << "," << upper_heap <<
-      "," << first_acc_heap  << "," << last_acc_heap << "\n";
-    
-    map_file.flush();
-    map_file.close();
+  if (!reached_main) {
+    halt_layout_calc();
+  }
+  std::ofstream map_file (output_tagfile_path);
+  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+  map_file << "Stack,0," << lower_stack << "," << upper_stack <<
+    "," << first_acc_stack << "," << last_acc_stack << "\n";
+  map_file << "Heap,1," << lower_heap << "," << upper_heap <<
+    "," << first_acc_heap  << "," << last_acc_heap << "\n";
+  for (auto& x : all_tags) {
+    TagData* t = x.second;
+    map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
+             << t->addr_range.first << ","
+             << t->addr_range.second << ","
+             << t->x_range.first << "," << t->x_range.second << "\n";
   }
 
-  std::ofstream meta_file (output_metadata_path);
-  meta_file << cache_size << " " << cache_line;
-  meta_file.flush();
-  meta_file.close();
+  // Close files
+  map_file.flush();
+  map_file.close();
+
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
   // Delete all TagData's
@@ -769,10 +747,7 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
-}
-
-VOID FindMain(IMG img, VOID *v) {
-  RTN rtn = RTN_FindByName(img, "main");
+  rtn = RTN_FindByName(img, "main");
   if (RTN_Valid(rtn)) {
     RTN_Open(rtn);
     RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)halt_layout_calc, IARG_END);
@@ -828,14 +803,14 @@ int main(int argc, char *argv[]) {
 	    "\nOutput trace file at: " << output_trace_path << "\n";
   }
 
+  std::ofstream meta_file (output_metadata_path);
+  meta_file << cache_size << " " << cache_line;
+  meta_file.flush();
+  meta_file.close();
   hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
-  if (!KnobTrackAll) {
-    IMG_AddInstrumentFunction(FindFunc, 0);
-  } else {
-    IMG_AddInstrumentFunction(FindMain, 0);
-  }
+  IMG_AddInstrumentFunction(FindFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
