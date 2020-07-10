@@ -33,11 +33,11 @@ using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
-constexpr bool DEBUG {0};
+constexpr bool DEBUG {1};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
-constexpr bool CACHE_DEBUG {0};
+constexpr bool CACHE_DEBUG {1};
 
 static int read_insts = 0;
 // Cache debug
@@ -53,10 +53,8 @@ constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"/home/jovyan/work/moneta/.output"};
 
 // Output file formatting
-const std::string FullTracePrefix   {"full_trace_"};
 const std::string TracePrefix       {"trace_"};
 const std::string TraceSuffix       {".hdf5"};
-const std::string FullTagFilePrefix {"full_tag_map_"};
 const std::string TagFilePrefix     {"tag_map_"};
 const std::string TagFileSuffix     {".csv"};
 const std::string MetaFilePrefix     {"meta_data_"};
@@ -89,7 +87,7 @@ enum {
 };
 
 // How to record duplicate addr in multiple ranges
-constexpr bool RECORD_ONCE {0};
+constexpr bool RECORD_ONCE {true};
 
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
@@ -108,7 +106,7 @@ struct TagData {
 	  tag_name(tn), 
 	  id(curr_id++),
 	  active {true},
-          x_range({-1, -1}) {}
+    x_range({-1, -1}) {}
   // Default destructor
 };
 
@@ -390,7 +388,6 @@ VOID flush_cache() {
 }
 
 
-// Write id,op,addr to file
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
   int id = 0;
   if (is_stack) {
@@ -417,7 +414,6 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
 }
 
 
-
 VOID halt_layout_calc() {
   if (!reached_main) { // Should only be called once
     std::cerr << "Size of main trace: " << before_main.size() << "\n";
@@ -427,7 +423,6 @@ VOID halt_layout_calc() {
     std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
       return left.first < right.first;
     });
-
 
     for (size_t i = 1; i < before_main.size(); i++) {
       ADDRINT curr_diff = before_main[i].first - before_main[i-1].first;
@@ -476,6 +471,11 @@ VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
     cerr << "Dump begin called - " << begin << ", " << end << " TAG: " << str_tag << "\n";
   }
 
+  if (str_tag == "Heap" || str_tag == "Stack") {
+      cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
+              "Exiting Trace Early...\n";
+      PIN_ExitApplication(0);
+  }
   if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
       cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
@@ -608,16 +608,17 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read) {
       lower_stack = addr;
     }
   }
-  if (KnobTrackAll) {
-    write_to_memfile(0, access_type, addr, is_stack);
-    return;
-  }
+  bool recorded {false{;
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
+      recorded = true;
       write_to_memfile(t, access_type, addr, is_stack);
       if (RECORD_ONCE) break;
     }
+  }
+  if (!recorded && KnobTrackAll) {
+    write_to_memfile(0, access_type, addr, is_stack);
   }
 }
 
@@ -703,8 +704,8 @@ VOID Instruction(INS ins, VOID *v)
         if (isRead) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
-                IARG_MEMORYOP_EA,
-                memOp, true,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_BOOL, true,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -713,8 +714,8 @@ VOID Instruction(INS ins, VOID *v)
         if (isWrite) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
-                IARG_MEMORYOP_EA,
-                memOp, false,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_BOOL, false,
                 IARG_END);
         }
     }
@@ -772,15 +773,16 @@ int main(int argc, char *argv[]) {
 
   // User input
   output_trace_path = KnobOutputFile.Value();
-  if (!KnobTrackAll) {
-    output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
-    output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + output_trace_path + MetaFileSuffix;
-    output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
-  } else { // Different name when tracing everything
-    output_tagfile_path = DefaultOutputPath + "/" + FullTagFilePrefix + output_trace_path + TagFileSuffix;
-    output_metadata_path = DefaultOutputPath + "/" + FullPrefix + MetaFilePrefix + output_trace_path + MetaFileSuffix;
-    output_trace_path = DefaultOutputPath + "/" + FullTracePrefix + output_trace_path + TraceSuffix;
-  }
+  std::string pref = KnobTrackAll ? FullPrefix : "";
+  output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
+  output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
+  output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
+
+  std::ofstream meta_file (output_metadata_path);
+  meta_file << cache_size << " " << cache_line;
+  meta_file.flush();
+  meta_file.close();
+
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -803,10 +805,6 @@ int main(int argc, char *argv[]) {
 	    "\nOutput trace file at: " << output_trace_path << "\n";
   }
 
-  std::ofstream meta_file (output_metadata_path);
-  meta_file << cache_size << " " << cache_line;
-  meta_file.flush();
-  meta_file.close();
   hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
