@@ -42,7 +42,6 @@ constexpr bool CACHE_DEBUG {0};
 static int read_insts = 0;
 // Cache debug
 static int cache_writes {0};
-static int first_record {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
 constexpr int SkipRate  {100};
@@ -60,6 +59,9 @@ const std::string TraceSuffix       {".hdf5"};
 const std::string FullTagFilePrefix {"full_tag_map_"};
 const std::string TagFilePrefix     {"tag_map_"};
 const std::string TagFileSuffix     {".csv"};
+const std::string MetaFilePrefix     {"meta_data_"};
+const std::string MetaFileSuffix     {".txt"};
+const std::string FullPrefix {"full_"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -67,6 +69,7 @@ static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
 static std::string output_trace_path;
 static std::string output_tagfile_path;
+static std::string output_metadata_path;
 
 // Macros to track
 const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
@@ -91,7 +94,7 @@ constexpr bool RECORD_ONCE {0};
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id for every new tag
-static int curr_id {0};
+static int curr_id {2}; // Reserved for stack and heap
 
 struct TagData {
   const std::pair<ADDRINT, ADDRINT> addr_range; // Read only
@@ -394,23 +397,23 @@ VOID flush_cache() {
 
 // Write id,op,addr to file
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
+  int id = 0;
+  if (is_stack) {
+    last_acc_stack = curr_lines;
+  } else {
+    last_acc_heap = curr_lines;
+    id = 1;
+  }
   if (t) { // Only if running with tags
-    hdf_handler->write_data_mem(t->id, op, addr); // straight to hdf
+    id = t->id;
     if (t->x_range.first == -1) { // First time accessed
       t->x_range.first  = curr_lines;
       t->x_range.second = curr_lines;
     } else { // Update last access
       t->x_range.second = curr_lines;
     }
-  } else {
-    if (is_stack) {
-      hdf_handler->write_data_mem(0, op, addr);
-      last_acc_stack = curr_lines;
-    } else {
-      hdf_handler->write_data_mem(1, op, addr);
-      last_acc_heap = curr_lines;
-    }
   }
+  hdf_handler->write_data_mem(id, op, addr);
   curr_lines++; // Afterward, for 0-based indexing
   
   if(curr_lines >= max_lines) { // If reached file size limit, exit
@@ -587,113 +590,44 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-// Write address if in the range of the active tags as read to hdf5
-VOID RecordMemRead(ADDRINT addr) {
+VOID RecordMemAccess(ADDRINT addr, bool is_read) {
   if (DEBUG) {
     read_insts++;
+  }
+  int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
+  if (!reached_main) {
+    before_main.push_back({addr, access_type});
+    if (before_main.size() == MAIN_LIMIT) {
+      halt_layout_calc();
+    }
+    return;
+  }
+
+  bool is_stack = false;
+  if (addr >= lower_stack) {
+    is_stack = true;
+  } else if (addr <= upper_heap) {
+    is_stack = false;
+  } else {
+    // rearange to 2*addr < lower_stack + upper_heap?
+    if (addr - upper_heap < lower_stack - addr) {
+      is_stack = false;
+      upper_heap = addr;
+    } else {
+      is_stack = true;
+      lower_stack = addr;
+    }
   }
   if (KnobTrackAll) {
-    int access_type = translate_cache(add_to_simulated_cache(addr), true);
-    if (!reached_main) {
-      before_main.push_back({addr, access_type});
-      if (before_main.size() == MAIN_LIMIT) {
-        halt_layout_calc();
-      }
-    } else {
-      bool is_stack = false;
-      if (addr >= lower_stack) {
-        is_stack = true;
-      } else if (addr <= upper_heap) {
-        is_stack = false;
-      } else {
-        // rearrange to 2*addr < lower_stack + upper_heap?
-        if (addr - upper_heap < lower_stack - addr) {
-          is_stack = false;
-          upper_heap = addr;
-        } else {
-          is_stack = true;
-          lower_stack = addr;
-        }
-      }
-      write_to_memfile(0, access_type, addr, is_stack);
-    }
+    write_to_memfile(0, access_type, addr, is_stack);
     return;
   }
-
-  bool recorded = false;
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
-    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second ) {
-      recorded = true;
-      if (CACHE_DEBUG) {
-        if (first_record == 0) {
-          first_record = cache_writes;
-          cerr << "First access (read) to cache at time [" << first_record << "] :" << addr << "\n";
-        }
-      }
-      int access_type = translate_cache(add_to_simulated_cache(addr), true);
-      addr -= t->range_offset; // Transform
-      write_to_memfile(t, access_type, addr, false);
+    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
+      write_to_memfile(t, access_type, addr, is_stack);
       if (RECORD_ONCE) break;
     }
-  }
-  if (!recorded) { // Outside ranges
-    add_to_simulated_cache(addr); // Add original value to cache
-  }
-}
-
-// Write address if in the range of the active tags as write to hdf5
-VOID RecordMemWrite(ADDRINT addr) {
-  if (DEBUG) {
-    read_insts++;
-  }
-  if (KnobTrackAll) { // No normalization for address
-    int access_type = translate_cache(add_to_simulated_cache(addr), false);
-    if (!reached_main) {
-      before_main.push_back({addr, access_type});
-      if (before_main.size() == MAIN_LIMIT) {
-        halt_layout_calc();
-      }
-    } else {
-      bool is_stack = false;
-      if (addr >= lower_stack) {
-        is_stack = true;
-      } else if (addr <= upper_heap) {
-        is_stack = false;
-      } else {
-        // rearange to 2*addr < lower_stack + upper_heap?
-        if (addr - upper_heap < lower_stack - addr) {
-          is_stack = false;
-          upper_heap = addr;
-        } else {
-          is_stack = true;
-          lower_stack = addr;
-        }
-      }
-      write_to_memfile(0, access_type, addr, is_stack);
-    }
-    return;
-  }
-
-  bool recorded = false;
-  for (auto& tag_iter : all_tags) {
-    TagData* t = tag_iter.second;
-    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second ) {
-      recorded = true;
-      if (CACHE_DEBUG) {
-        if (first_record == 0) {
-          first_record = cache_writes;
-          cerr << "First access (write) to cache at time [" << first_record << "] :" << addr << "\n";
-        }
-      }
-      int access_type = translate_cache(add_to_simulated_cache(addr), false);
-      addr -= t->range_offset; // Transform
-      write_to_memfile(t, access_type, addr, false);
-      if (RECORD_ONCE) break;
-    }
-  }
-  if (!recorded) { // Outside ranges
-    add_to_simulated_cache(addr); // Add original value to cache
   }
 }
 
@@ -760,6 +694,11 @@ VOID Fini(INT32 code, VOID *v) {
     map_file.flush();
     map_file.close();
   }
+
+  std::ofstream meta_file (output_metadata_path);
+  meta_file << cache_size << " " << cache_line;
+  meta_file.flush();
+  meta_file.close();
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
   // Delete all TagData's
@@ -785,9 +724,9 @@ VOID Instruction(INS ins, VOID *v)
         const bool isWrite = INS_MemoryOperandIsWritten(ins, memOp);
         if (isRead) {
             INS_InsertPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemRead,
+                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA,
-                memOp,
+                memOp, true,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -795,9 +734,9 @@ VOID Instruction(INS ins, VOID *v)
         // In that case we instrument it once for read and once for write.
         if (isWrite) {
             INS_InsertPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
+                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA,
-                memOp,
+                memOp, false,
                 IARG_END);
         }
     }
@@ -860,9 +799,11 @@ int main(int argc, char *argv[]) {
   output_trace_path = KnobOutputFile.Value();
   if (!KnobTrackAll) {
     output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
+    output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + output_trace_path + MetaFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
   } else { // Different name when tracing everything
     output_tagfile_path = DefaultOutputPath + "/" + FullTagFilePrefix + output_trace_path + TagFileSuffix;
+    output_metadata_path = DefaultOutputPath + "/" + FullPrefix + MetaFilePrefix + output_trace_path + MetaFileSuffix;
     output_trace_path = DefaultOutputPath + "/" + FullTracePrefix + output_trace_path + TraceSuffix;
   }
   UINT64 in_output_limit = KnobMaxOutput.Value();
