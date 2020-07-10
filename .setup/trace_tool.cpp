@@ -37,7 +37,8 @@ constexpr bool DEBUG {1};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
-constexpr bool CACHE_DEBUG {1};
+constexpr bool CACHE_DEBUG {0};
+constexpr bool TAG_DEBUG   {1};
 
 static int read_insts = 0;
 // Cache debug
@@ -391,8 +392,14 @@ VOID flush_cache() {
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
   int id = 0;
   if (is_stack) {
+    if (first_acc_stack == -1) {
+      first_acc_stack = curr_lines;
+    }
     last_acc_stack = curr_lines;
   } else {
+    if (first_acc_heap == -1) {
+      first_acc_heap = curr_lines;
+    }
     last_acc_heap = curr_lines;
     id = 1;
   }
@@ -400,10 +407,8 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
     id = t->id;
     if (t->x_range.first == -1) { // First time accessed
       t->x_range.first  = curr_lines;
-      t->x_range.second = curr_lines;
-    } else { // Update last access
-      t->x_range.second = curr_lines;
     }
+    t->x_range.second = curr_lines;
   }
   hdf_handler->write_data_mem(id, op, addr);
   curr_lines++; // Afterward, for 0-based indexing
@@ -439,21 +444,21 @@ VOID halt_layout_calc() {
     /*for (int i = 0; i < 10; i++) {
       std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
     }*/
-    for (size_t i = 0; i < before_main.size(); i++) {
-      bool is_stack = false;
-      if (before_main[i].first <= upper_heap) {
-        if (first_acc_heap == -1) {
-          first_acc_heap = i;
+    if (KnobTrackAll) {
+      for (size_t i = 0; i < before_main.size(); i++) {
+        bool is_stack = false;
+        if (before_main[i].first <= upper_heap) {
+          if (first_acc_heap == -1) {
+            first_acc_heap = i;
+          }
+          last_acc_heap = i;
+        } else {
+          if (first_acc_stack == -1) {
+            first_acc_stack = i;
+          }
+          last_acc_stack = i;
+          is_stack = true;
         }
-        last_acc_heap = i;
-      } else {
-        if (first_acc_stack == -1) {
-          first_acc_stack = i;
-        }
-        last_acc_stack = i;
-        is_stack = true;
-      }
-      if (KnobTrackAll) {
         write_to_memfile(0, before_main[i].second, before_main[i].first, is_stack);
       }
     }
@@ -599,7 +604,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read) {
   } else if (addr <= upper_heap) {
     is_stack = false;
   } else {
-    // rearange to 2*addr < lower_stack + upper_heap?
+    // rearrange to 2*addr < lower_stack + upper_heap?
     if (addr - upper_heap < lower_stack - addr) {
       is_stack = false;
       upper_heap = addr;
@@ -608,7 +613,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read) {
       lower_stack = addr;
     }
   }
-  bool recorded {false{;
+  bool recorded {false};
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
@@ -660,18 +665,42 @@ VOID Fini(INT32 code, VOID *v) {
   if (!reached_main) {
     halt_layout_calc();
   }
+  if (TAG_DEBUG) {
+    std::cerr << "Stack,0," << lower_stack << "," << upper_stack <<
+      "," << first_acc_stack << "," << last_acc_stack << "\n";
+    std::cerr << "Heap,1," << lower_heap << "," << upper_heap <<
+      "," << first_acc_heap  << "," << last_acc_heap << "\n";
+    for (auto& x : all_tags) {
+      TagData* t = x.second;
+      std::cerr << t->tag_name << "," << t->id << ","
+               << t->addr_range.first << ","
+               << t->addr_range.second << ","
+               << t->x_range.first << "," << t->x_range.second << "\n";
+    }
+  }
   std::ofstream map_file (output_tagfile_path);
   map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-  map_file << "Stack,0," << lower_stack << "," << upper_stack <<
-    "," << first_acc_stack << "," << last_acc_stack << "\n";
-  map_file << "Heap,1," << lower_heap << "," << upper_heap <<
-    "," << first_acc_heap  << "," << last_acc_heap << "\n";
+  if (first_acc_stack != -1 && last_acc_stack != -1) {
+    map_file << "Stack,0," << lower_stack 
+      << "," << upper_stack 
+      << "," << first_acc_stack 
+      << "," << last_acc_stack << "\n";
+  }
+  if (first_acc_heap != -1 && last_acc_heap != -1) {
+    map_file << "Heap,1," << lower_heap 
+      << "," << upper_heap 
+      << "," << first_acc_heap 
+      << "," << last_acc_heap << "\n";
+  }
   for (auto& x : all_tags) {
     TagData* t = x.second;
-    map_file << t->tag_name << "," << t->id << "," // Could overload in TagData struct
-             << t->addr_range.first << ","
-             << t->addr_range.second << ","
-             << t->x_range.first << "," << t->x_range.second << "\n";
+    if (t->x_range.first != -1 && t->x_range.second != -1) {
+      map_file << t->tag_name << "," << t->id // Could overload in TagData struct
+        << "," << t->addr_range.first
+        << "," << t->addr_range.second
+        << "," << t->x_range.first 
+        << "," << t->x_range.second << "\n";
+    }
   }
 
   // Close files
