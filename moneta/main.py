@@ -503,10 +503,17 @@ def generate_plot(trace_name):
     missCount = curReadMisses.count() + curWriteMisses.count()
     compMissCount = curCompReadMisses.count() + curCompWriteMisses.count()
     totalCount = hitCount + missCount + compMissCount
-    
-    currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
-    currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
-    currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+   
+    if totalCount: 
+        currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
+        currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
+        currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+    else:
+        currentHitRate.value = "Hit Rate: N/A"
+        currentCapMissRate.value = "Capacity Miss Rate: N/A"
+        currentCompMissRate.value = "Compulsory Miss Rate: N/A"
+        
+
   tagChecks = []
   tagChecksBox = []
   if tag_path:
@@ -722,7 +729,7 @@ def generate_plot(trace_name):
   if tag_path:
     for i in range(numTags):
       tagChecks[i].children[1].on_click(plot.backend.zoomSection)
-        
+
   display(checks)
 
   def selectDF(inDF):
@@ -759,7 +766,7 @@ def generate_plot(trace_name):
   def depSubPlot(b):
       df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=plot.selection, limits=plot.limits,type='custom_plot1')
 
-
+  
   dSubPlotButton = Button(
           description='Create Dependent Subplot',
           disabled=False,
