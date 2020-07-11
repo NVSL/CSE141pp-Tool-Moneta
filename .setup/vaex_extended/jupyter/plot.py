@@ -29,7 +29,7 @@ class Plot2dDefault(Plot2dDefault):
         #     #    bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
         #     #draw_legend(legend)
         #     mplplt.gca().set_axis_off()      
-
+        
         self.legend = widgets.VBox([]) 
         if 'legend' in kwargs:
             self.legend = kwargs.get('legend')

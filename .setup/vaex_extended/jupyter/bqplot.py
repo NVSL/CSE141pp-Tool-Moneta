@@ -25,7 +25,7 @@ def __init__(self, figure=None, figure_key=None):
     self.figure_key = figure_key
     self.figure = figure
     self.signal_limits = vaex.events.Signal()
-
+    
     self._cleanups = []
     
     self.dataset_original = None
@@ -247,12 +247,55 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
+                
+                addresses = self.dataset.Address.values
+
+                x_min = max(0, int(x1))
+                x_max = min(int(x2), len(addresses) - 1)
+
+                selection = addresses[x_min:x_max + 1]
+
+
+                if len(selection):
+                    # If too slow, modify to use one pass: "for i, j in zip(range(x), range(y))"
+                    for i in range (x_min, x_max + 1):
+                        curr_addr = addresses[i]
+                        if y1 <= curr_addr and curr_addr <= y2:
+                            x_min = i
+                            break
+
+                    for i in range (x_max, x_min - 1, -1):
+                        curr_addr = addresses[i]
+                        if y1 <= curr_addr and curr_addr <= y2:
+                            x_max = i
+                            break
+
+                # +/-1 buffer to prevent Vaex getting stuck at one index
+                x_min = x_min - 1
+                x_max = x_max + 1
+
+
+                y_min = int(y1)
+                y_max = int(y2)
+
+                trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max]))
+                #print(y1, y2, min(trimmed), max(trimmed))
+                if len(trimmed):
+                    y_min = max(y_min, min(trimmed)) 
+                    y_max = min(y_max, max(trimmed))
+
+                # +/-1 int buffer to prevent Vaex getting stuck at one-value axis and create fixed minimum zoom
+                x_min = int(x_min - 1)
+                x_max = int(x_max + 1)
+                y_min = int(y_min - 1)
+                y_max = int(y_max + 1)
+
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
-                        self.scale_x.min, self.scale_x.max = x1, x2
-                        self.scale_y.min, self.scale_y.max = y1, y2
+                        self.scale_x.min, self.scale_x.max = float(x_min), float(x_max)
+                        self.scale_y.min, self.scale_y.max = float(y_min), float(y_max)
                 self._update_limits()      
             self.figure.interaction = self.zoom_brush
             # Delete selection
@@ -269,15 +312,15 @@ def zoomSection(self, change):
 
     rangeData = accessRanges[change.tooltip]    
 
-    xmin = rangeData['startIndex']
-    xmax = rangeData['endIndex']
-    ymin = rangeData['startAddr']
-    ymax = rangeData['endAddr']
+    x_min = rangeData['startIndex']
+    x_max = rangeData['endIndex']
+    y_min = rangeData['startAddr']
+    y_max = rangeData['endAddr']
 
     with self.scale_x.hold_trait_notifications():
-        self.scale_x.min = xmin
-        self.scale_x.max = xmax
+        self.scale_x.min = x_min
+        self.scale_x.max = x_max
     with self.scale_y.hold_trait_notifications():
-        self.scale_y.min = ymin
-        self.scale_y.max = ymax
+        self.scale_y.min = y_min
+        self.scale_y.max = y_max
 
