@@ -33,12 +33,12 @@ using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
-constexpr bool DEBUG {1};
+constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
-constexpr bool TAG_DEBUG   {1};
+constexpr bool TAG_DEBUG   {0};
 
 static int read_insts = 0;
 // Cache debug
@@ -54,13 +54,13 @@ constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"/home/jovyan/work/moneta/.output"};
 
 // Output file formatting
-const std::string TracePrefix       {"trace_"};
-const std::string TraceSuffix       {".hdf5"};
-const std::string TagFilePrefix     {"tag_map_"};
-const std::string TagFileSuffix     {".csv"};
-const std::string MetaFilePrefix     {"meta_data_"};
-const std::string MetaFileSuffix     {".txt"};
-const std::string FullPrefix {"full_"};
+const std::string TracePrefix    {"trace_"};
+const std::string TraceSuffix    {".hdf5"};
+const std::string TagFilePrefix  {"tag_map_"};
+const std::string TagFileSuffix  {".csv"};
+const std::string MetaFilePrefix {"meta_data_"};
+const std::string MetaFileSuffix {".txt"};
+const std::string FullPrefix     {"full_"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -424,7 +424,6 @@ VOID halt_layout_calc() {
     std::cerr << "Size of main trace: " << before_main.size() << "\n";
     reached_main = true;
     ADDRINT max_diff = 0;
-    //std::sort(before_main.begin(), before_main.end());
     std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
       return left.first < right.first;
     });
@@ -692,7 +691,12 @@ VOID Fini(INT32 code, VOID *v) {
       << "," << first_acc_heap 
       << "," << last_acc_heap << "\n";
   }
-  for (auto& x : all_tags) {
+  std::vector<std::pair<std::string, TagData*>> vec_tags (all_tags.begin(), all_tags.end());
+  std::sort(vec_tags.begin(), vec_tags.end(), 
+    [](const std::pair<std::string, TagData*> &left, const std::pair<std::string, TagData*> &right) {
+      return left.second->id < right.second->id;
+  });
+  for (auto& x : vec_tags) {
     TagData* t = x.second;
     if (t->x_range.first != -1 && t->x_range.second != -1) {
       map_file << t->tag_name << "," << t->id // Could overload in TagData struct
