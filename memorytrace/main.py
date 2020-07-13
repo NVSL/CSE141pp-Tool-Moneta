@@ -101,7 +101,7 @@ select_widget = SelectMultiple(
 df = 0
 tag_map = 0
 curr_trace = ""
-
+COLORPALETTE_EDITABLE = True
 
 def button_factory(desc, color='lightgray'):
   return Button(
@@ -650,8 +650,6 @@ def generate_plot(trace_name):
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
  
-  COLORPALETTE_EDITABLE = True
-
   # Custom checkbox for Read/Writes
   def RWCheckbox(description, primary_color, secondary_color):
       cp_read = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
