@@ -45,7 +45,7 @@ static int read_insts = 0;
 static int cache_writes {0};
 static int comp_misses  {0};
 static int cap_misses   {0};
-constexpr int SkipRate  {100};
+constexpr int SkipRate  {10000};
 
 // Constant Vars for User input
 constexpr ADDRINT DefaultMaximumLines   {100000000};
@@ -853,5 +853,3 @@ int main(int argc, char *argv[]) {
   
   return 0;
 }
-
-
