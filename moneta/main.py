@@ -101,7 +101,7 @@ select_widget = SelectMultiple(
 df = 0
 tag_map = 0
 curr_trace = ""
-
+COLORPALETTE_EDITABLE = True
 
 def button_factory(desc, color='lightgray'):
   return Button(
@@ -625,7 +625,7 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
-          newcmap = np.copy(newc)
+          newcmap = np.copy(plot.colormap.colors)
           name=change.owner.name
           if(re.search('^Read Hits', name)):
               newcmap[1] = to_rgba(change.new,1)
@@ -645,23 +645,22 @@ def generate_plot(trace_name):
           plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
-  
-  # Read Write custom checkbox
-  
+ 
+  # Custom checkbox for Read/Writes
   def RWCheckbox(description, primary_color, secondary_color):
-      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
-      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
-      rcp.name= "Read " + description
-      wcp.name= "Write " + description
+      cp_read = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_write = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_read.name= "Read " + description
+      cp_write.name= "Write " + description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
-                  rcp, wcp])
+                  cp_read, cp_write])
 
-
+  # Custom checkbox for Cache
   def CacheLabel(description, color_value):
-      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=False,layout=cp_lyt)
-      ccp.name=description
+      cp_cache = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_cache.name=description
       #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
-      return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
+      return HBox([Label(value=description,layout=Layout(width='150px')),cp_cache])
 
   with open(meta_path) as meta_f:
     mlines = meta_f.readlines()
