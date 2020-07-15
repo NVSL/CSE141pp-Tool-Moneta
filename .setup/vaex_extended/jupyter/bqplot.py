@@ -283,7 +283,7 @@ def update_zoom_brush(self, *args):
                     y_min = int(y1)
                     y_max = int(y2)
 
-                    trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max]))
+                    trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max + 1]))
 
                     if len(trimmed):
                         y_min = max(y_min, min(trimmed)) 
