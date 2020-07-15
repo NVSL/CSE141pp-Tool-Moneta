@@ -195,12 +195,18 @@ def create_tools(self):
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
        
+        # Checkbox for toggling smart zoom
+        smart_zoom_lyt = widgets.Layout(display='flex', justify_content='center', height='100%')
+        self.smart_zoom_toggle = widgets.Checkbox(value=False, description='Use Smart "Zoom to selection"', indent=False)
+        self.smart_zoom_vbox = widgets.VBox([self.smart_zoom_toggle], layout=smart_zoom_lyt)
+
         # Controls to be added to menubar instead of sidebar 
         self.widget_menubar = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
-                self.widget_reset
+                self.widget_reset,
+                self.smart_zoom_vbox
             ])
         ])
 
@@ -221,7 +227,6 @@ def create_tools(self):
             button.on_click(self.zoomSection)        
 
         self.plot.add_control_widget(self.zoomButtonList)
-
 
 
 
@@ -247,48 +252,49 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
-                
-                addresses = self.dataset.Address.values
+               
 
-                x_min = max(0, int(x1))
-                x_max = min(int(x2), len(addresses) - 1)
+                if self.smart_zoom_toggle.value == True: 
+                    addresses = self.dataset.Address.values
 
-                selection = addresses[x_min:x_max + 1]
+                    x_min = max(0, int(x1))
+                    x_max = min(int(x2), len(addresses) - 1)
 
-                done_min = False;
-                done_max = False;
-                if len(selection):
-                    for i, j in zip(range (x_min, x_max + 1), range(x_max, x_min-1, -1)):
-                        curr_addr_min = addresses[i]
-                        curr_addr_max = addresses[i]
-                        if done_min and y1 <= curr_addr_min and curr_addr_min <= y2:
-                            x_min = i
-                            done_min = True
+                    selection = addresses[x_min:x_max + 1]
 
-                        if done_max and y1 <= curr_addr_max and curr_addr_max <= y2:
-                            x_max = i
-                            done_max = True
+                    done_min = False;
+                    done_max = False;
+                    if len(selection):
+                        for i, j in zip(range (x_min, x_max + 1), range(x_max, x_min-1, -1)):
+                            curr_addr_min = addresses[i]
+                            curr_addr_max = addresses[j]
+                            if not done_min and y1 <= curr_addr_min and curr_addr_min <= y2:
+                                x_min = i
+                                done_min = True
 
-                        if done_min and done_max:
-                            break;
+                            if not done_max and y1 <= curr_addr_max and curr_addr_max <= y2:
+                                x_max = j
+                                done_max = True
+
+                            if done_min and done_max:
+                                break;
 
 
-                y_min = int(y1)
-                y_max = int(y2)
+                    y_min = int(y1)
+                    y_max = int(y2)
 
-                trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max]))
+                    trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max + 1]))
 
-                if len(trimmed):
-                    y_min = max(y_min, min(trimmed))
-                    y_max = min(y_max, max(trimmed))
+                    if len(trimmed):
+                        y_min = max(y_min, min(trimmed)) 
+                        y_max = min(y_max, max(trimmed))
 
-                if (x_max-x_min < 1):
-                    x_min -= (1 + x_min - x_max) / 2
-                    x_max = x_min + 1
+                else: 
+                    x_min = x1
+                    x_max = x2
+                    y_min = y1
+                    y_max = y2
 
-                if (y_max-y_min < 1):
-                    y_min -= (1 + y_min - y_max) / 2
-                    y_max = y_min + 1
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
