@@ -258,7 +258,7 @@ def update_zoom_brush(self, *args):
                     addresses = self.dataset.Address.values
 
                     x_min = max(0, int(x1))
-                    x_max = min(int(x2), len(addresses) - 1)
+                    x_max = min(max(0, int(x2)), len(addresses) - 1)
 
                     selection = addresses[x_min:x_max + 1]
 
@@ -295,6 +295,16 @@ def update_zoom_brush(self, *args):
                     y_min = y1
                     y_max = y2
 
+
+                # Fix for plot getting stuck at one value axis
+                if (x_max-x_min < 1):
+                    x_min -= (1 + x_min - x_max) / 2
+                    x_max = x_min + 1
+
+                if (y_max-y_min < 1):
+                    y_min -= (1 + y_min - y_max) / 2
+                    y_max = y_min + 1
+                
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
