@@ -277,17 +277,18 @@ def update_zoom_brush(self, *args):
                 y_max = int(y2)
 
                 trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max]))
-                #print(y1, y2, min(trimmed), max(trimmed))
+
                 if len(trimmed):
-                    y_min = max(y_min, min(trimmed)) 
+                    y_min = max(y_min, min(trimmed))
                     y_max = min(y_max, max(trimmed))
 
-                # +/-1 int buffer to prevent Vaex getting stuck at one-value axis and create fixed minimum zoom
-                x_min = int(x_min - 1)
-                x_max = int(x_max + 1)
-                y_min = int(y_min - 1)
-                y_max = int(y_max + 1)
+                if (x_max-x_min < 1):
+                    x_min -= (1 + x_min - x_max) / 2
+                    x_max = x_min + 1
 
+                if (y_max-y_min < 1):
+                    y_min -= (1 + y_min - y_max) / 2
+                    y_max = y_min + 1
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
