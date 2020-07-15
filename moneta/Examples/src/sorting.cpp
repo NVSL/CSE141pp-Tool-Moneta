@@ -6,7 +6,7 @@
 */
 
 
-#include "pin_macros.h"
+#include "../../pin_macros.h"
 #include <iostream>
 #include <stdlib.h>
 
@@ -118,11 +118,11 @@ int main(int argc, char *argv[]){
 	DUMP_ACCESS_STOP_TAG("Insertion");
 	
 	//HEAP
-	DUMP_ACCESS_START_TAG("Heap", &heap[0], &heap[SIZE-1]);
+	DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
 	
 	heapSort(heap, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Heap");
+	DUMP_ACCESS_STOP_TAG("Heap sort");
 
 	//SELECTION	
 	DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);

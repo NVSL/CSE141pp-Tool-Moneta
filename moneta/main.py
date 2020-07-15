@@ -101,7 +101,7 @@ select_widget = SelectMultiple(
 df = 0
 tag_map = 0
 curr_trace = ""
-
+COLORPALETTE_EDITABLE = True
 
 def button_factory(desc, color='lightgray'):
   return Button(
@@ -217,10 +217,6 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
 
   if sub_stderr.startswith("Error"):
     print(sub_stderr)
-
-  meta_prefix = "full_meta_data_" if is_full_trace else "meta_data_"
-  with open(OUTPUT_DIR + meta_prefix + o_name + ".txt", 'w') as meta_f:
-    meta_f.write(str(c_lines) + " " + str(c_block))
 
 
 def gen_trace_controls():
@@ -629,7 +625,7 @@ def generate_plot(trace_name):
   from matplotlib.colors import to_rgba
   def updateColorMap(change):
       if(change.name=='value'):
-          newcmap = np.copy(newc)
+          newcmap = np.copy(plot.colormap.colors)
           name=change.owner.name
           if(re.search('^Read Hits', name)):
               newcmap[1] = to_rgba(change.new,1)
@@ -649,23 +645,22 @@ def generate_plot(trace_name):
           plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
   cp_lyt=Layout(width='30px')
-  
-  # Read Write custom checkbox
-  
+ 
+  # Custom checkbox for Read/Writes
   def RWCheckbox(description, primary_color, secondary_color):
-      rcp = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=False,layout=cp_lyt)
-      wcp = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=False,layout=cp_lyt)
-      rcp.name= "Read " + description
-      wcp.name= "Write " + description
+      cp_read = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_write = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_read.name= "Read " + description
+      cp_write.name= "Write " + description
       return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
-                  rcp, wcp])
+                  cp_read, cp_write])
 
-
+  # Custom checkbox for Cache
   def CacheLabel(description, color_value):
-      ccp = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=False,layout=cp_lyt)
-      ccp.name=description
+      cp_cache = ColorPicker(concise=True, value=to_hex(color_value[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
+      cp_cache.name=description
       #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
-      return HBox([Label(value=description,layout=Layout(width='150px')),ccp])
+      return HBox([Label(value=description,layout=Layout(width='150px')),cp_cache])
 
   with open(meta_path) as meta_f:
     mlines = meta_f.readlines()
@@ -715,9 +710,11 @@ def generate_plot(trace_name):
   #   plt.gca().set_axis_off()
   #   plt.show()
   
+  x_lim = [df.index.min()[()], df.index.max()[()]]
+  y_lim = [df.Address.min()[()], df.Address.max()[()]]
   #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
-                 colormap = custom_cmap, selection=[True],
+                 colormap = custom_cmap, selection=[True], limits = [x_lim, y_lim],
                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
   if tag_path:
     for i in range(numTags):

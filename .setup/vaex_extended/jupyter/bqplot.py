@@ -251,6 +251,12 @@ def update_zoom_brush(self, *args):
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
+                        if (x2-x1 < 1):
+                            x1-=(1+x1-x2)/2
+                            x2=x1+1
+                        if (y2-y1 < 1):
+                            y1-=(1+y1-y2)/2
+                            y2=y1+1
                         self.scale_x.min, self.scale_x.max = x1, x2
                         self.scale_y.min, self.scale_y.max = y1, y2
                 self._update_limits()      

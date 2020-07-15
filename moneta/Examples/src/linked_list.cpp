@@ -4,13 +4,14 @@
 #include <cassert>
 #include <limits>
 
-constexpr int LIST_SIZE {1000};
+constexpr int LIST_SIZE {100};
 constexpr double LowerBound {0};
 constexpr double UpperBound {1000};
 
 std::uniform_real_distribution<float> unif {LowerBound, UpperBound};
 std::default_random_engine re;
 
+std::pair<const void*, const void*> list_limits;
 struct Node {
   float val;
   Node* next;
@@ -80,9 +81,12 @@ void swap(Node* const a, Node* const b) {
 void bubble_sort(Node** head, bool pointer) {
   Node* m_head = *head;
   int unsorted = LIST_SIZE;
+  int i = 0;
   while (unsorted != 1) {
     int last_swap = 1;
     Node* prev = nullptr;
+    std::string s = "Per loop " +std::to_string(i);
+    DUMP_ACCESS_START_TAG(s.c_str(), list_limits.first, list_limits.second);
     for (int j = 1; j < unsorted; j++) {
       if (m_head->val > m_head->next->val) {
         if (pointer) {
@@ -106,6 +110,8 @@ void bubble_sort(Node** head, bool pointer) {
       prev = m_head;
       m_head = m_head->next;
     }
+    DUMP_ACCESS_STOP_TAG(s.c_str());
+    i++;
     unsorted = last_swap;
     m_head = *head;
   }     
@@ -114,7 +120,7 @@ void bubble_sort(Node** head, bool pointer) {
 int main() {
   std::cerr << "Initializing list\n";
   Node* head = init_list();
-  std::pair<const void*, const void*> list_limits = min_max(head);
+  list_limits = min_max(head);
   
   std::cerr << "Check number of nodes\n";
   DUMP_ACCESS_START_TAG("Count nodes", list_limits.first, list_limits.second);
@@ -125,9 +131,9 @@ int main() {
   DUMP_ACCESS_START_TAG("Before verify", list_limits.first, list_limits.second);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_ACCESS_STOP_TAG("Before verify");
-  DUMP_ACCESS_START_TAG("Bubble sort pointer", list_limits.first, list_limits.second);
-  bubble_sort(&head, false);
-  DUMP_ACCESS_STOP_TAG("Bubble sort pointer");
+  //DUMP_ACCESS_START_TAG("Bubble sort pointer", list_limits.first, list_limits.second);
+  bubble_sort(&head, true);
+  //DUMP_ACCESS_STOP_TAG("Bubble sort pointer");
   DUMP_ACCESS_START_TAG("After verify", list_limits.first, list_limits.second);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_ACCESS_STOP_TAG("After verify");
@@ -159,9 +165,9 @@ int main() {
   DUMP_ACCESS_START_TAG("Before verify2", list_limits.first, list_limits.second);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_ACCESS_STOP_TAG("Before verify2");
-  DUMP_ACCESS_START_TAG("Bubble sort", list_limits.first, list_limits.second);
-  bubble_sort(&head, false);
-  DUMP_ACCESS_STOP_TAG("Bubble sort");
+  //DUMP_ACCESS_START_TAG("Bubble sort", list_limits.first, list_limits.second);
+  //bubble_sort(&head, false);
+  //DUMP_ACCESS_STOP_TAG("Bubble sort");
   DUMP_ACCESS_START_TAG("After verify2", list_limits.first, list_limits.second);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_ACCESS_STOP_TAG("After verify2");
