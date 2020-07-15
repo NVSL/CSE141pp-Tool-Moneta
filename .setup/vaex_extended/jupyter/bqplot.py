@@ -255,24 +255,22 @@ def update_zoom_brush(self, *args):
 
                 selection = addresses[x_min:x_max + 1]
 
-
+                done_min = False;
+                done_max = False;
                 if len(selection):
-                    # If too slow, modify to use one pass: "for i, j in zip(range(x), range(y))"
-                    for i in range (x_min, x_max + 1):
-                        curr_addr = addresses[i]
-                        if y1 <= curr_addr and curr_addr <= y2:
+                    for i, j in zip(range (x_min, x_max + 1), range(x_max, x_min-1, -1)):
+                        curr_addr_min = addresses[i]
+                        curr_addr_max = addresses[i]
+                        if done_min and y1 <= curr_addr_min and curr_addr_min <= y2:
                             x_min = i
-                            break
+                            done_min = True
 
-                    for i in range (x_max, x_min - 1, -1):
-                        curr_addr = addresses[i]
-                        if y1 <= curr_addr and curr_addr <= y2:
+                        if done_max and y1 <= curr_addr_max and curr_addr_max <= y2:
                             x_max = i
-                            break
+                            done_max = True
 
-                # +/-1 buffer to prevent Vaex getting stuck at one index
-                x_min = x_min - 1
-                x_max = x_max + 1
+                        if done_min and done_max:
+                            break;
 
 
                 y_min = int(y1)
@@ -289,6 +287,7 @@ def update_zoom_brush(self, *args):
                 x_max = int(x_max + 1)
                 y_min = int(y_min - 1)
                 y_max = int(y_max + 1)
+
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
