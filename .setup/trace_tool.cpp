@@ -811,11 +811,6 @@ int main(int argc, char *argv[]) {
   output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
   output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
 
-  std::ofstream meta_file (output_metadata_path);
-  meta_file << cache_size << " " << cache_line;
-  meta_file.flush();
-  meta_file.close();
-
   UINT64 in_output_limit = KnobMaxOutput.Value();
   UINT64 in_cache_size = KnobCacheSize.Value();
   UINT64 in_cache_line = KnobCacheLineSize.Value();
@@ -837,6 +832,11 @@ int main(int argc, char *argv[]) {
 	    "\nCache line size in bytes: " << cache_line << 
 	    "\nOutput trace file at: " << output_trace_path << "\n";
   }
+
+  std::ofstream meta_file (output_metadata_path);
+  meta_file << cache_size << " " << cache_line;
+  meta_file.flush();
+  meta_file.close();
 
   hdf_handler = new HandleHdf5(output_trace_path);
 
