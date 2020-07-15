@@ -4,16 +4,16 @@ import re
 import sys
 import vaex
 import vaex.jupyter
-#import vaex.jupyter.plot
+import vaex.jupyter.plot
 import argparse
 import subprocess
 import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-PIN_DIR  = "/setup/pintool/pin.sh"
-TOOL_DIR = "/setup/converter/trace_tool.so"
-OUTPUT_DIR = "/setup/converter/outfiles/"
+PIN_DIR  = "/pin/pin.sh"
+TOOL_DIR = "../.setup/trace_tool.so"
+OUTPUT_DIR = "./.output/"
 
 # Constants
 WIDGET_DESC_PROP = {'description_width': '150px'}

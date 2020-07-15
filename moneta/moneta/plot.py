@@ -2,8 +2,8 @@ from .imports import *
 
 #sys.path.append('/setup/') # For master branch
 sys.path.append('../') # For dev branch
-#import vaex_extended
-#vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
+import vaex_extended
+vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
 # Custom colormap
 newc = np.ones((11, 4))
@@ -78,7 +78,7 @@ class MonetaPlot():
 
 
     # Initialize accessRanges dictionary in bqplot backend with file info
-    '''from vaex_extended.jupyter.bqplot import accessRanges
+    from vaex_extended.jupyter.bqplot import accessRanges
     accessRanges.clear()
     if tag_path:
       for i in range(numTags):
@@ -89,7 +89,7 @@ class MonetaPlot():
         rangeData.update({"startIndex" : startIndices[i]})
         rangeData.update({"endIndex" : endIndices[i]})
         rangeData.update({"startAddr" : startAddresses[i]})
-        rangeData.update({"endAddr" : endAddresses[i]})'''
+        rangeData.update({"endAddr" : endAddresses[i]})
 
     #Define all selections here
     self.df.select(True, name='structures')
@@ -398,7 +398,7 @@ class MonetaPlot():
       m_split = mlines[0].split()
       logging.debug("Reading meta data: {}".format(m_split))
 
-    """vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])"""
+    vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
     from matplotlib.colors import to_hex
     legendLabel = HBox([Label(value='Legend',layout=cb_lyt), Label(value='R',layout=cp_lyt), Label(value='W',layout=cp_lyt)])
@@ -442,14 +442,12 @@ class MonetaPlot():
     #   plt.show()
     
     #replace checks2 with simple_legend to display the simple_legend over current legend
-    self.plot = self.df.widget.heatmap(self.df.index, self.df.Address)
-    display(self.plot)
-    #self.plot = self.df.plot_widget(self.df.index, self.df.Address, what='max(Access)',
-    #              colormap = custom_cmap, selection=[True],
-    #              backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
-    '''if tag_path:
+    self.plot = self.df.plot_widget(self.df.index, self.df.Address, what='max(Access)',
+                  colormap = custom_cmap, selection=[True],
+                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
+    if tag_path:
       for i in range(numTags):
-        tagChecks[i].children[1].on_click(self.plot.backend.zoomSection)'''
+        tagChecks[i].children[1].on_click(self.plot.backend.zoomSection)
           
     #display(checks)
 
