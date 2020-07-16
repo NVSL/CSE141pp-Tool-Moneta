@@ -256,44 +256,18 @@ def update_zoom_brush(self, *args):
 
                 if self.smart_zoom_toggle.value == True: 
                     addresses = self.dataset.Address.values
-
-                    x_min = max(0, int(x1))
-                    x_max = min(max(0, int(x2)), len(addresses) - 1)
-
-                    selection = addresses[x_min:x_max + 1]
-
-                    done_min = False;
-                    done_max = False;
-                    if len(selection):
-                        for i, j in zip(range (x_min, x_max + 1), range(x_max, x_min-1, -1)):
-                            curr_addr_min = addresses[i]
-                            curr_addr_max = addresses[j]
-                            if not done_min and y1 <= curr_addr_min and curr_addr_min <= y2:
-                                x_min = i
-                                done_min = True
-
-                            if not done_max and y1 <= curr_addr_max and curr_addr_max <= y2:
-                                x_max = j
-                                done_max = True
-
-                            if done_min and done_max:
-                                break;
-
-
-                    y_min = int(y1)
-                    y_max = int(y2)
-
-                    trimmed = list(filter(lambda val : y1 <= val and val <= y2, addresses[x_min:x_max + 1]))
-
-                    if len(trimmed):
-                        y_min = max(y_min, min(trimmed)) 
-                        y_max = min(y_max, max(trimmed))
-
-                else: 
-                    x_min = x1
-                    x_max = x2
-                    y_min = y1
-                    y_max = y2
+                    df = self.dataset
+                    res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+                    if res.count() != 0:
+                        x_min = res.index.values[0]
+                        x_max = res.index.values[-1]
+                        y_min = res.Address.min()[()]
+                        y_max = res.Address.max()[()]
+                    else:
+                        x_min = x1
+                        x_max = x2
+                        y_min = y1
+                        y_max = y2
 
 
                 # Fix for plot getting stuck at one value axis
