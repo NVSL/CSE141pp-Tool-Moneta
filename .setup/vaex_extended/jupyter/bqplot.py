@@ -195,18 +195,12 @@ def create_tools(self):
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
        
-        # Checkbox for toggling smart zoom
-        smart_zoom_lyt = widgets.Layout(display='flex', justify_content='center', height='100%')
-        self.smart_zoom_toggle = widgets.Checkbox(value=False, description='Use Smart "Zoom to selection"', indent=False)
-        self.smart_zoom_vbox = widgets.VBox([self.smart_zoom_toggle], layout=smart_zoom_lyt)
-
         # Controls to be added to menubar instead of sidebar 
         self.widget_menubar = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
                 self.widget_reset,
-                self.smart_zoom_vbox
             ])
         ])
 
@@ -254,21 +248,20 @@ def update_zoom_brush(self, *args):
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                
 
-                if self.smart_zoom_toggle.value == True: 
-                    addresses = self.dataset.Address.values
-                    df = self.dataset
-                    res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
-                    if res.count() != 0:
-                        x_min = res.index.values[0]
-                        x_max = res.index.values[-1]
-                        y_min = res.Address.min()[()]
-                        y_max = res.Address.max()[()]
-                    else:
-                        x_min = x1
-                        x_max = x2
-                        y_min = y1
-                        y_max = y2
+                x_min = x1;
+                x_max = x2;
+                y_min = y1;
+                y_min = y2;
 
+                addresses = self.dataset.Address.values
+                df = self.dataset
+
+                res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+                if res.count() != 0:
+                    x_min = res.index.values[0]
+                    x_max = res.index.values[-1]
+                    y_min = res.Address.min()[()]
+                    y_max = res.Address.max()[()]
 
                 # Fix for plot getting stuck at one value axis
                 if (x_max-x_min < 1):
