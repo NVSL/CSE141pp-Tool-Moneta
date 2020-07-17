@@ -264,11 +264,11 @@ def update_zoom_brush(self, *args):
                     y_max = res.Address.max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if (x_max-x_min < 1):
+                if (x_max - x_min < 1):
                     x_min -= (1 + x_min - x_max) / 2
                     x_max = x_min + 1
 
-                if (y_max-y_min < 1):
+                if (y_max - y_min < 1):
                     y_min -= (1 + y_min - y_max) / 2
                     y_max = y_min + 1
                 
