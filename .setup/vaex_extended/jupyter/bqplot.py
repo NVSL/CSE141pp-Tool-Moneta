@@ -286,6 +286,7 @@ def update_zoom_brush(self, *args):
                     with self.scale_y.hold_trait_notifications():
                         self.scale_x.min, self.scale_x.max = float(x_min), float(x_max)
                         self.scale_y.min, self.scale_y.max = float(y_min), float(y_max)
+
                 self._update_limits()      
             self.figure.interaction = self.zoom_brush
             # Delete selection
