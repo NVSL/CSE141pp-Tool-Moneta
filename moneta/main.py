@@ -96,7 +96,8 @@ select_widget = SelectMultiple(
     options=[],
     value=[],
     description='Trace:',
-    layout=WIDGET_LAYOUT
+    layout=WIDGET_LAYOUT,
+    rows=10
 )
 
 df = 0
@@ -274,8 +275,8 @@ def gen_trace_controls():
     if verify_input(*widget_vals):
       run_pintool(*widget_vals)
       read_out_dir()
-
-      print("Done generating trace")
+      print("Done generating trace: {}".format(trace_out_widget.value))
+    
     logging.debug("Input Cache lines: {}".format(cache_lines_widget.value))
 
   gen_button.on_click(gen_trace)
