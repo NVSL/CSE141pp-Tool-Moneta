@@ -247,38 +247,31 @@ def update_zoom_brush(self, *args):
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                
-
-                x_min = x1;
-                x_max = x2;
-                y_min = y1;
-                y_min = y2;
-
-                addresses = self.dataset.Address.values
                 df = self.dataset
 
                 res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
                 if res.count() != 0:
-                    x_min = res.index.values[0]
-                    x_max = res.index.values[-1]
-                    y_min = res.Address.min()[()]
-                    y_max = res.Address.max()[()]
+                    x1 = res.index.values[0]
+                    x2 = res.index.values[-1]
+                    y1 = res.Address.min()[()]
+                    y2 = res.Address.max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if (x_max - x_min < 1):
-                    x_min -= (1 + x_min - x_max) / 2
-                    x_max = x_min + 1
+                if (x2 - x1 < 1):
+                    x1 -= (1 + x1 - x2) / 2
+                    x2 = x1 + 1
 
-                if (y_max - y_min < 1):
-                    y_min -= (1 + y_min - y_max) / 2
-                    y_max = y_min + 1
+                if (y2 - y1 < 1):
+                    y1 -= (1 + y1 - y2) / 2
+                    y2 = y1 + 1
                 
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
-                        self.scale_x.min, self.scale_x.max = float(x_min), float(x_max)
-                        self.scale_y.min, self.scale_y.max = float(y_min), float(y_max)
+                        self.scale_x.min, self.scale_x.max = x1, x2
+                        self.scale_y.min, self.scale_y.max = y1, y2
 
                 self._update_limits()      
             self.figure.interaction = self.zoom_brush
