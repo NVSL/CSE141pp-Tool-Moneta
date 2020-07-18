@@ -194,13 +194,49 @@ def create_tools(self):
         pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
-       
+
+
+
+
+        # Undo/redo zoom
+        self.button_undo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['undo'])
+                                ])
+        self.widget_undo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_undo
+        }], children=[
+            "Undo Zoom"
+        ])
+        self.button_undo.on_event('click', lambda *ignore: self.undo_zoom())
+
+        self.button_redo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['redo'])
+                                ])
+        self.widget_redo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_redo
+        }], children=[
+            "Redo Zoom"
+        ])
+        self.button_redo.on_event('click', lambda *ignore: self.redo_zoom())
+
+        self.button_undo.disabled = True;       
+        self.button_redo.disabled = True;       
+        self.undo = []
+        self.redo = []
+
+
         # Controls to be added to menubar instead of sidebar 
         self.widget_menubar = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
                 self.widget_reset,
+                self.widget_undo,
+                self.widget_redo
             ])
         ])
 
@@ -246,7 +282,8 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
-               
+
+
                 df = self.dataset
 
                 res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
@@ -270,8 +307,10 @@ def update_zoom_brush(self, *args):
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
-                        self.scale_x.min, self.scale_x.max = x1, x2
-                        self.scale_y.min, self.scale_y.max = y1, y2
+                        self.redo = []
+                        self.save_limits(self.undo)
+                        self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                        self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
                 self._update_limits()      
             self.figure.interaction = self.zoom_brush
@@ -301,3 +340,41 @@ def zoomSection(self, change):
         self.scale_y.min = y_min
         self.scale_y.max = y_max
 
+
+@extend_class(BqplotBackend)
+def save_limits(self, undo_redo):
+    undo_redo.append([[self.scale_x.min, self.scale_y.min], [self.scale_x.max, self.scale_y.max]])
+    self.update_undo_redo()
+
+
+@extend_class(BqplotBackend)
+def update_undo_redo(self):
+    self.button_undo.disabled = False if len(self.undo) else True;
+    self.button_redo.disabled = False if len(self.redo) else True;
+
+
+@extend_class(BqplotBackend)
+@debounced(0.5, method=True)
+def undo_zoom(self):
+    (x1, y1), (x2, y2) = self.undo.pop()
+    self.save_limits(self.redo)
+
+    with self.scale_x.hold_trait_notifications():
+        with self.scale_y.hold_trait_notifications():
+            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+    self._update_limits()      
+
+@extend_class(BqplotBackend)
+@debounced(0.5, method=True)
+def redo_zoom(self):
+    (x1, y1), (x2, y2) = self.redo.pop()
+    self.save_limits(self.undo)
+
+    with self.scale_x.hold_trait_notifications():
+        with self.scale_y.hold_trait_notifications():
+            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+    self._update_limits()      
