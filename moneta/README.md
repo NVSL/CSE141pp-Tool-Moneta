@@ -67,6 +67,8 @@ Input your desired values and press `Generate Trace`. This will create a trace i
 
 If **Trace Everything** is enabled, the name of your trace can be found with parentheses surrounding it indicating that it's a full trace.
 
+If you find that the trace is taking a very long time to load, or the kernel is consistently dying, then start small with the lines of output. Again, the default is 100,000,000 but try 1,000,000 and generate the trace again. 
+
 ## Analyzing a Trace
 
 From the box on the right, select your desired trace and press `Load Trace`.
