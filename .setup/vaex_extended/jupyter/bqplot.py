@@ -3,7 +3,6 @@ from vaex_extended.utils.decorator import *
 from vaex.jupyter.plot import PlotBase as PlotBase
 import vaex_extended
 import copy
-
 # # alternate wrapper version in case the function should be left alone
 # def fix_image_flipping(func):
 #     from functools import wraps
@@ -37,12 +36,8 @@ def _update_limits(self, *args):
     with self.output:
         limits = copy.deepcopy(self.limits)
         limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
+        self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
         self.limits = limits
-        left = max(0, int(limits[0][0]))
-        right = max(0, int(limits[0][1]))
-        # print(left, right)
-        #sliced = self.dataset[left:right]
-        #print(len(sliced))
         
 
 @extend_class(BqplotBackend)
@@ -115,7 +110,7 @@ def create_tools(self):
             with self.zoom_brush.hold_trait_notifications():
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
-            self._update_limits()
+            self._update_limits() # is this necessary?
 
         
         self.button_reset.on_event('click', lambda *ignore: reset())
@@ -259,7 +254,7 @@ def update_zoom_brush(self, *args):
                             y2=y1+1
                         self.scale_x.min, self.scale_x.max = x1, x2
                         self.scale_y.min, self.scale_y.max = y1, y2
-                self._update_limits()      
+                self._update_limits() # is this necessary?
             self.figure.interaction = self.zoom_brush
             # Delete selection
             with self.zoom_brush.hold_trait_notifications():
