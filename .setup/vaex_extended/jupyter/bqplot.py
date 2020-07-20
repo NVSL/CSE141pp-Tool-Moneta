@@ -56,6 +56,70 @@ def update_image(self, rgb_image):
         self.image.y = (self.scale_y.min, self.scale_y.max)
 
 @extend_class(BqplotBackend)
+def create_widget(self, output, plot, dataset, limits):
+    self.plot = plot
+    self.output = output
+    self.dataset = dataset
+    self.limits = np.array(limits).tolist()
+    def fix(v):
+        # bqplot is picky about float and numpy scalars
+        if hasattr(v, 'item'):
+            return v.item()
+        else:
+            return v
+    self.scale_x = bqplot.LinearScale(min=fix(limits[0][0]), max=fix(limits[0][1]), allow_padding=False)
+    self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
+    self.scale_rotation = bqplot.LinearScale(min=0, max=1)
+    self.scale_size = bqplot.LinearScale(min=0, max=1)
+    self.scale_opacity = bqplot.LinearScale(min=0, max=1)
+    self.scales = {'x': self.scale_x, 'y': self.scale_y, 'rotation': self.scale_rotation,
+                   'size': self.scale_size, 'opacity': self.scale_opacity}
+
+    margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 5}
+    self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
+    self.figure.layout.min_width = '800px'
+    self.figure.layout.min_height = '600px'
+    self.figure.layout.max_height = '600px'
+    plt.figure(fig=self.figure)
+    self.figure.padding_y = 0
+    x = np.arange(0, 10)
+    y = x ** 2
+    self._fix_scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales)
+    self._fix_scatter.visible = False
+    # self.scale_rotation = self.scales['rotation']
+    src = ""  # vaex.image.rgba_to_url(self._create_rgb_grid())
+    # self.scale_x.min, self.scale_x.max = self.limits[0]
+    # self.scale_y.min, self.scale_y.max = self.limits[1]
+    self.core_image = widgets.Image(format='png')
+    self.core_image_fix = widgets.Image(format='png')
+
+    self.image = bqplot.Image(scales=self.scales, image=self.core_image)
+    self.figure.marks = self.figure.marks + [self.image]
+    # self.figure.animation_duration = 500
+    self.figure.layout.width = '100%'
+    self.figure.layout.max_width = '800px'
+    self.scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales, size=x, marker="arrow")
+    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
+    self.figure.interaction = self.panzoom
+    for axes in self.figure.axes:
+        axes.grid_lines = 'none'
+        axes.color = axes.grid_color = axes.label_color = blackish
+    self.figure.axes[0].label = str(plot.x)
+    self.figure.axes[1].label = str(plot.y)
+    self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+
+    self.scale_x.observe(self._update_limits, "min")
+    self.scale_x.observe(self._update_limits, "max")
+    self.scale_y.observe(self._update_limits, "min")
+    self.scale_y.observe(self._update_limits, "max")
+    self.observe(self._update_limits, "limits")
+
+    self.image.observe(self._on_view_count_change, 'view_count')
+    self.control_widget = widgets.VBox()
+    self.widget = widgets.VBox(children=[self.figure])
+    self.create_tools()
+
+@extend_class(BqplotBackend)
 def create_tools(self):
     self.tools = []
     tool_actions = []
