@@ -120,7 +120,7 @@ class Plot2dDefault(Plot2dDefault):
                         val = fgrid[0][row][col]
                         if val != 0:
                             for i in range(row, max(-1, row-new_size), -1):
-                                for j in range(col, min(cols-1,col+new_size)):
+                                for j in range(col, min(cols,col+new_size)):
                                     if fgrid[0][i][j] == 0:
                                         n_fgrid[0][i][j] = val
                 fgrid = n_fgrid
