@@ -11,7 +11,8 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
-sys.path.append('../.setup/')
+MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
+sys.path.append(MONETA_BASE_DIR + ".setup/")
 
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
@@ -45,9 +46,9 @@ BUTTON_STYLE = {'button_color': 'lightgray'}
 
 DEFAULT_TRACE_DROP = 'Select a trace to load'
 
-PIN_DIR  = "/pin/pin.sh"
-TOOL_DIR = "../.setup/trace_tool.so"
-OUTPUT_DIR = "./.output/"
+PIN_PATH  = "/pin/pin.sh"
+TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
+OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
 
 #Enumerations
 COMP_W_MISS = 6
@@ -189,13 +190,24 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   args_string = "" if len(e_args) == 0 else " " + " ".join(e_args) 
   print("Running \"{}{}\", Cache Lines={}, and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file, args_string, c_lines, c_block, m_lines, o_name))
 
+
+  dir_delimiter_index = e_file.rfind("/")
+  if (dir_delimiter_index == -1):
+    e_file = "./" + e_file
+    dir_delimiter_index = 1
+
+  curr_dir = os.getcwd()
+  exec_dir = e_file[0:dir_delimiter_index + 1]
+  exec_name = "./" + e_file[dir_delimiter_index + 1:len(e_file)]
+  os.chdir(exec_dir)
+    
   args = [
-      PIN_DIR,
+      PIN_PATH,
       "-ifeellucky",
       "-injection",
       "child",
       "-t",
-      TOOL_DIR,
+      TOOL_PATH,
       "-o",
       o_name,
       "-c",
@@ -207,13 +219,17 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
       "-f",
       str(is_full_trace_int),
       "--",
-      e_file,
+      exec_name,
       *e_args
   ]
+  
+  logging.debug("Stripped Executable: {}".format(exec_name))
+  logging.debug("Running in dir: {}".format(os.getcwd()))
   sub_output = subprocess.run(args, capture_output=True)
   sub_stderr = sub_output.stderr.decode('utf-8')
   logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
 
+  os.chdir(curr_dir)
 
   if sub_stderr.startswith("Error"):
     print(sub_stderr)
@@ -244,7 +260,7 @@ def gen_trace_controls():
     if args.r:
       refresh()
     exec_inputs = executable_widget.value.split(" ")
-    exec_file = exec_inputs[0]
+    exec_file = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
     
     widget_vals = [cache_lines_widget.value,
@@ -499,10 +515,17 @@ def generate_plot(trace_name):
     missCount = curReadMisses.count() + curWriteMisses.count()
     compMissCount = curCompReadMisses.count() + curCompWriteMisses.count()
     totalCount = hitCount + missCount + compMissCount
-    
-    currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
-    currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
-    currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+   
+    if totalCount: 
+        currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
+        currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
+        currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+    else:
+        currentHitRate.value = "Hit Rate: N/A"
+        currentCapMissRate.value = "Capacity Miss Rate: N/A"
+        currentCompMissRate.value = "Compulsory Miss Rate: N/A"
+        
+
   tagChecks = []
   tagChecksBox = []
   if tag_path:
@@ -719,7 +742,7 @@ def generate_plot(trace_name):
   if tag_path:
     for i in range(numTags):
       tagChecks[i].children[1].on_click(plot.backend.zoomSection)
-        
+
   display(checks)
 
   def selectDF(inDF):
@@ -756,7 +779,7 @@ def generate_plot(trace_name):
   def depSubPlot(b):
       df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=plot.selection, limits=plot.limits,type='custom_plot1')
 
-
+  
   dSubPlotButton = Button(
           description='Create Dependent Subplot',
           disabled=False,
