@@ -318,6 +318,16 @@ def update_zoom_brush(self, *args):
                     y2 = y1 + 1
                 
 
+                # Add a 5% padding so points are directly on edge
+                padding_x = (x2 - x1) * 0.05
+                padding_y = (y2 - y1) * 0.05
+
+
+                x1 = x1 - padding_x
+                x2 = x2 + padding_x
+                y1 = y1 - padding_y
+                y2 = y2 + padding_y
+
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
