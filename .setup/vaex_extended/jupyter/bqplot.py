@@ -19,6 +19,10 @@ PAN_ZOOM = "pan/zoom"
 ZOOM_SELECT = 'zoom select'
 SELECT = "select"
 
+ZOOM_UNDO = "undo"
+ZOOM_REDO = "redo"
+ZOOM_HISTORY_SIZE = 50
+
 @extend_class(BqplotBackend)
 def __init__(self, figure=None, figure_key=None):
     self._dirty = False
@@ -35,6 +39,17 @@ def __init__(self, figure=None, figure_key=None):
 @debounced(0.5, method=True)
 def _update_limits(self, *args):
     with self.output:
+
+
+        if len(args) and args[0] == ZOOM_UNDO:
+            self.save_limits(self.redo)
+        elif len(args) and args[0] == ZOOM_REDO:
+            self.save_limits(self.undo)
+        else:
+            self.redo.clear()
+            self.save_limits(self.undo)
+
+
         limits = copy.deepcopy(self.limits)
         limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
         self.limits = limits
@@ -307,8 +322,6 @@ def update_zoom_brush(self, *args):
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
-                        self.redo = []
-                        self.save_limits(self.undo)
                         self.scale_x.min, self.scale_x.max = float(x1), float(x2)
                         self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
@@ -343,7 +356,11 @@ def zoomSection(self, change):
 
 @extend_class(BqplotBackend)
 def save_limits(self, undo_redo):
-    undo_redo.append([[self.scale_x.min, self.scale_y.min], [self.scale_x.max, self.scale_y.max]])
+    undo_redo.append(self.limits)
+
+    if(len(self.undo) > ZOOM_HISTORY_SIZE):
+        self.undo.pop(0)
+
     self.update_undo_redo()
 
 
@@ -356,25 +373,23 @@ def update_undo_redo(self):
 @extend_class(BqplotBackend)
 @debounced(0.5, method=True)
 def undo_zoom(self):
-    (x1, y1), (x2, y2) = self.undo.pop()
-    self.save_limits(self.redo)
+    (x1, x2), (y1, y2) = self.undo.pop()
 
     with self.scale_x.hold_trait_notifications():
         with self.scale_y.hold_trait_notifications():
             self.scale_x.min, self.scale_x.max = float(x1), float(x2)
             self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
-    self._update_limits()      
+    self._update_limits(ZOOM_UNDO)      
 
 @extend_class(BqplotBackend)
 @debounced(0.5, method=True)
 def redo_zoom(self):
-    (x1, y1), (x2, y2) = self.redo.pop()
-    self.save_limits(self.undo)
+    (x1, x2), (y1, y2) = self.redo.pop()
 
     with self.scale_x.hold_trait_notifications():
         with self.scale_y.hold_trait_notifications():
             self.scale_x.min, self.scale_x.max = float(x1), float(x2)
             self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
-    self._update_limits()      
+    self._update_limits(ZOOM_REDO)      
