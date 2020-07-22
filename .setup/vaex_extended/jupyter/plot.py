@@ -73,9 +73,59 @@ class Plot2dDefault(Plot2dDefault):
                 for i in range(grid.shape[0]):
                     fgrid[i] = vaex.grids.gf(fgrid[i], self.smooth_post)
             y_lo, y_hi = self.backend.limits[1]
+            x_lo, x_hi = self.backend.limits[0]
             cache_size = vaex_extended.vaex_cache_size
-            diff = y_hi - y_lo
-            cache_fraction = min(1, cache_size/diff)
+            diffy = y_hi - y_lo
+            diffx = x_hi - x_lo
+            """
+            if (diff < 100 and x_hi - x_lo < 100):
+                row = col = 0
+                rows = len(fgrid[0])
+                cols = len(fgrid[0][0])
+                n_fgrid = copy.deepcopy(fgrid)
+                for row in range(rows):
+                    for col in range(cols):
+                        val = fgrid[0][row][col]
+                        if val != 0:
+                            if row > 0:
+                                if fgrid[0][row-1][col] == 0:
+                                    n_fgrid[0][row-1][col] = val
+                                if col > 0 and fgrid[0][row-1][col-1] == 0:
+                                    n_fgrid[0][row-1][col-1] = val
+                                if col < cols-1 and fgrid[0][row-1][col+1] == 0:
+                                    n_fgrid[0][row-1][col+1] = val
+                            if row < rows-1:
+                                if fgrid[0][row+1][col] == 0:
+                                    n_fgrid[0][row+1][col] = val
+                                if col > 0 and fgrid[0][row+1][col-1] == 0:
+                                    n_fgrid[0][row+1][col-1] = val
+                                if col < cols-1 and fgrid[0][row+1][col+1] == 0:
+                                    n_fgrid[0][row+1][col+1] = val
+                            if col > 0 and fgrid[0][row][col-1] == 0:
+                                n_fgrid[0][row][col-1] = val
+                            if col < cols-1 and fgrid[0][row][col+1] == 0:
+                                n_fgrid[0][row][col+1] = val
+                fgrid = n_fgrid
+            """
+            new_size = 0
+            curr_scale = max(diffx, diffy)
+            new_size = int(min(8, self.shape//curr_scale))
+            if new_size > 1:
+                row = col = 0
+                rows = len(fgrid[0])
+                cols = len(fgrid[0][0])
+                n_fgrid = copy.deepcopy(fgrid)
+                for row in range(rows-1, -1, -1):
+                    for col in range(cols):
+                        val = fgrid[0][row][col]
+                        if val != 0:
+                            for i in range(row, max(-1, row-new_size), -1):
+                                for j in range(col, min(cols,col+new_size)):
+                                    if fgrid[0][i][j] == 0:
+                                        n_fgrid[0][i][j] = val
+                fgrid = n_fgrid
+
+            cache_fraction = min(1, cache_size/diffy)
             lim = cache_fraction*fgrid.shape[1]
             for i in range(int(lim)):
                 fgrid[0][0][i] = 2.4
