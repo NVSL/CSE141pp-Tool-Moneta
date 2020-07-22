@@ -6,35 +6,30 @@ RUN apt-get install -y vim
 RUN apt-get install -y less
 RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
+RUN apt-get install -y screen
 
-WORKDIR /setup
+ARG DIR_MONETA=/home/jovyan/work/moneta
+ARG DIR_SETUP=/home/jovyan/work/.setup
 
-# Install pintool and add to PATH
-RUN wget -q https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz -O pintool.tar.gz
-RUN tar -xzf pintool.tar.gz
-RUN echo "This may take a while..." && mv pin-2.14-71313-gcc.4.4.7-linux pintool
-RUN rm pintool.tar.gz
+WORKDIR /
 
+# Install pintool and COPY to PATH
+# Fix PIN compilation (included in tar ball): https://chunkaichang.com/tool/pin-notes/
+ADD .setup/moneta_pintool.tar.gz /
 
-# Make directories for pintool executable and outfiles
-RUN mkdir /setup/converter
-RUN mkdir /setup/converter/outfiles
-ADD Setup/pin_macros.h /setup/pin_macros.h
-ADD Setup/trace_tool.so /setup/converter
-ADD Setup/vaex_extended_setup /setup/vaex_extended
-
-
-ENV PIN_ROOT=/setup/pintool
-RUN echo "alias pin='/setup/pintool/pin.sh -ifeellucky -injection child'" >> ~/.bashrc
-
-# Fix PIN compilation: https://chunkaichang.com/tool/pin-notes/
-ADD Setup/pin_makefile.unix.config /setup/pintool/source/tools/Config/makefile.unix.config
-# Use HDF5 library with PINtool
-ADD Setup/pin_makefile.default.rules /setup/pintool/source/tools/Config/makefile.default.rules
+ENV PIN_ROOT=/pin
 
 # Install python libraries
-ADD Setup/requirements.txt /setup
+COPY .setup/requirements.txt ${DIR_SETUP}/
+WORKDIR ${DIR_SETUP}
 RUN pip install -r requirements.txt
 
+# Create aliases for Pin and Moneta
+COPY .setup/bashrc_aliases ${DIR_SETUP}/
 
-WORKDIR /home/jovyan/work/memorytrace
+# Fix Windows to Linux file endings
+RUN sed -i 's/\r$//' bashrc_aliases 
+RUN cat bashrc_aliases >> ~/.bashrc
+
+WORKDIR ${DIR_MONETA}
+
