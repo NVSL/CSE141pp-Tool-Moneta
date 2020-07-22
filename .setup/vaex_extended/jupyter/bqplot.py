@@ -174,7 +174,7 @@ def create_tools(self):
             with self.zoom_brush.hold_trait_notifications():
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
-            self._update_limits() # is this necessary?
+            self._update_limits()
 
         
         self.button_reset.on_event('click', lambda *ignore: reset())
@@ -331,7 +331,7 @@ def update_zoom_brush(self, *args):
                     with self.scale_y.hold_trait_notifications():
                         self.scale_x.min, self.scale_x.max = float(x1), float(x2)
                         self.scale_y.min, self.scale_y.max = float(y1), float(y2)
-                self._update_limits() # is this necessary?
+                self._update_limits()
             self.figure.interaction = self.zoom_brush
             # Delete selection
             with self.zoom_brush.hold_trait_notifications():
