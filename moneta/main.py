@@ -12,6 +12,7 @@ from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
+MONETA_TOOL_DIR = os.path.expanduser("~") + "/work/moneta"
 sys.path.append(MONETA_BASE_DIR + ".setup/")
 
 import vaex_extended
@@ -38,7 +39,7 @@ if not args.log:
   logging.disable(logging.CRITICAL) # To disable logger
 
 # Constants
-WIDGET_DESC_PROP = {'description_width': '150px'}
+WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 BUTTON_LAYOUT = Layout(margin='15px 15px 0 15px',
                        height='40px', width='90%', border='1px solid black')
@@ -133,7 +134,7 @@ def input_text_factory(placeholder, description):
          )
 
 
-def verify_input(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace):
+def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
   logging.info("Verifying pintool arguments")
 
   if (c_lines <= 0 or c_block <= 0 or m_lines <= 0):
@@ -152,18 +153,26 @@ def verify_input(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trac
     print("Error: Output name can only contain alphanumeric characters and underscore")
     return False
 
+  if (not os.path.isdir(cwd_path)):
+    print("Directory '{}' not found".format(cwd_path))
+    return False
+
+  os.chdir(cwd_path)
   if (not os.path.isfile(e_file)):
     print("Executable '{}' not found".format(e_file))
+    os.chdir(MONETA_TOOL_DIR)
     return False
 
   if(not os.access(e_file, os.X_OK)):
     print("\"{}\" is not an executable".format(e_file))
+    os.chdir(MONETA_TOOL_DIR)
     return False
-
+  os.chdir(MONETA_TOOL_DIR)
+    
   return True
 
 
-def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace):
+def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
   logging.info("Running pintool")
   global df
   global tag_map
@@ -189,18 +198,8 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
   is_full_trace_int = 1 if is_full_trace else 0
 
   args_string = "" if len(e_args) == 0 else " " + " ".join(e_args) 
-  print("Running \"{}{}\", Cache Lines={}, and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file, args_string, c_lines, c_block, m_lines, o_name))
+  print("Running \"{}{}\" in Directory \"{}\" with Cache Lines={} and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file,  args_string, cwd_path, c_lines, c_block, m_lines, o_name))
 
-
-  dir_delimiter_index = e_file.rfind("/")
-  if (dir_delimiter_index == -1):
-    e_file = "./" + e_file
-    dir_delimiter_index = 1
-
-  curr_dir = os.getcwd()
-  exec_dir = e_file[0:dir_delimiter_index + 1]
-  exec_name = "./" + e_file[dir_delimiter_index + 1:len(e_file)]
-  os.chdir(exec_dir)
     
   args = [
       PIN_PATH,
@@ -220,17 +219,21 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
       "-f",
       str(is_full_trace_int),
       "--",
-      exec_name,
+      e_file,
       *e_args
   ]
   
-  logging.debug("Stripped Executable: {}".format(exec_name))
+  os.chdir(cwd_path)
+
+  logging.debug("Executable: {}".format(e_file))
   logging.debug("Running in dir: {}".format(os.getcwd()))
   sub_output = subprocess.run(args, capture_output=True)
+  sub_stdout = sub_output.stdout.decode('utf-8')
   sub_stderr = sub_output.stderr.decode('utf-8')
+  logging.debug("Raw pintool stdout: \n{}".format(sub_stdout))
   logging.debug("Raw pintool stderr: \n{}".format(sub_stderr))
 
-  os.chdir(curr_dir)
+  os.chdir(MONETA_TOOL_DIR)
 
   if sub_stderr.startswith("Error"):
     print(sub_stderr)
@@ -241,8 +244,9 @@ def gen_trace_controls():
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
   maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
-  executable_widget = input_text_factory('e.g. ./Examples/build/sorting', 'Executable Path:')
-  trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output')
+  cwd_widget = input_text_factory('e.g. ./Examples/build/', 'Working Directory (Optional):')
+  exec_path_widget = input_text_factory('e.g. ./sorting', 'Executable Path and Args:')
+  trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output:')
 
   full_trace = Checkbox(description="Trace everything (Ignore tags)?",
                         value=False, indent=False)
@@ -251,7 +255,8 @@ def gen_trace_controls():
   gen_trace_inputs = VBox([cache_lines_widget,
                            cache_block_widget,
                            maximum_lines_widget,
-                           executable_widget,
+                           cwd_widget,
+                           exec_path_widget,
                            trace_out_widget,
                            full_trace],
                            layout=Layout(width="100%"))
@@ -260,14 +265,24 @@ def gen_trace_controls():
   def gen_trace(_):
     if args.r:
       refresh()
-    exec_inputs = executable_widget.value.split(" ")
-    exec_file = os.path.expanduser(exec_inputs[0])
-    exec_args = exec_inputs[1:]
     
+    exec_inputs = exec_path_widget.value.split(" ")
+    exec_file_path = os.path.expanduser(exec_inputs[0])
+    exec_args = exec_inputs[1:]
+    if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
+      exec_file_path = "./" + exec_file_path; 
+
+    cwd_path = cwd_widget.value
+    if not (cwd_path.startswith("/") or cwd_path.startswith("./")):
+      cwd_path = "./" + cwd_path;
+    if cwd_path.endswith("/"):
+      cwd_path = cwd_path[0:-1]
+
     widget_vals = [cache_lines_widget.value,
                    cache_block_widget.value,
                    maximum_lines_widget.value,
-                   exec_file,
+                   cwd_path,
+                   exec_file_path,
                    exec_args,
                    trace_out_widget.value,
                    full_trace.value]
