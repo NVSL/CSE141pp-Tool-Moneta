@@ -109,7 +109,7 @@ class Plot2dDefault(Plot2dDefault):
             """
             new_size = 0
             curr_scale = max(diffx, diffy)
-            new_size = int(min(8, self.shape//curr_scale))
+            new_size = int(min(32, self.shape//curr_scale))
             if new_size > 1:
                 row = col = 0
                 rows = len(fgrid[0])
