@@ -1,6 +1,11 @@
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
 **/*.py[cod]
+moneta/Examples/build/*
+moneta/.output/*
 
 # IPython checkpoints
 .ipynb_checkpoints
+
+# Exclusions
+!.gitkeep
