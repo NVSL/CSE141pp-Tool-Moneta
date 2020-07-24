@@ -25,7 +25,7 @@ def __init__(self, figure=None, figure_key=None):
     self.figure_key = figure_key
     self.figure = figure
     self.signal_limits = vaex.events.Signal()
-
+    
     self._cleanups = []
     
     self.dataset_original = None
@@ -200,7 +200,7 @@ def create_tools(self):
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
-                self.widget_reset
+                self.widget_reset,
             ])
         ])
 
@@ -221,7 +221,6 @@ def create_tools(self):
             button.on_click(self.zoomSection)        
 
         self.plot.add_control_widget(self.zoomButtonList)
-
 
 
 
@@ -247,18 +246,33 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
+               
+                df = self.dataset
+
+                res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+                if res.count() != 0:
+                    x1 = res.index.values[0]
+                    x2 = res.index.values[-1]
+                    y1 = res.Address.min()[()]
+                    y2 = res.Address.max()[()]
+
+                # Fix for plot getting stuck at one value axis
+                if (x2 - x1 < 1):
+                    x1 -= (1 + x1 - x2) / 2
+                    x2 = x1 + 1
+
+                if (y2 - y1 < 1):
+                    y1 -= (1 + y1 - y2) / 2
+                    y2 = y1 + 1
+                
+
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
-                        if (x2-x1 < 1):
-                            x1-=(1+x1-x2)/2
-                            x2=x1+1
-                        if (y2-y1 < 1):
-                            y1-=(1+y1-y2)/2
-                            y2=y1+1
-                        self.scale_x.min, self.scale_x.max = x1, x2
-                        self.scale_y.min, self.scale_y.max = y1, y2
+                        self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                        self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
                 self._update_limits()      
             self.figure.interaction = self.zoom_brush
             # Delete selection
@@ -275,15 +289,15 @@ def zoomSection(self, change):
 
     rangeData = accessRanges[change.tooltip]    
 
-    xmin = rangeData['startIndex']
-    xmax = rangeData['endIndex']
-    ymin = rangeData['startAddr']
-    ymax = rangeData['endAddr']
+    x_min = rangeData['startIndex']
+    x_max = rangeData['endIndex']
+    y_min = rangeData['startAddr']
+    y_max = rangeData['endAddr']
 
     with self.scale_x.hold_trait_notifications():
-        self.scale_x.min = xmin
-        self.scale_x.max = xmax
+        self.scale_x.min = x_min
+        self.scale_x.max = x_max
     with self.scale_y.hold_trait_notifications():
-        self.scale_y.min = ymin
-        self.scale_y.max = ymax
+        self.scale_y.min = y_min
+        self.scale_y.max = y_max
 
