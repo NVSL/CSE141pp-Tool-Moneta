@@ -69,15 +69,16 @@ def create_widget(self, output, plot, dataset, limits):
             return v
     self.scale_x = bqplot.LinearScale(min=fix(limits[0][0]), max=fix(limits[0][1]), allow_padding=False)
     self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
+    self.scale_z = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
     self.scale_rotation = bqplot.LinearScale(min=0, max=1)
     self.scale_size = bqplot.LinearScale(min=0, max=1)
     self.scale_opacity = bqplot.LinearScale(min=0, max=1)
-    self.scales = {'x': self.scale_x, 'y': self.scale_y, 'rotation': self.scale_rotation,
+    self.scales = {'x': self.scale_x, 'y': self.scale_y, 'z': self.scale_z, 'rotation': self.scale_rotation,
                    'size': self.scale_size, 'opacity': self.scale_opacity}
 
     margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 5}
     self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
-    self.figure.layout.min_width = '800px'
+    self.figure.layout.min_width = '700px'
     self.figure.layout.min_height = '600px'
     self.figure.layout.max_height = '600px'
     plt.figure(fig=self.figure)
@@ -97,7 +98,7 @@ def create_widget(self, output, plot, dataset, limits):
     self.figure.marks = self.figure.marks + [self.image]
     # self.figure.animation_duration = 500
     self.figure.layout.width = '100%'
-    self.figure.layout.max_width = '800px'
+    self.figure.layout.max_width = '700px'
     self.scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales, size=x, marker="arrow")
     self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
     self.figure.interaction = self.panzoom
@@ -107,6 +108,20 @@ def create_widget(self, output, plot, dataset, limits):
     self.figure.axes[0].label = str(plot.x)
     self.figure.axes[1].label = str(plot.y)
     self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+    #self.figure.axes[1].side='right'
+    #self.figure.axes.append(bqplot.Axis(color='#666', grid_color='#666', grid_lines='none', label='Z', label_color='#666', scale=self.figure.axes[1].scale, side='right', orientation='vertical'))
+    val_copy = bqplot.Axis(color='#666', grid_color='#666', grid_lines='none', label='Z', label_color='#666', scale=self.figure.axes[1].scale, side='right', orientation='vertical')
+    val_copy.tick_format = self.figure.axes[1].tick_format
+    val_copy.num_ticks = self.figure.axes[1].num_ticks
+    val_copy.offset = self.figure.axes[1].offset
+    val_copy.visible = self.figure.axes[1].visible
+    #val_copy = copy.deepcopy(self.figure.axes[1])
+    self.figure.axes.append(val_copy)
+    print(type(self.figure.axes[0]))
+    print()
+    print(self.figure.axes)
+    print()
+    print(self.figure.axes[0])
 
     self.scale_x.observe(self._update_limits, "min")
     self.scale_x.observe(self._update_limits, "max")
