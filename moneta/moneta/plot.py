@@ -1,7 +1,8 @@
 from .imports import *
+from . import control
 
-#sys.path.append('/setup/') # For master branch
-sys.path.append('../') # For dev branch
+sys.path.append('../.setup/')
+
 import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ('vaex_extended.jupyter.bqplot', 'BqplotBackend')
 
@@ -43,7 +44,7 @@ class MonetaPlot():
   def generate_plot(self,trace_path, tag_path, meta_path, trace_name):
     """Plots interactive widget with all other UI controls for user interaction"""
     #global df
-    global tag_map
+    #global self.tag_map
     global curr_trace
     if curr_trace != "":
       refresh()
@@ -54,8 +55,8 @@ class MonetaPlot():
     self.df = vaex.open(trace_path)
     if tag_path:
       logging.debug("Found a tag map file")
-      tag_map = vaex.open(tag_path)
-      if len(tag_map.columns['Tag_Name']) == 0:
+      self.tag_map = vaex.open(tag_path)
+      if len(self.tag_map.columns['Tag_Name']) == 0:
         print("No tags in file")
         return
     else:
@@ -65,12 +66,12 @@ class MonetaPlot():
 
     if tag_path:
       #Set up name-tag mapping
-      namesFromFile = (tag_map.Tag_Name.values).tolist()
-      tagsFromFile = (tag_map.Tag_Value.values).tolist()
-      startIndices = (tag_map.First_Access.values).tolist()
-      startAddresses = (tag_map.Low_Address.values).tolist()
-      endIndices = (tag_map.Last_Access.values).tolist()
-      endAddresses = (tag_map.High_Address.values).tolist()
+      namesFromFile = (self.tag_map.Tag_Name.values).tolist()
+      tagsFromFile = (self.tag_map.Tag_Value.values).tolist()
+      startIndices = (self.tag_map.First_Access.values).tolist()
+      startAddresses = (self.tag_map.Low_Address.values).tolist()
+      endIndices = (self.tag_map.Last_Access.values).tolist()
+      endAddresses = (self.tag_map.High_Address.values).tolist()
     
       numTags = len(namesFromFile)
       logging.debug("Number of tags: {}".format(numTags))
@@ -110,18 +111,19 @@ class MonetaPlot():
     missCount = read_misses.count() + write_misses.count()
     compMissCount = comp_read_misses.count() + comp_write_misses.count()
 
+    accessCounts = [readCount, writeCount, hitCount, missCount, compMissCount]
+
     if tag_path:
       #Initialize selections
       for tag in tagsFromFile:
         self.df.select(self.df.Tag == tag, mode='or')
 
 
-    #Handle all boolean combinations of independent checkboxes here
+    """ #Handle all boolean combinations of independent checkboxes here
     def combineSelections():
       self.df.select("structures", mode='replace', name='total')
       self.df.select("rw", mode='and', name='total')
       self.df.select("hm", mode='and', name='total')
-
 
     def updateGraph(change):
       if(change.name == 'value'):
@@ -136,8 +138,6 @@ class MonetaPlot():
           self.df.select(self.df.Tag == tag, mode='subtract', name='structures')
           combineSelections()
       self.df.select('total')
-
-
 
     def updateReadWrite(change):
       if(change.name == 'value'):
@@ -175,8 +175,7 @@ class MonetaPlot():
           
       self.df.select('total')
 
-
-    def updateHitMiss(change):
+    def updateHitMiss(change): 
       if(change.name == 'value'):
 
         name = change.owner.description
@@ -208,7 +207,7 @@ class MonetaPlot():
           currentSelection[targetWrite - 1] = 0
           
       self.df.select('total')
-    
+    """
     def getCurrentView(frame):
       curView = frame[frame.index >= int(self.plot.limits[0][0])]
       curView = curView[curView.index <= int(self.plot.limits[0][1])+1]
@@ -233,6 +232,8 @@ class MonetaPlot():
       currentHitRate.value = "Hit Rate: "+f"{hitCount*100/totalCount:.2f}"+"%"
       currentCapMissRate.value = "Capacity Miss Rate: "+f"{missCount*100/totalCount:.2f}"+"%"
       currentCompMissRate.value = "Compulsory Miss Rate: "+f"{compMissCount*100/totalCount:.2f}"+"%"
+    
+    """ # Data Structures
     tagChecks = []
     tagChecksBox = []
     if tag_path:
@@ -263,7 +264,7 @@ class MonetaPlot():
 
     hmChecks = [Checkbox(description="Hits ("+str(hitCount)+")", value=True, disabled=False, indent=False),
                 Checkbox(description="Capacity Misses ("+str(missCount)+")", value=True, disabled=False, indent=False),
-                Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)]
+                Checkbox(description="Compulsory Misses ("+str(compMissCount)+")", value=True, disabled=False, indent=False)] """
 
     hmRates = [Label(value="Total Trace Stats:", layout=Layout(width='200px')),
               Label(value="Hit Rate: "+f"{hitCount*100/self.df.count():.2f}"+"%"),
@@ -284,7 +285,7 @@ class MonetaPlot():
             style={'button_color': 'lightgray'},
             )
       
-    if tag_path:
+    """if tag_path:
       for i in range(numTags):
         tagChecks[i].children[0].observe(updateGraph)
       
@@ -292,18 +293,18 @@ class MonetaPlot():
       check.observe(updateReadWrite)
       
     for check in hmChecks:
-      check.observe(updateHitMiss)
+      check.observe(updateHitMiss) """
     
     
     refreshRatesButton.on_click(updateStats)
       
-    if tag_path:
+    """ if tag_path:
       checks = VBox([HBox([VBox(tagChecks), VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
     else:
-      checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])])
+      checks = VBox([HBox([VBox(rwChecks), VBox(hmChecks)]), HBox([VBox(hmRates), VBox(currentHmRates), refreshRatesButton])]) """
 
 
-    def updateReadWrite2(change):
+    """ def updateReadWrite2(change):
         if(change.name == 'value'):
             
             name = change.owner.description
@@ -352,8 +353,9 @@ class MonetaPlot():
                 self.df.select(self.df.Access == targetRead, mode='subtract', name='hm')
                 self.df.select(self.df.Access == targetWrite, mode='subtract', name='hm')
                 combineSelections()
-        self.df.select('total')  
-    from matplotlib.colors import to_rgba
+        self.df.select('total')   """
+    
+    """ from matplotlib.colors import to_rgba
     def updateColorMap(change):
         if(change.name=='value'):
             newcmap = np.copy(self.plot.colormap.colors)
@@ -374,10 +376,11 @@ class MonetaPlot():
                 newcmap[8] = to_rgba(change.new,1)
             self.plot.colormap = ListedColormap(newcmap)
             self.plot.backend.plot._update_image()
+    
     cb_lyt=Layout(width='150px')
-    cp_lyt=Layout(width='30px')
+    cp_lyt=Layout(width='30px') """
   
-    # Custom checkbox for Read/Writes
+    """ # Custom checkbox for Read/Writes
     def RWCheckbox(description, primary_color, secondary_color):
         cp_read = ColorPicker(concise=True, value=to_hex(primary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
         cp_write = ColorPicker(concise=True, value=to_hex(secondary_color[0:3]), disabled=not COLORPALETTE_EDITABLE,layout=cp_lyt)
@@ -392,7 +395,7 @@ class MonetaPlot():
         cp_cache.name=description
         #return HBox([Checkbox(description=description, value=True, disabled=False, indent=False,layout=cb_lyt),
         return HBox([Label(value=description,layout=Layout(width='150px')),cp_cache])
-
+ """
     with open(meta_path) as meta_f:
       mlines = meta_f.readlines()
       m_split = mlines[0].split()
@@ -400,7 +403,7 @@ class MonetaPlot():
 
     vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
-    from matplotlib.colors import to_hex
+    """ from matplotlib.colors import to_hex
     legendLabel = HBox([Label(value='Legend',layout=cb_lyt), Label(value='R',layout=cp_lyt), Label(value='W',layout=cp_lyt)])
     rwChecks2 = [Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px')),
                 Checkbox(description="Writes ("+str(writeCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px'))]
@@ -416,7 +419,7 @@ class MonetaPlot():
     for check in [hbox.children[0] for hbox in hmChecks2]:
         check.observe(updateHitMiss2)
     for colorpicker in [hbox.children[1] for hbox in hmChecks2] + [hbox.children[2] for hbox in hmChecks2] + [hbox.children[1] for hbox in cacheChecks2]:
-        colorpicker.observe(updateColorMap)
+        colorpicker.observe(updateColorMap) """
     
     #Code for simple_legend
     #import matplotlib.pyplot as plt
@@ -442,12 +445,25 @@ class MonetaPlot():
     #   plt.show()
     
     #replace checks2 with simple_legend to display the simple_legend over current legend
-    self.plot = self.df.plot_widget(self.df.index, self.df.Address, what='max(Access)',
+
+    #legend = VBox([])
+    legend = control.MonetaLegend(readCount, writeCount, hitCount, missCount, compMissCount, m_split, namesFromFile, tagsFromFile, tag_path,numTags)
+
+    """ self.plot = self.df.plot_widget(self.df.index, self.df.Address, what='max(Access)',
                   colormap = custom_cmap, selection=[True],
-                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
-    if tag_path:
+                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1') """
+
+    x_lim = [self.df.index.min()[()], self.df.index.max()[()]]
+    y_lim = [self.df.Address.min()[()], self.df.Address.max()[()]]
+    self.plot = self.df.plot_widget(self.df.index, self.df.Address, what='max(Access)',
+                  colormap = custom_cmap, selection=[True],limits = [x_lim, y_lim],
+                  backend='bqplot_v2', tool_select=True, legend=legend.widget, update_stats = updateStats, type='custom_plot1')
+    
+    legend.link_plot(self)
+
+    """ if tag_path:
       for i in range(numTags):
-        tagChecks[i].children[1].on_click(self.plot.backend.zoomSection)
+        tagChecks[i].children[1].on_click(self.plot.backend.zoomSection) """
           
     #display(checks)
 
