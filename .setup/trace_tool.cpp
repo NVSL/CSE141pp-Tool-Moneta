@@ -109,7 +109,6 @@ typedef std::pair<ADDRINT, ADDRINT> AddressRange;
 pintool::unordered_map<std::string, TagData*> all_tags;
 
 
-
 ADDRINT lower_stack {ULLONG_MAX};
 ADDRINT lower_heap  {ULLONG_MAX};
 ADDRINT upper_stack {0};
@@ -118,6 +117,16 @@ int last_acc_stack  {0};
 int last_acc_heap   {0};
 int first_acc_stack {-1};
 int first_acc_heap  {-1};
+
+struct Access {
+  TagData* tag;
+  int type;
+  ADDRINT rsp;
+  ADDRINT addr;
+} prev_acc;
+
+bool is_prev_acc {0};
+ADDRINT min_rsp {ULLONG_MAX};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -531,19 +540,31 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   if (DEBUG) {
     read_insts++;
   }
-  bool is_stack = addr >= rsp;
+  min_rsp = std::min(rsp, min_rsp);
+  if (is_prev_acc) {
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= std::min(prev_acc.rsp,rsp));
+    is_prev_acc = false;
+  }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {false};
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
       recorded = true;
-      write_to_memfile(t, access_type, addr, is_stack);
+      is_prev_acc = true;
+      prev_acc.tag = t;
+      prev_acc.type = access_type;
+      prev_acc.addr = addr;
+      prev_acc.rsp = rsp;
       if (RECORD_ONCE) break;
     }
   }
   if (!recorded && KnobTrackAll) {
-    write_to_memfile(0, access_type, addr, is_stack);
+    is_prev_acc = true;
+    prev_acc.tag = 0;
+    prev_acc.type = access_type;
+    prev_acc.addr = addr;
+    prev_acc.rsp = rsp;
   }
 }
 
@@ -582,6 +603,10 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
+  if (is_prev_acc) {
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
+    is_prev_acc = false;
+  }
   if (TAG_DEBUG) {
     std::cerr << "Stack,0," << lower_stack << "," << upper_stack <<
       "," << first_acc_stack << "," << last_acc_stack << "\n";
@@ -657,7 +682,6 @@ VOID Instruction(INS ins, VOID *v)
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
-                //IARG_BOOL, INS_IsStackRead(ins),
                 IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
@@ -669,7 +693,6 @@ VOID Instruction(INS ins, VOID *v)
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
-                //IARG_BOOL, INS_IsStackWrite(ins),
                 IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
