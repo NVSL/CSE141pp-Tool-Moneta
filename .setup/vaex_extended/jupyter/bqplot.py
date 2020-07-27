@@ -21,6 +21,7 @@ SELECT = "select"
 
 ZOOM_UNDO = "undo"
 ZOOM_REDO = "redo"
+ZOOM_SEARCH = "zoom"
 ZOOM_HISTORY_SIZE = 50
 
 @extend_class(BqplotBackend)
@@ -40,14 +41,15 @@ def __init__(self, figure=None, figure_key=None):
 def _update_limits(self, *args):
     with self.output:
 
-
-        if len(args) and args[0] == ZOOM_UNDO:
+        if self.zoom_status == ZOOM_UNDO:
             self.save_limits(self.redo)
-        elif len(args) and args[0] == ZOOM_REDO:
+        elif self.zoom_status == ZOOM_REDO:
             self.save_limits(self.undo)
         else:
             self.redo.clear()
             self.save_limits(self.undo)
+
+        self.zoom_status = ZOOM_SEARCH;
 
 
         limits = copy.deepcopy(self.limits)
@@ -224,7 +226,6 @@ def create_tools(self):
         }], children=[
             "Undo Zoom"
         ])
-        self.button_undo.on_event('click', lambda *ignore: self.undo_zoom())
 
         self.button_redo = v.Btn(icon=True, v_on='tooltip.on', children=[
                                     v.Icon(children=['redo'])
@@ -236,12 +237,33 @@ def create_tools(self):
         }], children=[
             "Redo Zoom"
         ])
-        self.button_redo.on_event('click', lambda *ignore: self.redo_zoom())
 
         self.button_undo.disabled = True;       
         self.button_redo.disabled = True;       
         self.undo = []
         self.redo = []
+        self.zoom_status = "ZOOM_SEARCH"
+
+        def undo_zoom(self):
+            (x1, x2), (y1, y2) = self.undo.pop()
+            self.zoom_status = ZOOM_UNDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        def redo_zoom(self):
+            (x1, x2), (y1, y2) = self.redo.pop()
+            self.zoom_status = ZOOM_REDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        self.button_undo.on_event('click', lambda *ignore: undo_zoom(self))
+        self.button_redo.on_event('click', lambda *ignore: redo_zoom(self))
 
 
         # Controls to be added to menubar instead of sidebar 
@@ -379,27 +401,3 @@ def update_undo_redo(self):
     self.button_undo.disabled = False if len(self.undo) else True;
     self.button_redo.disabled = False if len(self.redo) else True;
 
-
-@extend_class(BqplotBackend)
-@debounced(0.5, method=True)
-def undo_zoom(self):
-    (x1, x2), (y1, y2) = self.undo.pop()
-
-    with self.scale_x.hold_trait_notifications():
-        with self.scale_y.hold_trait_notifications():
-            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
-            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
-
-    self._update_limits(ZOOM_UNDO)      
-
-@extend_class(BqplotBackend)
-@debounced(0.5, method=True)
-def redo_zoom(self):
-    (x1, x2), (y1, y2) = self.redo.pop()
-
-    with self.scale_x.hold_trait_notifications():
-        with self.scale_y.hold_trait_notifications():
-            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
-            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
-
-    self._update_limits(ZOOM_REDO)      
