@@ -19,6 +19,11 @@ PAN_ZOOM = "pan/zoom"
 ZOOM_SELECT = 'zoom select'
 SELECT = "select"
 
+ZOOM_UNDO = "undo"
+ZOOM_REDO = "redo"
+ZOOM_SEARCH = "zoom"
+ZOOM_HISTORY_SIZE = 50
+
 @extend_class(BqplotBackend)
 def __init__(self, figure=None, figure_key=None):
     self._dirty = False
@@ -35,6 +40,18 @@ def __init__(self, figure=None, figure_key=None):
 @debounced(0.5, method=True)
 def _update_limits(self, *args):
     with self.output:
+
+        if self.zoom_status == ZOOM_UNDO:
+            self.save_limits(self.redo)
+        elif self.zoom_status == ZOOM_REDO:
+            self.save_limits(self.undo)
+        else:
+            self.redo.clear()
+            self.save_limits(self.undo)
+
+        self.zoom_status = ZOOM_SEARCH;
+
+
         limits = copy.deepcopy(self.limits)
         limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
         self.limits = limits
@@ -194,13 +211,69 @@ def create_tools(self):
         pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
-       
+
+
+
+
+        # Undo/redo zoom
+        self.button_undo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['undo'])
+                                ])
+        self.widget_undo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_undo
+        }], children=[
+            "Undo Zoom"
+        ])
+
+        self.button_redo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['redo'])
+                                ])
+        self.widget_redo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_redo
+        }], children=[
+            "Redo Zoom"
+        ])
+
+        self.button_undo.disabled = True;       
+        self.button_redo.disabled = True;       
+        self.undo = []
+        self.redo = []
+        self.zoom_status = "ZOOM_SEARCH"
+
+        def undo_zoom(self):
+            (x1, x2), (y1, y2) = self.undo.pop()
+            self.zoom_status = ZOOM_UNDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        def redo_zoom(self):
+            (x1, x2), (y1, y2) = self.redo.pop()
+            self.zoom_status = ZOOM_REDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        self.button_undo.on_event('click', lambda *ignore: undo_zoom(self))
+        self.button_redo.on_event('click', lambda *ignore: redo_zoom(self))
+
+
         # Controls to be added to menubar instead of sidebar 
         self.widget_menubar = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
                 self.widget_reset,
+                self.widget_undo,
+                self.widget_redo
             ])
         ])
 
@@ -246,7 +319,8 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
-               
+
+
                 df = self.dataset
 
                 res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
@@ -265,6 +339,16 @@ def update_zoom_brush(self, *args):
                     y1 -= (1 + y1 - y2) / 2
                     y2 = y1 + 1
                 
+
+                # Add a 5% padding so points are directly on edge
+                padding_x = (x2 - x1) * 0.05
+                padding_y = (y2 - y1) * 0.05
+
+
+                x1 = x1 - padding_x
+                x2 = x2 + padding_x
+                y1 = y1 - padding_y
+                y2 = y2 + padding_y
 
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
@@ -300,4 +384,20 @@ def zoomSection(self, change):
     with self.scale_y.hold_trait_notifications():
         self.scale_y.min = y_min
         self.scale_y.max = y_max
+
+
+@extend_class(BqplotBackend)
+def save_limits(self, undo_redo):
+    undo_redo.append(self.limits)
+
+    if(len(self.undo) > ZOOM_HISTORY_SIZE):
+        self.undo.pop(0)
+
+    self.update_undo_redo()
+
+
+@extend_class(BqplotBackend)
+def update_undo_redo(self):
+    self.button_undo.disabled = False if len(self.undo) else True;
+    self.button_redo.disabled = False if len(self.redo) else True;
 
