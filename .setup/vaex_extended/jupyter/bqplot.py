@@ -244,8 +244,10 @@ def create_tools(self):
         self.redo = []
         self.zoom_status = "ZOOM_SEARCH"
 
+        @debounced(0.5, method=True)
         def undo_zoom(self):
             (x1, x2), (y1, y2) = self.undo.pop()
+            self.update_undo_redo()
             self.zoom_status = ZOOM_UNDO;    
 
             with self.scale_x.hold_trait_notifications():
@@ -253,8 +255,10 @@ def create_tools(self):
                     self.scale_x.min, self.scale_x.max = float(x1), float(x2)
                     self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
+        @debounced(0.5, method=True)
         def redo_zoom(self):
             (x1, x2), (y1, y2) = self.redo.pop()
+            self.update_undo_redo()
             self.zoom_status = ZOOM_REDO;    
 
             with self.scale_x.hold_trait_notifications():
