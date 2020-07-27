@@ -1,4 +1,4 @@
-from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple, ColorPicker
+from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple, ColorPicker, Combobox
 import os
 import re
 import sys
@@ -50,6 +50,9 @@ DEFAULT_TRACE_DROP = 'Select a trace to load'
 PIN_PATH  = "/pin/pin.sh"
 TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
+CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history.txt"
+
+HISTORY_MAX = 5
 
 #Enumerations
 COMP_W_MISS = 6
@@ -244,7 +247,22 @@ def gen_trace_controls():
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
   maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
-  cwd_widget = input_text_factory('e.g. ./Examples/build/', 'Working Directory (Optional):')
+    
+  try:
+    with open(CWD_HISTORY_PATH, "r") as history:
+      cwd_history = history.read().split()
+      logging.debug("Working Directory History: {}".format(cwd_history))
+  except: 
+    cwd_history = []
+
+  cwd_widget = Combobox(
+                    placeholder='e.g. ./Examples/build',
+                    options=cwd_history,
+                    description='Working Directory (Optional):',
+                    style=WIDGET_DESC_PROP,
+                    layout=WIDGET_LAYOUT,
+                    disabled=False)
+
   exec_path_widget = input_text_factory('e.g. ./sorting', 'Executable Path and Args:')
   trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output:')
 
@@ -272,12 +290,12 @@ def gen_trace_controls():
     if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
       exec_file_path = "./" + exec_file_path; 
 
-    cwd_path = cwd_widget.value
+    cwd_path = os.path.expanduser(cwd_widget.value)
     if not (cwd_path.startswith("/") or cwd_path.startswith("./")):
       cwd_path = "./" + cwd_path;
     if cwd_path.endswith("/"):
       cwd_path = cwd_path[0:-1]
-
+    print(cwd_path)
     widget_vals = [cache_lines_widget.value,
                    cache_block_widget.value,
                    maximum_lines_widget.value,
@@ -287,7 +305,15 @@ def gen_trace_controls():
                    trace_out_widget.value,
                    full_trace.value]
 
+    
     if verify_input(*widget_vals):
+        
+      if not cwd_path == "./" and not cwd_path in cwd_widget.options:
+        cwd_widget.options = [cwd_path, *cwd_widget.options][0:HISTORY_MAX]
+        with open(CWD_HISTORY_PATH, "w+") as history:
+          for path in cwd_widget.options:
+              history.write(path + "\n")
+        
       run_pintool(*widget_vals)
       read_out_dir()
       print("Done generating trace: {}".format(trace_out_widget.value))
