@@ -3,7 +3,6 @@ from vaex_extended.utils.decorator import *
 from vaex.jupyter.plot import PlotBase as PlotBase
 import vaex_extended
 import copy
-
 # # alternate wrapper version in case the function should be left alone
 # def fix_image_flipping(func):
 #     from functools import wraps
@@ -18,6 +17,11 @@ accessRanges = {}
 PAN_ZOOM = "pan/zoom"
 ZOOM_SELECT = 'zoom select'
 SELECT = "select"
+
+ZOOM_UNDO = "undo"
+ZOOM_REDO = "redo"
+ZOOM_SEARCH = "zoom"
+ZOOM_HISTORY_SIZE = 50
 
 @extend_class(BqplotBackend)
 def __init__(self, figure=None, figure_key=None):
@@ -35,14 +39,22 @@ def __init__(self, figure=None, figure_key=None):
 @debounced(0.5, method=True)
 def _update_limits(self, *args):
     with self.output:
+
+        if self.zoom_status == ZOOM_UNDO:
+            self.save_limits(self.redo)
+        elif self.zoom_status == ZOOM_REDO:
+            self.save_limits(self.undo)
+        else:
+            self.redo.clear()
+            self.save_limits(self.undo)
+
+        self.zoom_status = ZOOM_SEARCH;
+
+
         limits = copy.deepcopy(self.limits)
         limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
+        self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
         self.limits = limits
-        left = max(0, int(limits[0][0]))
-        right = max(0, int(limits[0][1]))
-        # print(left, right)
-        #sliced = self.dataset[left:right]
-        #print(len(sliced))
         
 
 @extend_class(BqplotBackend)
@@ -59,6 +71,70 @@ def update_image(self, rgb_image):
         self.image.image = self.core_image
         self.image.x = (self.scale_x.min, self.scale_x.max)
         self.image.y = (self.scale_y.min, self.scale_y.max)
+
+@extend_class(BqplotBackend)
+def create_widget(self, output, plot, dataset, limits):
+    self.plot = plot
+    self.output = output
+    self.dataset = dataset
+    self.limits = np.array(limits).tolist()
+    def fix(v):
+        # bqplot is picky about float and numpy scalars
+        if hasattr(v, 'item'):
+            return v.item()
+        else:
+            return v
+    self.scale_x = bqplot.LinearScale(min=fix(limits[0][0]), max=fix(limits[0][1]), allow_padding=False)
+    self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
+    self.scale_rotation = bqplot.LinearScale(min=0, max=1)
+    self.scale_size = bqplot.LinearScale(min=0, max=1)
+    self.scale_opacity = bqplot.LinearScale(min=0, max=1)
+    self.scales = {'x': self.scale_x, 'y': self.scale_y, 'rotation': self.scale_rotation,
+                   'size': self.scale_size, 'opacity': self.scale_opacity}
+
+    margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 5}
+    self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
+    self.figure.layout.min_width = '800px'
+    self.figure.layout.min_height = '600px'
+    self.figure.layout.max_height = '600px'
+    plt.figure(fig=self.figure)
+    self.figure.padding_y = 0
+    x = np.arange(0, 10)
+    y = x ** 2
+    self._fix_scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales)
+    self._fix_scatter.visible = False
+    # self.scale_rotation = self.scales['rotation']
+    src = ""  # vaex.image.rgba_to_url(self._create_rgb_grid())
+    # self.scale_x.min, self.scale_x.max = self.limits[0]
+    # self.scale_y.min, self.scale_y.max = self.limits[1]
+    self.core_image = widgets.Image(format='png')
+    self.core_image_fix = widgets.Image(format='png')
+
+    self.image = bqplot.Image(scales=self.scales, image=self.core_image)
+    self.figure.marks = self.figure.marks + [self.image]
+    # self.figure.animation_duration = 500
+    self.figure.layout.width = '100%'
+    self.figure.layout.max_width = '800px'
+    self.scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales, size=x, marker="arrow")
+    self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
+    self.figure.interaction = self.panzoom
+    for axes in self.figure.axes:
+        axes.grid_lines = 'none'
+        axes.color = axes.grid_color = axes.label_color = blackish
+    self.figure.axes[0].label = str(plot.x)
+    self.figure.axes[1].label = str(plot.y)
+    self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+
+    self.scale_x.observe(self._update_limits, "min")
+    self.scale_x.observe(self._update_limits, "max")
+    self.scale_y.observe(self._update_limits, "min")
+    self.scale_y.observe(self._update_limits, "max")
+    self.observe(self._update_limits, "limits")
+
+    self.image.observe(self._on_view_count_change, 'view_count')
+    self.control_widget = widgets.VBox()
+    self.widget = widgets.VBox(children=[self.figure])
+    self.create_tools()
 
 @extend_class(BqplotBackend)
 def create_tools(self):
@@ -194,13 +270,69 @@ def create_tools(self):
         pz_lyt = widgets.Layout(display='flex',flex_flow='row',width='70%')
         self.panzoom_controls_menu = widgets.HBox([self.panzoom_controls_label, self.panzoom_controls])
         self.plot.add_control_widget(self.panzoom_controls_menu)
-       
+
+
+
+
+        # Undo/redo zoom
+        self.button_undo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['undo'])
+                                ])
+        self.widget_undo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_undo
+        }], children=[
+            "Undo Zoom"
+        ])
+
+        self.button_redo = v.Btn(icon=True, v_on='tooltip.on', children=[
+                                    v.Icon(children=['redo'])
+                                ])
+        self.widget_redo = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator',
+            'variable': 'tooltip',
+            'children': self.button_redo
+        }], children=[
+            "Redo Zoom"
+        ])
+
+        self.button_undo.disabled = True;       
+        self.button_redo.disabled = True;       
+        self.undo = []
+        self.redo = []
+        self.zoom_status = "ZOOM_SEARCH"
+
+        def undo_zoom(self):
+            (x1, x2), (y1, y2) = self.undo.pop()
+            self.zoom_status = ZOOM_UNDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        def redo_zoom(self):
+            (x1, x2), (y1, y2) = self.redo.pop()
+            self.zoom_status = ZOOM_REDO;    
+
+            with self.scale_x.hold_trait_notifications():
+                with self.scale_y.hold_trait_notifications():
+                    self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+                    self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+
+        self.button_undo.on_event('click', lambda *ignore: undo_zoom(self))
+        self.button_redo.on_event('click', lambda *ignore: redo_zoom(self))
+
+
         # Controls to be added to menubar instead of sidebar 
         self.widget_menubar = v.Layout(children=[
             v.Layout(pa_1=True, column=False, align_center=True, children=[
                 widgets.VBox([self.panzoom_x, self.panzoom_y]),
                 self.button_action,
                 self.widget_reset,
+                self.widget_undo,
+                self.widget_redo
             ])
         ])
 
@@ -246,7 +378,8 @@ def update_zoom_brush(self, *args):
             self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
-               
+
+
                 df = self.dataset
 
                 res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
@@ -266,14 +399,23 @@ def update_zoom_brush(self, *args):
                     y2 = y1 + 1
                 
 
+                # Add a 5% padding so points are directly on edge
+                padding_x = (x2 - x1) * 0.05
+                padding_y = (y2 - y1) * 0.05
+
+
+                x1 = x1 - padding_x
+                x2 = x2 + padding_x
+                y1 = y1 - padding_y
+                y2 = y2 + padding_y
+
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 # Update limits
                 with self.scale_x.hold_trait_notifications():
                     with self.scale_y.hold_trait_notifications():
                         self.scale_x.min, self.scale_x.max = float(x1), float(x2)
                         self.scale_y.min, self.scale_y.max = float(y1), float(y2)
-
-                self._update_limits()      
+                self._update_limits()
             self.figure.interaction = self.zoom_brush
             # Delete selection
             with self.zoom_brush.hold_trait_notifications():
@@ -300,4 +442,20 @@ def zoomSection(self, change):
     with self.scale_y.hold_trait_notifications():
         self.scale_y.min = y_min
         self.scale_y.max = y_max
+
+
+@extend_class(BqplotBackend)
+def save_limits(self, undo_redo):
+    undo_redo.append(self.limits)
+
+    if(len(self.undo) > ZOOM_HISTORY_SIZE):
+        self.undo.pop(0)
+
+    self.update_undo_redo()
+
+
+@extend_class(BqplotBackend)
+def update_undo_redo(self):
+    self.button_undo.disabled = False if len(self.undo) else True;
+    self.button_redo.disabled = False if len(self.redo) else True;
 
