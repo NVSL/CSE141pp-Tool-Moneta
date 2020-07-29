@@ -127,6 +127,7 @@ struct Access {
 
 bool is_prev_acc {0};
 ADDRINT min_rsp {ULLONG_MAX};
+bool is_last_acc {0};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -414,7 +415,7 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
   hdf_handler->write_data_mem(id, op, addr);
   curr_lines++; // Afterward, for 0-based indexing
   
-  if(curr_lines >= max_lines) { // If reached file size limit, exit
+  if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
     PIN_ExitApplication(0);
   }
 }
@@ -604,6 +605,7 @@ VOID Fini(INT32 code, VOID *v) {
   }*/
 
   if (is_prev_acc) {
+    is_last_acc = true;
     write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
     is_prev_acc = false;
   }
