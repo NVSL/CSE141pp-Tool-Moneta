@@ -737,7 +737,7 @@ def generate_plot(trace_name):
   y_lim = [df.Address.min()[()], df.Address.max()[()]]
   #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
-                 colormap = custom_cmap, selection=[True], limits = [x_lim, y_lim],
+                 colormap = custom_cmap, selection=[True], limits = [x_lim, y_lim], default_title=curr_trace,
                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
   if tag_path:
     for i in range(numTags):
@@ -763,7 +763,8 @@ def generate_plot(trace_name):
   def indSubPlot(b):
       dfNew = vaex.from_pandas(df)
       #intial selection not functioning, diplays all data from original df
-      dfNew.plot_widget(dfNew.index, dfNew.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=True, limits=plot.limits, type='custom_plot1')
+      dfNew.plot_widget(dfNew.index, dfNew.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', 
+      tool_select=True, selection=True, limits=plot.limits, default_title='I: ' + plot.default_title, type='custom_plot1')
       selectDF(dfNew)
 
   indSubPlotButton = Button(
@@ -777,7 +778,8 @@ def generate_plot(trace_name):
   display(indSubPlotButton)
 
   def depSubPlot(b):
-      df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', tool_select=True, selection=plot.selection, limits=plot.limits,type='custom_plot1')
+      df.plot_widget(df.index, df.Address, what='max(Access)', colormap = custom_cmap, backend='bqplot_v2', 
+      tool_select=True, selection=plot.selection, limits=plot.limits, default_title='D: ' + plot.default_title, type='custom_plot1')
 
   
   dSubPlotButton = Button(

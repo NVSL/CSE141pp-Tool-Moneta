@@ -38,12 +38,17 @@ class Plot2dDefault(Plot2dDefault):
             setattr(self.__class__, '_update_stats', kwargs.get('update_stats'))
         else:
             self.update_stats = lambda *args, **kwargs: None
+        if 'default_title' in kwargs:
+            self.default_title = kwargs.get('default_title')
+        else:
+            self.default_title = 'Moneta'
         self.widget = PlotTemplate_v2(components={
                         #'main-widget': widgets.VBox([self.backend.widget, self.progress, self.output]),
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget,self.legend]), self.progress, self.output]),
                         'control-widget': self.control_widget,
                         'output-widget': self.output,
-                        'toolbox': self.backend.widget_menubar
+                        'toolbox': self.backend.widget_menubar,
+                        'default_title': self.default_title
                     },
                     model=False
             )
