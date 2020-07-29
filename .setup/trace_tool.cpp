@@ -415,7 +415,7 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
   hdf_handler->write_data_mem(id, op, addr);
   curr_lines++; // Afterward, for 0-based indexing
   
-  if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
+  if(!is_last_acc && curr_lines+1 >= max_lines) { // If reached file size limit, exit
     PIN_ExitApplication(0);
   }
 }
