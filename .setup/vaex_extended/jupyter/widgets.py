@@ -1,9 +1,11 @@
 from vaex.jupyter.widgets import *
+from vaex.jupyter.widgets import PlotTemplate as PlotTemplateBase
 
-class PlotTemplate(v.VuetifyTemplate):
+#class PlotTemplate(v.VuetifyTemplate):
+class PlotTemplate(PlotTemplateBase):
     show_output = Bool(False).tag(sync=True)
     new_output = Bool(False).tag(sync=True)
-    default_title = Unicode('Moneta')
+    default_title = Unicode('Moneta').tag(sync=True)
     title = default_title.tag(sync=True)
 
     drawer = Bool(True).tag(sync=True)
@@ -92,4 +94,11 @@ class PlotTemplate(v.VuetifyTemplate):
 </v-app>
 ''').tag(sync=True)
 
-
+    def __init__(self, *args, **kwargs): 
+        # change the title (must be done before the widget gets built!!!)
+        if 'components' in kwargs:
+            if 'default_title' in kwargs['components']:
+                self.default_title = kwargs['components']['default_title']
+        
+        # proceed with original constructor    
+        super().__init__(*args, **kwargs)
