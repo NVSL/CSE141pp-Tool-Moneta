@@ -64,7 +64,7 @@ class Legend():
             for tag in tags], layout=Layout(max_height='210px', overflow_y='auto'))
 
     def create_button(self, tag):
-        w = Button(
+        btn = Button(
                 icon='search-plus',
                 tooltip=self.tag_tooltip(tag),
                 style={'button_color': 'transparent'},
@@ -75,8 +75,8 @@ class Legend():
         def zoom_to_selection(_):
             self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
                                     float(tag.address[0]), float(tag.address[1]))
-        w.on_click(zoom_to_selection)
-        return w
+        btn.on_click(zoom_to_selection)
+        return btn
 
     def set_zoom_sel_handler(self, f):
         self.zoom_sel_handler = f
