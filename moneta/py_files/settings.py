@@ -1,41 +1,43 @@
+## Input Fields
+
 # Cache Lines
 CACHE_LINES_VAL = 4096
-CACHE_LINES_DESC = 'Cache Lines:'
+CACHE_LINES_DESC = "Cache Lines:"
 
 # Cache Block size
 CACHE_BLOCK_VAL = 64
-CACHE_BLOCK_DESC = 'Block Size (Bytes):'
+CACHE_BLOCK_DESC = "Block Size (Bytes):"
 
 # Output Lines
 OUTPUT_LINES_VAL = 10000000
-OUTPUT_LINES_DESC = 'Lines to Output:'
+OUTPUT_LINES_DESC = "Lines to Output:"
 
 # Executable Path
-EXEC_PATH_DEF = 'e.g. ./Examples/build/sorting'
-EXEC_PATH_DESC = 'Executable Path:'
+EXEC_PATH_DEF = "e.g. ./Examples/build/sorting"
+EXEC_PATH_DESC = "Executable Path:"
 
 # Trace Name
-TRACE_NAME_DEF = 'e.g. baseline'
-TRACE_NAME_DESC = 'Name for Trace:'
+TRACE_NAME_DEF = "e.g. baseline"
+TRACE_NAME_DESC = "Name for Trace:"
 
 # Full Trace
-FULL_TRACE_DESC = 'Trace everything (Ignore tags)?'
+FULL_TRACE_DESC = "Trace everything (Ignore program tags)?"
 
 # Select Multiple
-SELECT_MULTIPLE_DESC = 'Trace:'
+SELECT_MULTIPLE_DESC = "Trace:"
 
 ## Buttons
 
 # Generate
-GENERATE_DESC = 'Generate Trace'
+GENERATE_DESC = "Generate Trace"
 GENERATE_COLOR = 'darkseagreen'
 
 # Load
-LOAD_DESC = 'Load Trace'
+LOAD_DESC = "Load Trace"
 LOAD_COLOR = 'lightblue'
 
 # Delete
-DELETE_DESC = 'Delete Trace'
+DELETE_DESC = "Delete Trace"
 DELETE_COLOR = 'salmon'
 
 import logging
@@ -67,3 +69,18 @@ PIN_PATH  = "/pin/pin.sh"
 TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
 WIDGET_DESC_PROP = {'description_width': '150px'}
 WIDGET_LAYOUT = Layout(width='90%')
+
+# Errors
+NO_TAGS = "No tags were traced"
+
+## Vaex
+
+INDEX_LABEL = "Access Number"
+
+# Pintool Enumerations
+COMP_W_MISS = 6
+COMP_R_MISS = 5
+WRITE_MISS = 4
+READ_MISS = 3
+WRITE_HIT = 2
+READ_HIT = 1

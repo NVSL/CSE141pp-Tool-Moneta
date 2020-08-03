@@ -248,11 +248,12 @@ def update_zoom_brush(self, *args):
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                
                 df = self.dataset
+                index_rep = 'Access Number'
 
-                res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+                res = df[(df[index_rep] >= x1) & (df[index_rep] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
                 if res.count() != 0:
-                    x1 = res.index.values[0]
-                    x2 = res.index.values[-1]
+                    x1 = res[index_rep].values[0]
+                    x2 = res[index_rep].values[-1]
                     y1 = res.Address.min()[()]
                     y2 = res.Address.max()[()]
 
@@ -301,3 +302,11 @@ def zoomSection(self, change):
         self.scale_y.min = y_min
         self.scale_y.max = y_max
 
+@extend_class(BqplotBackend)
+def zoom_sel(self, x1, x2, y1, y2):
+    with self.scale_x.hold_trait_notifications():
+        self.scale_x.min = x1
+        self.scale_x.max = x2
+    with self.scale_y.hold_trait_notifications():
+        self.scale_y.min = y1
+        self.scale_y.max = y2

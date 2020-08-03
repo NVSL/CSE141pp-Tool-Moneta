@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 
 class MonetaWidgets():
     def __init__(self):
-        log.info('MonetaWidgets __init__')
+        log.info("__init__")
         self.cl = int_field(settings.CACHE_LINES_VAL, settings.CACHE_LINES_DESC)
         self.cb = int_field(settings.CACHE_BLOCK_VAL, settings.CACHE_BLOCK_DESC)
         self.ml = int_field(settings.OUTPUT_LINES_VAL, settings.OUTPUT_LINES_DESC)

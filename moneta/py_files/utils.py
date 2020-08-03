@@ -138,11 +138,11 @@ def collect_traces():
     for file_name in file_names:
         log.info("Checking {}".format(file_name))
         
-        if (file_name.startswith('trace_') and file_name.endswith('.hdf5')):
+        if (file_name.startswith("trace_") and file_name.endswith(".hdf5")):
             
-            trace_name = file_name[6:file_name.index('.hdf5')]
-            tag_path = os.path.join(dir_path, 'tag_map_' + trace_name + '.csv')
-            meta_path = os.path.join(dir_path, 'meta_data_' + trace_name + '.txt')
+            trace_name = file_name[6:file_name.index(".hdf5")]
+            tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
+            meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
                 print("Warning: Tag Map and/or Metadata file missing for {}. Omitting trace.".format(file_name))
                 continue
@@ -151,16 +151,16 @@ def collect_traces():
             trace_map[trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
-        elif (file_name.startswith('full_trace_') and file_name.endswith('.hdf5')):
-            trace_name = file_name[11:file_name.index('.hdf5')]
-            tag_path = os.path.join(dir_path, 'full_tag_map_' + trace_name + '.csv')
-            meta_path = os.path.join(dir_path, 'full_meta_data_' + trace_name + '.txt')
+        elif (file_name.startswith("full_trace_") and file_name.endswith(".hdf5")):
+            trace_name = file_name[11:file_name.index(".hdf5")]
+            tag_path = os.path.join(dir_path, "full_tag_map_" + trace_name + ".csv")
+            meta_path = os.path.join(dir_path, "full_meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
                 print("Warning: Tag Map and/or Metadata file missing for {}. Omitting full trace.".format(file_name))
                 continue
             
-            trace_list.append("(" + trace_name + ")")
-            trace_map["(" + trace_name + ")"] = (os.path.join(dir_path, file_name),
+            trace_list.append("(Full) " + trace_name)
+            trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
     return trace_list, trace_map

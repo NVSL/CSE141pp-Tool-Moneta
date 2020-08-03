@@ -1,7 +1,7 @@
 import logging
 from importlib import reload
 reload(logging) # To display in Jupyter
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(name)15s] - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 #logging.disable(logging.CRITICAL) # To disable logging
