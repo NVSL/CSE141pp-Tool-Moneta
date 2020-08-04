@@ -23,7 +23,6 @@ CLICK_ZOOM = 'click select'
 SELECT = "select"
 coor_x = 0
 coor_y = 0
-click_zoom_fig = plt.figure()
 
 @property
 @extend_class(BqplotBackend)
