@@ -55,18 +55,21 @@ class Legend():
         ])
 
     def get_datastructures(self, tags):
+        max_id = max(tags, key=lambda x: x.id_).id_
+        stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         return VBox([Label(value='Data Structures')]+[
             HBox([
                 self.create_checkbox(tag.name, self.wid_150, 
                     SelectionGroup.data_structures, tag.id_),
-                self.create_button(tag)
+                self.create_button(tag, stats)
                 ], layout=Layout(min_height='35px'))
             for tag in tags], layout=Layout(max_height='210px', overflow_y='auto'))
 
-    def create_button(self, tag):
+    def create_button(self, tag, stats):
+        stats_str = self.stats_to_str(tag.id_, stats)
         btn = Button(
                 icon='search-plus',
-                tooltip=self.tag_tooltip(tag),
+                tooltip=self.tag_tooltip(tag) + stats_str,
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
                                 borders='none', align_items='center'
@@ -84,6 +87,13 @@ class Legend():
     def tag_tooltip(self, tag):
         return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
         "(" + tag.address[0] + ", " + tag.address[1] + ")")
+
+    def stats_to_str(self, ind, stats):
+        total = sum(stats[ind])
+        if total == 0:
+            return ','.join([repr(stat) for stat in stats[ind]])
+        hits = stats[ind][0] + stats[ind][1]
+        return ','.join([repr(stat) for stat in stats[ind]]) + "," + repr(hits/total) + "," + repr((total-hits)/total)
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))

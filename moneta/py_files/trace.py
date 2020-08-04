@@ -11,7 +11,7 @@ class Tag():
         self.address = (tag_dict['Low_Address'], tag_dict['High_Address'])
         self.access = (tag_dict['First_Access'], tag_dict['Last_Access'])
         self.name = tag_dict['Tag_Name']
-        self.id_ = tag_dict['Tag_Value']
+        self.id_ = int(tag_dict['Tag_Value'])
 
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
