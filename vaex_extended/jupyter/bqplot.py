@@ -52,7 +52,7 @@ def bind_to(self, callback):
     self._observers.append(callback)
        
 @extend_class(BqplotBackend)
-def __init__(self, figure=None, figure_key=None, click_zoom=None):
+def __init__(self, figure=None, figure_key=None):
     self._dirty = False
     self.figure_key = figure_key
     self.figure = figure
@@ -61,7 +61,6 @@ def __init__(self, figure=None, figure_key=None, click_zoom=None):
     self.coor_x = 0
     self.coor_y = 0
     self._observers = []
-    self._global_wealth = 10
     #self.limit_callback = None
 
     self._cleanups = []
@@ -323,8 +322,6 @@ def update_click_brush(self, *args):
             if self.click_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.click_brush.selected
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
-                zoom_x = x1/2 + x2/2
-                zoom_y = y1/2 + y2/2
                 df = self.dataset
                 if x2 > x1 and y1 > y2:
                          res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y2) & (df["Address"] <= y1)]	

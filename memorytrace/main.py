@@ -739,31 +739,6 @@ def generate_plot(trace_name):
   for colorpicker in [hbox.children[1] for hbox in hmChecks2]:
       colorpicker.observe(updateColorMap)
    
-  #Code for simple_legend
-  #import matplotlib.pyplot as plt
-  #import ipywidgets as widgets
-
-  #colors = [[0.047, 1, 0, 1], [0, 0, 1, 1], [0, 1, 1, 1], [1, 1, 0, 1], [1, 0, 0, 1], [0.737, 0.745, 0.235, 1], [0.745, 0.309, 0.235, 1]]
-  #f = lambda m,c: plt.plot([],[],marker=m, color=c, ls="none")[0]
-  #handles = [f("s", colors[i]) for i in range(7)]
-  #labels = ["Cache", "Read Hits", "Write Hits", "Read Misses", "Write Misses", "Compulsory Read Misses", "Compulsory Write Misses"]
-  #legend = plt.legend(handles, labels, loc=3, framealpha=1, frameon=True, prop={"size":15})
-  #def export_legend(legend, filename="legend.png", expand=[-10,-10,10,10]):
-  #  fig  = legend.figure
-  #  fig.canvas.draw()
-  #  bbox  = legend.get_window_extent()
-  #  bbox = bbox.from_extents(*(bbox.extents + np.array(expand)))
-  #  bbox = bbox.transformed(fig.dpi_scale_trans.inverted())
-  #  fig.savefig(filename, dpi="figure", bbox_inches=bbox)
-    
-  #simple_legend = widgets.Output()
-  #with simple_legend:
-  #   export_legend(legend)
-  #   plt.gca().set_axis_off()
-  #   plt.show()
-  #import ipywidgets as widgets
-  #import bqplot.pyplot as plt
-  #plt.subplots()
   #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
@@ -772,12 +747,6 @@ def generate_plot(trace_name):
   #create click_zoom object and connect to the widget's backend
   click_zoom_obj = click_zoom_observer(plot.backend)
 
-  #plot.backend.click_zoom_update_coords_x(100.0)
-  #fig = plt.figure(plot.backend.figure_key, fig=plot.backend.figure, scales=plot.backend.scales)
-  #display(fig)
-
-  #with click_zoom_widget:
-     #df_filter4.scatter(df_filter4.index,  df_filter4.Address, c=colors, s=0.3)
 
   if tag_path:
     for i in range(numTags):
@@ -830,13 +799,7 @@ def generate_plot(trace_name):
           )
   dSubPlotButton.on_click(depSubPlot)
   display(dSubPlotButton)
-  #display(fig)
-  df_zoom = vaex.from_pandas(df)
-  #df_zoom = df_zoom.select(df_zoom.Access == 0, mode='or', name='rw')
-  #print(df_zoom)
-  #wao = df.plot_widget(df_zoom.index, df_zoom.Address, what='max(Access)',
-  #               colormap = custom_cmap, selection=[True],
-  #               backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
+
   return
 
 
