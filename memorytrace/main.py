@@ -1,16 +1,21 @@
 from ipywidgets import Text, Button, VBox, HBox, Layout, Checkbox, IntText, Label, Dropdown, SelectMultiple, ColorPicker
+import ipywidgets as widgets
 import os
 import re
 import sys
 import vaex
 import vaex.jupyter
 import vaex.jupyter.plot
+from vaex.jupyter.bqplot import *
 import argparse
 import subprocess
 import numpy as np
+import matplotlib.pyplot as plt
+from IPython.display import display, clear_output
 from matplotlib.colors import ListedColormap
 from IPython.display import clear_output
 
+plt.ioff()
 #sys.path.append('/setup/') # For master branch
 sys.path.append('../') # For dev branch
 
@@ -395,8 +400,7 @@ def generate_plot(trace_name):
     df.select("structures", mode='replace', name='total')
     df.select("rw", mode='and', name='total')
     df.select("hm", mode='and', name='total')
-
-
+    
   def updateGraph(change):
     if(change.name == 'value'):
 
@@ -668,6 +672,55 @@ def generate_plot(trace_name):
 
   vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
+  class click_zoom_observer:
+    def __init__(self, observable):
+        self.coor_x = 1.0
+        self.coor_y = 1.0
+        self.observable = observable
+        #this line is to get this object to update whenever the selected coords are updated
+        self.observable.bind_to(self.update_click_zoom_coords)
+        self.x_coormin = 0
+        self.x_coormax = 0
+        self.y_coormin = 0
+        self.y_coormax = 0
+    
+    @debounced(0.5, method=True)
+    def update_click_zoom_coords(self, data):
+
+        #set limits for data
+        self.x_coormin = self.observable.coor_x - 50
+        self.x_coormax = self.observable.coor_x + 50
+        self.y_coormin = self.observable.coor_y - 100
+        self.y_coormax = self.observable.coor_y + 100
+
+        #filter data to only those limits
+        df_filter1 = df[df.index < self.x_coormax]
+        df_filter2 = df_filter1[df.index > self.x_coormin]
+        df_filter3 = df_filter2[df.Address > self.y_coormin]
+        df_filter4 = df_filter3[df.Address < self.y_coormax]
+        colors = newc[df_filter4.Access.values]
+        plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
+
+
+        
+  click_zoom_widget = widgets.Output()
+  #display(click_zoom_widget)
+  @click_zoom_widget.capture(clear_output = True, wait=True)
+  def plot_click_zoom(dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
+    with click_zoom_widget:
+        #filter for indices and addresses and their access type that are currently displayed in main widget
+        index = dataset.evaluate(df.index, selection=True)
+        address = dataset.evaluate(df.Address, selection=True)
+        access = dataset.evaluate(df.Access, selection=True)
+        colors = newc[access]
+        #plot the data
+        plt.scatter(index,  address, c=colors, s=0.5)
+        #set limits
+        plt.xlim(xlim_min, xlim_max)
+        plt.ylim(ylim_min, ylim_max)
+        plt.show()
+
+
   from matplotlib.colors import to_hex
   legendLabel = HBox([Label(value='Legend',layout=cb_lyt), Label(value='R',layout=cp_lyt), Label(value='W',layout=cp_lyt)])
   rwChecks2 = [Checkbox(description="Reads ("+str(readCount)+")",  value=True, disabled=False, indent=False,layout=Layout(width='270px')),
@@ -676,7 +729,7 @@ def generate_plot(trace_name):
               RWCheckbox(description="Capacity Misses ("+str(missCount)+")", primary_color=newc[4], secondary_color=newc[5]),
               RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", primary_color=newc[6], secondary_color=newc[8])]
   cacheChecks2 = [CacheLabel(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=newc[3])]
-  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox,
+  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox + [click_zoom_widget],
                        layout=Layout(padding='10px',border='1px solid black')
                       )])
   for check in rwChecks2:
@@ -708,17 +761,31 @@ def generate_plot(trace_name):
   #   export_legend(legend)
   #   plt.gca().set_axis_off()
   #   plt.show()
-  
+  #import ipywidgets as widgets
+  #import bqplot.pyplot as plt
+  #plt.subplots()
   #replace checks2 with simple_legend to display the simple_legend over current legend
   plot = df.plot_widget(df.index, df.Address, what='max(Access)',
                  colormap = custom_cmap, selection=[True],
                  backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
+  
+  #create click_zoom object and connect to the widget's backend
+  click_zoom_obj = click_zoom_observer(plot.backend)
+
+  #plot.backend.click_zoom_update_coords_x(100.0)
+  #fig = plt.figure(plot.backend.figure_key, fig=plot.backend.figure, scales=plot.backend.scales)
+  #display(fig)
+
+  #with click_zoom_widget:
+     #df_filter4.scatter(df_filter4.index,  df_filter4.Address, c=colors, s=0.3)
+
   if tag_path:
     for i in range(numTags):
       tagChecks[i].children[1].on_click(plot.backend.zoomSection)
         
   display(checks)
-
+  
+    
   def selectDF(inDF):
     if(currentSelection[READ_MISS-1] == 1):
         inDF.select(inDF.Access == READ_MISS, mode='or')
@@ -763,7 +830,13 @@ def generate_plot(trace_name):
           )
   dSubPlotButton.on_click(depSubPlot)
   display(dSubPlotButton)
-
+  #display(fig)
+  df_zoom = vaex.from_pandas(df)
+  #df_zoom = df_zoom.select(df_zoom.Access == 0, mode='or', name='rw')
+  #print(df_zoom)
+  #wao = df.plot_widget(df_zoom.index, df_zoom.Address, what='max(Access)',
+  #               colormap = custom_cmap, selection=[True],
+  #               backend='bqplot_v2', tool_select=True, legend=checks2, update_stats = updateStats, type='custom_plot1')
   return
 
 
