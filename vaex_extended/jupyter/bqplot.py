@@ -3,6 +3,8 @@ from vaex_extended.utils.decorator import *
 from vaex.jupyter.plot import PlotBase as PlotBase
 import vaex_extended
 import copy
+import matplotlib.pyplot as plt
+
 
 # # alternate wrapper version in case the function should be left alone
 # def fix_image_flipping(func):
@@ -17,20 +19,53 @@ accessRanges = {}
 
 PAN_ZOOM = "pan/zoom"
 ZOOM_SELECT = 'zoom select'
+CLICK_ZOOM = 'click select'
 SELECT = "select"
+coor_x = 0
+coor_y = 0
+click_zoom_fig = plt.figure()
+
+@property
+@extend_class(BqplotBackend)
+def click_zoom_coords_x(self):
+    return self.coor_x
+
+@property
+@extend_class(BqplotBackend)
+def click_zoom_coords_y(self):
+    return self.coor_y
 
 @extend_class(BqplotBackend)
-def __init__(self, figure=None, figure_key=None):
+def click_zoom_update_coords_x(self, value_x):
+    self.coor_x = value_x
+    for callback in self._observers:
+        callback(self.coor_x)
+
+@extend_class(BqplotBackend)
+def click_zoom_update_coords_y(self, value_y):
+    self.coor_y = value_y
+    for callback in self._observers:
+        callback(self.coor_y)
+
+@extend_class(BqplotBackend)
+def bind_to(self, callback):
+    self._observers.append(callback)
+       
+@extend_class(BqplotBackend)
+def __init__(self, figure=None, figure_key=None, click_zoom=None):
     self._dirty = False
     self.figure_key = figure_key
     self.figure = figure
     self.signal_limits = vaex.events.Signal()
-
-    self._cleanups = []
-    
     self.dataset_original = None
+    self.coor_x = 0
+    self.coor_y = 0
+    self._observers = []
+    self._global_wealth = 10
     #self.limit_callback = None
 
+    self._cleanups = []
+   
 @extend_class(BqplotBackend)
 @debounced(0.5, method=True)
 def _update_limits(self, *args):
@@ -44,7 +79,6 @@ def _update_limits(self, *args):
         #sliced = self.dataset[left:right]
         #print(len(sliced))
         
-
 @extend_class(BqplotBackend)
 def update_image(self, rgb_image):
     # corrects error where the image is flipped vertically
@@ -61,6 +95,13 @@ def update_image(self, rgb_image):
         self.image.y = (self.scale_y.min, self.scale_y.max)
 
 @extend_class(BqplotBackend)
+def _update_limits(self, *args):
+    with self.output:
+        limits = copy.deepcopy(self.limits)
+        limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
+        self.limits = limits;
+
+@extend_class(BqplotBackend)
 def create_tools(self):
     self.tools = []
     tool_actions = []
@@ -70,6 +111,7 @@ def create_tools(self):
     self._main_widget = widgets.VBox()
     self._main_widget_1 = widgets.HBox()
     self._main_widget_2 = widgets.HBox()
+    self._main_widget_3 = widgets.HBox()
     if 1:  # tool_select:
         tool_actions_map[PAN_ZOOM] = self.panzoom
         tool_actions.append(PAN_ZOOM)
@@ -85,6 +127,13 @@ def create_tools(self):
         tool_actions.append(SELECT)
 
         self.brush.observe(self.update_brush, ["selected", "selected_x"])
+
+        self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
+        tool_actions_map[CLICK_ZOOM] = self.click_brush
+        tool_actions.append(CLICK_ZOOM)
+
+        self.click_brush.observe(self.update_click_brush, ["brushing"])
+        
         # fig.interaction = brush
         # callback = self.dataset.signal_selection_changed.connect(lambda dataset: update_image())
         # callback = self.dataset.signal_selection_changed.connect(lambda *x: self.update_grid())
@@ -132,7 +181,7 @@ def create_tools(self):
                 name = tool_actions[self.button_action.v_model]
                 self.figure.interaction = tool_actions_map[name]
 
-        tool_actions = [PAN_ZOOM, ZOOM_SELECT]
+        tool_actions = [PAN_ZOOM, ZOOM_SELECT, CLICK_ZOOM]
         # tool_actions = [("m", "m"), ("b", "b")]
         self.button_action = \
             v.BtnToggle(v_model=0, mandatory=True, multiple=False, children=[
@@ -153,6 +202,15 @@ def create_tools(self):
                                 ])
                             }], children=[
                                 "Zoom to selection"
+                            ]),
+                            v.Tooltip(bottom=True, v_slots=[{
+                                'name': 'activator',
+                                'variable': 'tooltip',
+                                'children': v.Btn(v_on='tooltip.on', children=[
+                                    v.Icon(children=['mdi-mouse'])
+                                ])
+                            }], children=[
+                                "Click zoom"
                             ])
                     ])
         self.widget_tool_basic = v.Layout(children=[
@@ -222,9 +280,6 @@ def create_tools(self):
 
         self.plot.add_control_widget(self.zoomButtonList)
 
-
-
-
         self.button_action.observe(change_interact, "v_model")
         self.tools.insert(0, self.button_action)
         self.button_action.value = "pan/zoom"  # tool_actions[-1]
@@ -234,11 +289,11 @@ def create_tools(self):
         self._main_widget_1.children += (self.button_action,)
         self._main_widget_1.children += (self.button_reset,)
         # self._main_widget_2.children += (self.button_selection_mode,)
-    self._main_widget.children = [self._main_widget_1, self._main_widget_2]
+    self._main_widget.children = [self._main_widget_1, self._main_widget_2, self._main_widget_3]
     self.control_widget.children += (self._main_widget,)
     self._update_grid_counter = 0  # keep track of t
     self._update_grid_counter_scheduled = 0  # keep track of t
-    
+
 @extend_class(BqplotBackend)
 def update_zoom_brush(self, *args):
     # Only update on mouse-up
@@ -259,6 +314,65 @@ def update_zoom_brush(self, *args):
             with self.zoom_brush.hold_trait_notifications():
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
+
+@extend_class(BqplotBackend)
+def update_click_brush(self, *args):
+    if not self.click_brush.brushing:
+        with self.output:
+            self.figure.interaction = None
+            if self.click_brush.selected is not None:
+                (x1, y1), (x2, y2) = self.click_brush.selected
+                mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
+                zoom_x = x1/2 + x2/2
+                zoom_y = y1/2 + y2/2
+                df = self.dataset
+                if x2 > x1 and y1 > y2:
+                         res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y2) & (df["Address"] <= y1)]	
+                         if res.count() != 0:
+                                 zoom_x = res.index.values[-1]
+                                 zoom_y = res.Address.min()[()]
+                         else:
+                                 zoom_x = x2
+                                 zoom_y = y2
+                #mouse move towards top right
+                elif x2 > x1 and y2 > y1:
+                         res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]	
+                         if res.count() != 0:
+                                 zoom_x = res.index.values[-1]
+                                 zoom_y = res.Address.max()[()]
+                         else:
+                                 zoom_x = x2
+                                 zoom_y = y2
+                #mouse move towards top left
+                elif x1 > x2 and y2 > y1:
+                         res = df[(df["index"] >= x2) & (df["index"] <= x1) & (df["Address"] >= y1) & (df["Address"] <= y2)]	
+                         if res.count() != 0:
+                                 zoom_x = res.index.values[0]
+                                 zoom_y = res.Address.max()[()]
+                         else:
+                                 zoom_x = x2
+                                 zoom_y = y2
+                #mouse move towards bottom left
+                else:
+                         res = df[(df["index"] >= x2) & (df["index"] <= x1) & (df["Address"] >= y2) & (df["Address"] <= y1)]	 
+                         if res.count() != 0:
+                                 zoom_x = res.index.values[0]
+                                 zoom_y = res.Address.min()[()]
+                         else:
+                                 zoom_x = x2
+                                 zoom_y = y2
+	        
+
+                #else:
+                #        zoom_x = x2
+                #        zoom_y = y2
+
+                self.click_zoom_update_coords_x(zoom_x)
+                self.click_zoom_update_coords_y(zoom_y)
+            self.figure.interaction = self.click_brush
+            with self.click_brush.hold_trait_notifications():
+                self.click_brush.selected_x = None
+                self.click_brush.selected_y = None	 
 
 
 # From the addressRange dictionary, get the metadata corresponding to the button/tag name
