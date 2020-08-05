@@ -12,7 +12,7 @@ from settings import (
     PIN_PATH,
     TOOL_PATH,
     WIDGET_DESC_PROP,
-    WIDGET_LAYOUT
+    WIDGET_LAYOUT,
     CWD_HISTORY_PATH
 )
 sys.path.append(MONETA_BASE_DIR + ".setup/")
