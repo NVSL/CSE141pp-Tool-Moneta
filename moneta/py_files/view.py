@@ -36,6 +36,7 @@ class View():
         w_vals = [self.m_widget.cl.value,
                 self.m_widget.cb.value,
                 self.m_widget.ml.value,
+                self.m_widget.cwd.value,
                 self.m_widget.ex.value,
                 self.m_widget.to.value,
                 self.m_widget.ft.value]
