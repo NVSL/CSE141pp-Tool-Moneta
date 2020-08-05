@@ -13,6 +13,7 @@ from settings import (
     TOOL_PATH,
     WIDGET_DESC_PROP,
     WIDGET_LAYOUT
+    CWD_HISTORY_PATH
 )
 sys.path.append(MONETA_BASE_DIR + ".setup/")
 
@@ -43,6 +44,24 @@ def text_factory(placeholder, description):
             style=WIDGET_DESC_PROP,
             layout=WIDGET_LAYOUT
             )
+
+        
+def load_cwd_file():
+    try:
+        with open(CWD_HISTORY_PATH, "a+") as history:
+            history.seek(0)
+            cwd_history = history.read().split()
+            logging.debug("Reading history from file: {}".format(cwd_history))
+            return cwd_history
+    except Exception as e: 
+        # Allows tool to still work, just no history, if there is a problem with the file
+        log.debug("History file error: \n{}".format(e))
+        return []
+    
+def update_cwd_file(cwd_history):
+    with open(CWD_HISTORY_PATH, "w+") as history_file:
+        for path in cwd_history:
+            history_file.write(path + "\n")
 
 def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
     log.info("Verifying pintool arguments")

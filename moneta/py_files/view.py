@@ -1,6 +1,6 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH, OUTPUT_DIR
-from utils import generate_trace, delete_traces
+from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from utils import generate_trace, delete_traces, update_cwd_file
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import sys
@@ -36,9 +36,8 @@ class View():
         if not cwd_path == "./" and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             log.debug("New History: {}".format(self.m_widget.cwd.options))
-            with open(CWD_HISTORY_PATH, "w+") as history:
-                for path in self.m_widget.cwd.options:
-                    history.write(path + "\n")
+            update_cwd_file(self.m_widget.cwd.options)
+            
         
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
