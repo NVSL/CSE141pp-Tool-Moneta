@@ -32,7 +32,7 @@ class Model():
 
     def delete_traces(self, traces):
         delete_traces(map(lambda x: self.trace_map[x], traces))
-        if self.curr_trace.name in traces:
+        if self.curr_trace is not None and self.curr_trace.name in traces:
             self.curr_trace = None
             return False
         return True

@@ -93,7 +93,7 @@ class Legend():
         if total == 0:
             return ','.join([repr(stat) for stat in stats[ind]])
         hits = stats[ind][0] + stats[ind][1]
-        return ','.join([repr(stat) for stat in stats[ind]]) + "," + repr(hits/total) + "," + repr((total-hits)/total)
+        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
