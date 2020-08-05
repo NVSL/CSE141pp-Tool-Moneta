@@ -243,7 +243,7 @@ def gen_trace_controls():
   logging.info("Setting up generate trace widgets with handlers")
   cache_lines_widget = input_int_factory(4096, 'Cache Lines:')
   cache_block_widget = input_int_factory(64, 'Block Size (Bytes):')
-  maximum_lines_widget = input_int_factory(100000000, 'Lines to Output:')
+  maximum_lines_widget = input_int_factory(10000000, 'Lines to Output:')
   cwd_widget = input_text_factory('e.g. ./Examples/build/', 'Working Directory (Optional):')
   exec_path_widget = input_text_factory('e.g. ./sorting', 'Executable Path and Args:')
   trace_out_widget = input_text_factory('e.g. baseline', 'Name for Output:')
@@ -683,7 +683,7 @@ def generate_plot(trace_name):
           plot.colormap = ListedColormap(newcmap)
           plot.backend.plot._update_image()
   cb_lyt=Layout(width='150px')
-  cp_lyt=Layout(width='30px')
+  cp_lyt=Layout(width='30px', overflow='hidden')
  
   # Custom checkbox for Read/Writes
   def RWCheckbox(description, primary_color, secondary_color):
