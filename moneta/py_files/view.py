@@ -35,6 +35,7 @@ class View():
     def update_cwd_history(self, cwd_path):
         if not cwd_path == "./" and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
+            log.debug("New History: {}".format(self.m_widget.cwd.options))
             with open(CWD_HISTORY_PATH, "w+") as history:
                 for path in self.m_widget.cwd.options:
                     history.write(path + "\n")

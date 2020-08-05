@@ -15,7 +15,7 @@ class MonetaWidgets():
         self.ml = int_field(settings.OUTPUT_LINES_VAL, settings.OUTPUT_LINES_DESC)
 
         cwd_options = self.load_cwd_history()
-
+        
         self.cwd = Combobox(
                 placeholder=settings.CWD_PATH_DEF, options=cwd_options,description=settings.CWD_PATH_DESC,
                 style=settings.WIDGET_DESC_PROP, layout=settings.WIDGET_LAYOUT)
@@ -38,9 +38,10 @@ class MonetaWidgets():
         
     def load_cwd_history(self):
         try:
-            with open(settings.CWD_HISTORY_PATH, "w+") as history:
+            with open(settings.CWD_HISTORY_PATH, "a+") as history:
+                history.seek(0)
                 cwd_history = history.read().split()
-                logging.debug("Working Directory History: {}".format(cwd_history))
+                logging.debug("Reading history from file: {}".format(cwd_history))
                 return cwd_history
         except Exception as e: 
             # Allows tool to still work, just no history, if there is a problem with the file
