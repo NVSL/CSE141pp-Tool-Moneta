@@ -1,9 +1,10 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL
+from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH, OUTPUT_DIR
 from utils import generate_trace, delete_traces
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import sys
+import os
 sys.path.append(MONETA_BASE_DIR + ".setup/")
 import vaex
 import vaex_extended
@@ -31,6 +32,13 @@ class View():
         self.m_widget.sw.options = self.model.update_trace_list()
         self.m_widget.sw.value = []
 
+    def update_cwd_history(self, cwd_path):
+        if not cwd_path == "./" and not cwd_path in self.m_widget.cwd.options:
+            self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
+            with open(CWD_HISTORY_PATH, "w+") as history:
+                for path in self.m_widget.cwd.options:
+                    history.write(path + "\n")
+        
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
         w_vals = [self.m_widget.cl.value,
@@ -40,7 +48,9 @@ class View():
                 self.m_widget.ex.value,
                 self.m_widget.to.value,
                 self.m_widget.ft.value]
+        
         if generate_trace(*w_vals):
+            self.update_cwd_history(os.path.expanduser(self.m_widget.cwd.value))
             self.update_select_widget()
 
     def handle_load_trace(self, _):

@@ -125,10 +125,10 @@ def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_
     exec_inputs = e_file.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
-    
     if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
         exec_file_path = "./" + exec_file_path; 
-
+    
+    cwd_path = os.path.expanduser(cwd_path)
     if not (cwd_path.startswith("/") or cwd_path.startswith("./")):
         cwd_path = "./" + cwd_path;
     if cwd_path.endswith("/"):
@@ -140,6 +140,7 @@ def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_
         print("Done generating trace: {}".format(o_name))
         return True
     return False
+
 
 def collect_traces():
     """Reads output directory to fill up select widget with traces"""
