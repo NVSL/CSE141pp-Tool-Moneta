@@ -31,7 +31,7 @@ COPY .setup/bashrc_aliases ${DIR_SETUP}/
 RUN sed -i 's/\r$//' bashrc_aliases 
 RUN cat bashrc_aliases >> ~/.bashrc
 
-RUN cat ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
+RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
 WORKDIR ${DIR_MONETA}
 
