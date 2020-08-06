@@ -32,25 +32,38 @@ class View():
         self.m_widget.sw.options = self.model.update_trace_list()
         self.m_widget.sw.value = []
 
-    def update_cwd_history(self, cwd_path):
+    def update_cwd_widget(self, cwd_path):
         if not cwd_path == "./" and not cwd_path == "." and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
-            log.debug("New History: {}".format(self.m_widget.cwd.options))
             update_cwd_file(self.m_widget.cwd.options)
+            log.debug("New History: {}".format(self.m_widget.cwd.options))
             
         
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-        w_vals = [self.m_widget.cl.value,
-                self.m_widget.cb.value,
-                self.m_widget.ml.value,
-                self.m_widget.cwd.value,
-                self.m_widget.ex.value,
-                self.m_widget.to.value,
-                self.m_widget.ft.value]
+        '''
+        w_vals = {
+            'cl': self.m_widget.cl.value,
+            'cb': self.m_widget.cb.value,
+            'ml': self.m_widget.ml.value,
+            'cwd': self.m_widget.cwd.value,
+            'ex': self.m_widget.ex.value,
+            'to': self.m_widget.to.value,
+            'ft': self.m_widget.ft.value
+        }
+        '''
+        w_vals = [
+            self.m_widget.cl.value,
+            self.m_widget.cb.value,
+            self.m_widget.ml.value,
+            self.m_widget.cwd.value,
+            self.m_widget.ex.value,
+            self.m_widget.to.value,
+            self.m_widget.ft.value
+        ]
         
-        if generate_trace(*w_vals):
-            self.update_cwd_history(os.path.expanduser(self.m_widget.cwd.value))
+        if generate_trace(w_vals):
+            self.update_cwd_widget(os.path.expanduser(self.m_widget.cwd.value))
             self.update_select_widget()
 
     def handle_load_trace(self, _):
