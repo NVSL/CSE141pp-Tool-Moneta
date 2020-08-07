@@ -33,7 +33,7 @@ class View():
         self.m_widget.sw.value = []
 
     def update_cwd_widget(self, cwd_path):
-        if not cwd_path == "./" and not cwd_path == "." and not cwd_path in self.m_widget.cwd.options:
+        if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             update_cwd_file(self.m_widget.cwd.options)
             log.debug("New History: {}".format(self.m_widget.cwd.options))

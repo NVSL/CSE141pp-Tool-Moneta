@@ -47,10 +47,10 @@ def text_factory(placeholder, description):
 
     
 def parse_cwd(cwd_path):
-    if cwd_path == "/" or cwd_path == "." or cwd_path == "..":
+    if cwd_path in ("/", "~", ".", ".."):
         return cwd_path
     
-    if not (cwd_path.startswith("/") or cwd_path.startswith("./") or cwd_path.startswith("../")):
+    if not (cwd_path.startswith(("/", "~/", "./", "../"))):
         cwd_path = "./" + cwd_path;
     if cwd_path.endswith("/"):
         cwd_path = cwd_path[0:-1]
