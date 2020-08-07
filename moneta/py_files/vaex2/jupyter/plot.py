@@ -85,6 +85,8 @@ class PlotBase(widgets.Widget):
                 self.legend = kwargs.get('legend')
             if 'x_label' in kwargs:
                 self.x_label = kwargs.get('x_label')
+            if 'cache_size' in kwargs:
+                self.cache_size = kwargs.get('cache_size')
             self.widget = PlotTemplate(components={
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
@@ -261,7 +263,6 @@ class PlotBase(widgets.Widget):
 
             y_lo, y_hi = self.backend.limits[1]
             x_lo, x_hi = self.backend.limits[0]
-            cache_size = 1000 # Fix this default
             diffy = y_hi - y_lo
             diffx = x_hi - x_lo
             new_size = 0
@@ -282,7 +283,7 @@ class PlotBase(widgets.Widget):
                                         n_fgrid[0][i][j] = val
                 fgrid = n_fgrid
 
-            cache_fraction = min(1, cache_size/diffy)
+            cache_fraction = min(1, self.cache_size/diffy)
             lim = cache_fraction*fgrid.shape[1]
             for i in range(int(lim)):
                 fgrid[0][0][i] = 2.4

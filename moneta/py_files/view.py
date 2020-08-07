@@ -55,12 +55,13 @@ class View():
         df = curr_trace.df
         x_lim = curr_trace.x_lim
         y_lim = curr_trace.y_lim
+        cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(tags, df)
         plot = df.plot_widget(df[INDEX_LABEL], df.Address, what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
-                 x_label=INDEX_LABEL)
+                 x_label=INDEX_LABEL, cache_size=cache_size)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
