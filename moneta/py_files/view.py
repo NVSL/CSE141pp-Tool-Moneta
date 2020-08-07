@@ -62,6 +62,7 @@ class View():
                  backend='bqplot_v2', type='custom_plot1', legend=legend.widgets)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
+        legend.set_plot(plot)
         pass
     
     def handle_delete_trace(self, _):
