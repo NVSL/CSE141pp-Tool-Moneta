@@ -13,12 +13,8 @@ class Legend():
         self.wid_150 = Layout(width='150px')
         self.wid_30 = Layout(width='30px')
         self.wid_270 = Layout(width='270px')
-        self.checkboxes = list()
+        self.checkboxes = []
         self.df = df
-        #self.df.select(True, name="hi"+str(SelectionGroup.hit_miss))
-        #self.df.select(True, name="hi"+str(SelectionGroup.read_write))
-        #self.df.select(True, name="hi"+str(SelectionGroup.data_structures))
-        #self.df.select(True, name='total')
         first_row = HBox([
                 Label(value='Legend', layout=self.wid_150), 
                 Label(value='R', layout=self.wid_30), 
@@ -97,11 +93,9 @@ class Legend():
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
-        print("setup checkbox handler")
         return self.checkboxes[-1].widget
 
     def handle_checkbox_change(self, _): # TODO - move constants out
-        print("checkbox handler")
         if _.name == 'value':
             selections = set()
             for checkbox in self.checkboxes:

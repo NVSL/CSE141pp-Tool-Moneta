@@ -3,11 +3,8 @@ from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL
 from utils import generate_trace, delete_traces
 from moneta_widgets import MonetaWidgets
 from legend import Legend
-#import sys
-#sys.path.append(MONETA_BASE_DIR + ".setup/")
 import vaex
 import vaex.jupyter.plot
-#import vaex_extended
 vaex.jupyter.plot.backends['bqplot_v2'] = ("vaex_extended.jupyter.bqplot", "BqplotBackend")
 
 import logging
