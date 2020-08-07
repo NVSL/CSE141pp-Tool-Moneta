@@ -14,6 +14,7 @@ from settings import (
     WIDGET_LAYOUT
 )
 sys.path.append(MONETA_BASE_DIR + ".setup/")
+sys.path.append(MONETA_BASE_DIR + "moneta/py_files/")
 
 import logging
 log = logging.getLogger(__name__)
