@@ -273,10 +273,11 @@ class BqplotBackend(BackendBase):
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                 df = self.dataset
-                res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+		index_rep = "Access_Number"
+                res = df[(df[index_rep] >= x1) & (df[index_rep] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
                 if res.count() != 0:
-                    x1 = res.index.values[0]
-                    x2 = res.index.values[-1]
+                    x1 = res[index_rep].values[0]
+                    x2 = res[index_rep].values[-1]
                     y1 = res.Address.min()[()]
                     y2 = res.Address.max()[()]
 

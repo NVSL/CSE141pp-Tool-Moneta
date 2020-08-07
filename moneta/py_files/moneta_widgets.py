@@ -26,4 +26,3 @@ class MonetaWidgets():
         self.tw = HBox([self.gt_in, self.sw], layout=Layout(justify_content='space-around'))
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
-

@@ -52,6 +52,3 @@ class Trace():
         self.x_lim = [self.df[INDEX_LABEL].min()[()], self.df[INDEX_LABEL].max()[()]]
         self.y_lim = [self.df.Address.min()[()], self.df.Address.max()[()]]
 
-
-
-

@@ -1,8 +1,14 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox
+<<<<<<< HEAD
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT
 from enum import Enum
 import numpy as np
+=======
+from matplotlib.colors import to_hex
+from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT
+from enum import Enum
+>>>>>>> 8f0dc2bbf173425cca48c1aa9452330b5cb6bb51
 
 class SelectionGroup(Enum):
     hit_miss = 0
@@ -147,4 +153,3 @@ class CheckBox():
         self.widget.observe(handle_fun)
         self.group = group
         self.selections = selections
-

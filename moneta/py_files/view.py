@@ -75,6 +75,3 @@ class View():
             display(self.m_widget.widgets)
         self.update_select_widget()
         pass
-
-
-
