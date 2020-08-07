@@ -84,7 +84,7 @@ class PlotBase(widgets.Widget):
             if 'legend' in kwargs:
                 self.legend = kwargs.get('legend')
             self.widget = PlotTemplate(components={
-                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="100px 10px 10px 10px")), self.progress, self.output]),
+                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
                         'extra-widget': self.extra_widget
                     },

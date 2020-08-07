@@ -76,7 +76,7 @@ class BqplotBackend(BackendBase):
         self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
 
-        margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 50}
+        margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 0}
         self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
         self.figure.layout.width = '100%'
         self.figure.layout.max_height = '800px'
@@ -159,7 +159,6 @@ class BqplotBackend(BackendBase):
             tool_actions_map[PAN_ZOOM] = self.panzoom
             tool_actions = [PAN_ZOOM, ZOOM_SELECT]
 
-            import copy
             self.start_limits = copy.deepcopy(self.limits)
 
             def change_interact(*args):
