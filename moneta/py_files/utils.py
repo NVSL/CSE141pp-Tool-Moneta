@@ -152,7 +152,7 @@ def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_
         print(sub_stderr)
 
 def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_trace):
-    cwd_path = os.path.expanduser(cwd_path)
+    cwd_path = os.path.expanduser(parse_cwd(cwd_path))
     #TODO: Move this into a parse_e_file function
     exec_inputs = e_file.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
