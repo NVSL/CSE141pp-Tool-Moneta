@@ -1,6 +1,6 @@
 from IPython.display import clear_output, display
 from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
-from utils import generate_trace, delete_traces, update_cwd_file
+from utils import generate_trace, delete_traces, update_cwd_file, parse_cwd
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import sys
@@ -41,29 +41,21 @@ class View():
         
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-        '''
-        w_vals = {
-            'cl': self.m_widget.cl.value,
-            'cb': self.m_widget.cb.value,
-            'ml': self.m_widget.ml.value,
-            'cwd': self.m_widget.cwd.value,
-            'ex': self.m_widget.ex.value,
-            'to': self.m_widget.to.value,
-            'ft': self.m_widget.ft.value
-        }
-        '''
+
+        parsed_cwd = parse_cwd(self.m_widget.cwd.value)
+        
         w_vals = [
             self.m_widget.cl.value,
             self.m_widget.cb.value,
             self.m_widget.ml.value,
-            self.m_widget.cwd.value,
+            parsed_cwd,
             self.m_widget.ex.value,
             self.m_widget.to.value,
             self.m_widget.ft.value
         ]
         
-        if generate_trace(w_vals):
-            self.update_cwd_widget(os.path.expanduser(self.m_widget.cwd.value))
+        if generate_trace(*w_vals):
+            self.update_cwd_widget(parsed_cwd)
             self.update_select_widget()
 
     def handle_load_trace(self, _):
