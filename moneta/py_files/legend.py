@@ -67,13 +67,15 @@ class Legend():
 
     def create_colorpicker(self, clr):
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
+        clr_picker.observing = True
         def handle_color_picker(change):
-            print("changing colorpicker: ", change)
-            self.colormap[clr] = to_rgba(change.new, 1)
-            self.plot.colormap = ListedColormap(self.colormap)
-            self.plot.backend.plot._update_image()
+            if clr_picker.observing:
+                print("changing colorpicker: ", change)
+                self.colormap[clr] = to_rgba(change.new, 1)
+                self.plot.colormap = ListedColormap(self.colormap)
+                self.plot.backend.plot._update_image()
         clr_picker.observe(handle_color_picker,names='value')
-        self.colorpickers[clr] = (clr_picker, handle_color_picker)
+        self.colorpickers[clr] = clr_picker
         return clr_picker
 
     def create_reset_btn(self):
@@ -88,10 +90,10 @@ class Legend():
         def refresh_colormap(change):
             print("reseting: ", change)
             self.colormap = np.copy(newc)
-            for clr, val in self.colorpickers.items():
-                val[0].unobserve(val[1], names='value')
-                val[0].value=to_hex(self.colormap[clr][0:3])
-                val[0].observe(val[1], names='value')
+            for clr, clr_picker in self.colorpickers.items():
+                clr_picker.observing = False
+                clr_picker.value=to_hex(self.colormap[clr][0:3])
+                clr_picker.observing = True
             self.plot.colormap = ListedColormap(self.colormap)
             self.plot.backend.plot._update_image()
         btn.on_click(refresh_colormap)
