@@ -15,7 +15,7 @@ from settings import (
     WIDGET_LAYOUT,
     CWD_HISTORY_PATH
 )
-sys.path.append(MONETA_BASE_DIR + "moneta/py_files/")
+sys.path.append(MONETA_BASE_DIR + "moneta/moneta/")
 
 import logging
 log = logging.getLogger(__name__)
