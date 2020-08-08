@@ -3,11 +3,9 @@ from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL
 from utils import generate_trace, delete_traces
 from moneta_widgets import MonetaWidgets
 from legend import Legend
-import sys
-sys.path.append(MONETA_BASE_DIR + ".setup/")
 import vaex
-import vaex_extended
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaex_extended.jupyter.bqplot", "BqplotBackend")
+import vaex.jupyter.plot
+vaex.jupyter.plot.backends['bqplot_v2'] = ("vaex2.jupyter.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -57,13 +55,16 @@ class View():
         df = curr_trace.df
         x_lim = curr_trace.x_lim
         y_lim = curr_trace.y_lim
+        cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(tags, df)
         plot = df.plot_widget(df[INDEX_LABEL], df.Address, what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
-                 backend='bqplot_v2', type='custom_plot1', legend=legend.widgets)
+                 backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
+                 x_label=INDEX_LABEL, cache_size=cache_size)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
+        legend.set_plot(plot)
         pass
     
     def handle_delete_trace(self, _):
@@ -74,5 +75,3 @@ class View():
             display(self.m_widget.widgets)
         self.update_select_widget()
         pass
-
-

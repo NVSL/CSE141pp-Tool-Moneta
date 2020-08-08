@@ -36,5 +36,3 @@ class Model():
             self.curr_trace = None
             return False
         return True
-
-

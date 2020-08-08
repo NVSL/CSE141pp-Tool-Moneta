@@ -42,8 +42,8 @@ class Trace():
         with open(self.meta_path) as f:
             lines = f.readlines()
             lines_split = lines[0].split()
-        self.cache_lines = lines_split[0]
-        self.cache_block = lines_split[1]
+        self.cache_lines = int(lines_split[0])
+        self.cache_block = int(lines_split[1])
 
     def init_df(self):
         self.df = vaex.open(self.trace_path)
@@ -51,6 +51,4 @@ class Trace():
         self.df[INDEX_LABEL] = np.arange(0, num_accs)
         self.x_lim = [self.df[INDEX_LABEL].min()[()], self.df[INDEX_LABEL].max()[()]]
         self.y_lim = [self.df.Address.min()[()], self.df.Address.max()[()]]
-
-
 
