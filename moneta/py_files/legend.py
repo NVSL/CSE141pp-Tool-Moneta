@@ -15,6 +15,7 @@ class Legend():
         self.wid_30 = Layout(width='30px')
         self.wid_270 = Layout(width='270px')
         self.checkboxes = []
+        self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
         first_row = HBox([
@@ -67,11 +68,12 @@ class Legend():
     def create_colorpicker(self, clr):
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
         def handle_color_picker(change):
-            if change.name == 'value':
-                self.colormap[clr] = to_rgba(change.new, 1)
-                self.plot.colormap = ListedColormap(self.colormap)
-                self.plot.backend.plot._update_image()
-        clr_picker.observe(handle_color_picker)
+            print("changing colorpicker: ", change)
+            self.colormap[clr] = to_rgba(change.new, 1)
+            self.plot.colormap = ListedColormap(self.colormap)
+            self.plot.backend.plot._update_image()
+        clr_picker.observe(handle_color_picker,names='value')
+        self.colorpickers[clr] = (clr_picker, handle_color_picker)
         return clr_picker
 
     def create_reset_btn(self):
@@ -83,8 +85,13 @@ class Legend():
                     borders='none', align_items='center'
                     )
                 )
-        def refresh_colormap(_):
+        def refresh_colormap(change):
+            print("reseting: ", change)
             self.colormap = np.copy(newc)
+            for clr, val in self.colorpickers.items():
+                val[0].unobserve(val[1], names='value')
+                val[0].value=to_hex(self.colormap[clr][0:3])
+                val[0].observe(val[1], names='value')
             self.plot.colormap = ListedColormap(self.colormap)
             self.plot.backend.plot._update_image()
         btn.on_click(refresh_colormap)
@@ -128,22 +135,21 @@ class Legend():
         return self.checkboxes[-1].widget
 
     def handle_checkbox_change(self, _): # TODO - move constants out
-        if _.name == 'value':
-            selections = set()
-            for checkbox in self.checkboxes:
-                if checkbox.group == SelectionGroup.data_structures:
+        selections = set()
+        for checkbox in self.checkboxes:
+            if checkbox.group == SelectionGroup.data_structures:
+                if checkbox.widget.value == False:
+                    selections.add('(Tag != %s)' % (checkbox.selections))
+            else:
+                for selection in checkbox.selections:
                     if checkbox.widget.value == False:
-                        selections.add('(Tag != %s)' % (checkbox.selections))
-                else:
-                    for selection in checkbox.selections:
-                        if checkbox.widget.value == False:
-                            selections.add('(Access != %d)' % (selection))
-            self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+                        selections.add('(Access != %d)' % (selection))
+        self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
 
 class CheckBox():
     def __init__(self, desc, layout, group, selections, handle_fun):
         self.widget = Checkbox(description=desc, layout=layout,
                                 value=True, disabled=False, indent=False)
-        self.widget.observe(handle_fun)
+        self.widget.observe(handle_fun, names='value')
         self.group = group
         self.selections = selections
