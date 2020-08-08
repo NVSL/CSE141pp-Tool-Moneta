@@ -15,7 +15,7 @@ from settings import (
     WIDGET_LAYOUT,
     CWD_HISTORY_PATH
 )
-sys.path.append(MONETA_BASE_DIR + ".setup/")
+sys.path.append(MONETA_BASE_DIR + "moneta/py_files/")
 
 import logging
 log = logging.getLogger(__name__)
@@ -213,4 +213,3 @@ def delete_traces(trace_paths):
             subprocess.run(['rm', tag_path])
         if (os.path.isfile(meta_path)):
             subprocess.run(['rm', meta_path])
-
