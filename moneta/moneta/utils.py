@@ -7,11 +7,13 @@ import subprocess
 from settings import (
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
+    MONETA_TOOL_DIR,
     OUTPUT_DIR,
     PIN_PATH,
     TOOL_PATH,
     WIDGET_DESC_PROP,
-    WIDGET_LAYOUT
+    WIDGET_LAYOUT,
+    CWD_HISTORY_PATH
 )
 sys.path.append(MONETA_BASE_DIR + "moneta/py_files/")
 
@@ -43,7 +45,36 @@ def text_factory(placeholder, description):
             layout=WIDGET_LAYOUT
             )
 
-def verify_input(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace):
+    
+def parse_cwd(cwd_path):
+    if cwd_path in ("/", "~", ".", ".."):
+        return cwd_path
+    
+    if not (cwd_path.startswith(("/", "~/", "./", "../"))):
+        cwd_path = "./" + cwd_path;
+    if cwd_path.endswith("/"):
+        cwd_path = cwd_path[0:-1]
+    return cwd_path
+
+        
+def load_cwd_file():
+    try:
+        with open(CWD_HISTORY_PATH, "a+") as history:
+            history.seek(0)
+            cwd_history = history.read().split()
+            logging.debug("Reading history from file: {}".format(cwd_history))
+            return cwd_history
+    except Exception as e: 
+        # Allows tool to still work, just no history, if there is a problem with the file
+        log.debug("History file error: \n{}".format(e))
+        return []
+    
+def update_cwd_file(cwd_history):
+    with open(CWD_HISTORY_PATH, "w+") as history_file:
+        for path in cwd_history:
+            history_file.write(path + "\n")
+
+def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
     log.info("Verifying pintool arguments")
   
     if (c_lines <= 0 or c_block <= 0 or m_lines <= 0):
@@ -62,18 +93,27 @@ def verify_input(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trac
         print("Error: Output name can only contain alphanumeric characters and underscore")
         return False
   
+    if (not os.path.isdir(cwd_path)):
+        print("Directory '{}' not found".format(cwd_path))
+        return False
+
+    os.chdir(cwd_path)
+
     if (not os.path.isfile(e_file)):
         print("Executable '{}' not found".format(e_file))
+        os.chdir(MONETA_TOOL_DIR)
         return False
   
     if (not os.access(e_file, os.X_OK)):
         print("\"{}\" is not an executable".format(e_file))
+        os.chdir(MONETA_TOOL_DIR)
         return False
-  
+    
+    os.chdir(MONETA_TOOL_DIR)
     return True
 
 
-def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace):
+def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
     log.info("Running pintool")
   
     prefix = "full_trace_" if is_full_trace else "trace_"
@@ -84,18 +124,7 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
     is_full_trace_int = 1 if is_full_trace else 0
   
     args_string = "" if len(e_args) == 0 else " " + " ".join(e_args) 
-    print("Running \"{}{}\", Cache Lines={}, and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file, args_string, c_lines, c_block, m_lines, o_name))
-  
-  
-    dir_delimiter_index = e_file.rfind("/")
-    if (dir_delimiter_index == -1):
-        e_file = "./" + e_file
-        dir_delimiter_index = 1
-  
-    curr_dir = os.getcwd()
-    exec_dir = e_file[0:dir_delimiter_index + 1]
-    exec_name = "./" + e_file[dir_delimiter_index + 1:len(e_file)]
-    os.chdir(exec_dir)
+    print("Running \"{}{}\" in Directory \"{}\" with Cache Lines={} and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file,  args_string, cwd_path, c_lines, c_block, m_lines, o_name))
       
     args = [
         PIN_PATH, "-ifeellucky", "-injection", "child", "-t", TOOL_PATH,
@@ -104,29 +133,40 @@ def run_pintool(c_lines, c_block, m_lines, e_file, e_args, o_name, is_full_trace
         "-m", str(m_lines),
         "-l", str(c_block),
         "-f", str(is_full_trace_int),
-        "--", exec_name, *e_args
+        "--", e_file, *e_args
     ]
     
-    log.debug("Stripped Executable: {}".format(exec_name))
+    os.chdir(cwd_path)
+    
+    log.debug("Executable: {}".format(e_file))
     log.debug("Running in dir: {}".format(os.getcwd()))
     sub_output = subprocess.run(args, capture_output=True)
+    sub_stdout = sub_output.stdout.decode('utf-8')
     sub_stderr = sub_output.stderr.decode('utf-8')
+    log.debug("Raw pintool stdout: \n{}".format(sub_stdout))
     log.debug("Raw pintool stderr: \n{}".format(sub_stderr))
   
-    os.chdir(curr_dir)
+    os.chdir(MONETA_TOOL_DIR)
   
     if sub_stderr.startswith("Error"):
         print(sub_stderr)
 
-def generate_trace(c_lines, c_block, m_lines, e_file, o_name, is_full_trace):
+def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_trace):
+    cwd_path = os.path.expanduser(parse_cwd(cwd_path))
+    #TODO: Move this into a parse_e_file function
     exec_inputs = e_file.split(" ")
-    exec_file = os.path.expanduser(exec_inputs[0])
+    exec_file_path = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
-    next_args = [c_lines, c_block, m_lines, exec_file, exec_args, o_name, is_full_trace]
+    if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
+        exec_file_path = "./" + exec_file_path; 
+    
+    next_args = [c_lines, c_block, m_lines, cwd_path, exec_file_path, exec_args, o_name, is_full_trace]
     if verify_input(*next_args):
         run_pintool(*next_args)
+        print("Done generating trace: {}".format(o_name))
         return True
     return False
+
 
 def collect_traces():
     """Reads output directory to fill up select widget with traces"""
