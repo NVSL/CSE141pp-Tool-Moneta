@@ -23,6 +23,7 @@ class Legend():
                 Label(value='R', layout=self.wid_30), 
                 Label(value='W', layout=self.wid_30)
             ])
+        print("here")
         self.widgets = VBox([
                 first_row,
                 self.hit_miss_row("Hits", 1, 2, 
@@ -42,6 +43,7 @@ class Legend():
             ], layout=Layout(padding='10px', border='1px solid black', width='210px'))
 
     def hit_miss_row(self, desc, primary_clr, sec_clr, group, selections):
+        print("hit miss")
         return HBox([
             self.create_checkbox(desc, self.wid_150, group, selections),
             self.create_colorpicker(primary_clr),
@@ -49,14 +51,17 @@ class Legend():
         ])
 
     def cache_row(self, desc, clr):
+        print("cache row")
         return HBox([
             Label(value=desc, layout=self.wid_150),
             self.create_colorpicker(clr)
         ])
 
     def get_datastructures(self, tags):
+        print("data structures")
         max_id = max(tags, key=lambda x: x.id_).id_
         stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
+        print("got stats")
         return VBox([Label(value='Data Structures')]+[
             HBox([
                 self.create_checkbox(tag.name, self.wid_150, 
@@ -66,6 +71,7 @@ class Legend():
             for tag in tags], layout=Layout(max_height='210px', overflow_y='auto'))
 
     def create_colorpicker(self, clr):
+        print("colorpicker")
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
         clr_picker.observing = True
         def handle_color_picker(change):
@@ -79,6 +85,7 @@ class Legend():
         return clr_picker
 
     def create_reset_btn(self):
+        print("reset button")
         btn = Button(
                 icon='refresh',
                 tooltip="Reset all colors to default",
@@ -133,6 +140,7 @@ class Legend():
         return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
 
     def create_checkbox(self, desc, layout, group, selections):
+        print("creating checkboxes")
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
         return self.checkboxes[-1].widget
 

@@ -12,3 +12,6 @@ moneta/.output/*
 
 # Swap
 *.swp
+
+# Package egg
+*.egg-info
