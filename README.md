@@ -6,9 +6,9 @@ Generate and visualize billions of memory accesses with this project built on PI
 
 First clone the repository.
 ```
-git clone https://github.com/NVSL/CSE141pp-Tool-MemoryTrace
+git clone https://github.com/NVSL/CSE141pp-Tool-Moneta
 
-cd CSE141pp-Tool-MemoryTrace
+cd CSE141pp-Tool-Moneta
 ```
 
 Build the Docker image and name it `memorytrace`.

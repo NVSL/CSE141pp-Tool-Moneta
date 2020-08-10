@@ -2,6 +2,7 @@ from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
+from utils import load_cwd_file
 import settings
 import logging
 import subprocess
@@ -13,11 +14,12 @@ class MonetaWidgets():
         self.cl = int_field(settings.CACHE_LINES_VAL, settings.CACHE_LINES_DESC)
         self.cb = int_field(settings.CACHE_BLOCK_VAL, settings.CACHE_BLOCK_DESC)
         self.ml = int_field(settings.OUTPUT_LINES_VAL, settings.OUTPUT_LINES_DESC)
-
-        cwd_options = self.load_cwd_history()
+<<<<<<< HEAD:moneta/py_files/moneta_widgets.py
+=======
+>>>>>>> 8bfb027f1b5c8b0e956c55840a1a4210ed857935:moneta/moneta/moneta_widgets.py
         
         self.cwd = Combobox(
-                placeholder=settings.CWD_PATH_DEF, options=cwd_options,description=settings.CWD_PATH_DESC,
+                placeholder=settings.CWD_PATH_DEF, options=load_cwd_file(),description=settings.CWD_PATH_DESC,
                 style=settings.WIDGET_DESC_PROP, layout=settings.WIDGET_LAYOUT)
         
         self.ex = text_field(settings.EXEC_PATH_DEF, settings.EXEC_PATH_DESC)
@@ -35,6 +37,7 @@ class MonetaWidgets():
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
+<<<<<<< HEAD:moneta/py_files/moneta_widgets.py
         
     def load_cwd_history(self):
         try:
@@ -47,3 +50,5 @@ class MonetaWidgets():
             # Allows tool to still work, just no history, if there is a problem with the file
             log.debug("History file error: \n{}".format(e))
             return []
+=======
+>>>>>>> 8bfb027f1b5c8b0e956c55840a1a4210ed857935:moneta/moneta/moneta_widgets.py

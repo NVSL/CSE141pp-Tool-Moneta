@@ -12,9 +12,10 @@ from settings import (
     PIN_PATH,
     TOOL_PATH,
     WIDGET_DESC_PROP,
-    WIDGET_LAYOUT
+    WIDGET_LAYOUT,
+    CWD_HISTORY_PATH
 )
-sys.path.append(MONETA_BASE_DIR + ".setup/")
+sys.path.append(MONETA_BASE_DIR + "moneta/moneta/")
 
 import logging
 log = logging.getLogger(__name__)
@@ -43,6 +44,35 @@ def text_factory(placeholder, description):
             style=WIDGET_DESC_PROP,
             layout=WIDGET_LAYOUT
             )
+
+    
+def parse_cwd(cwd_path):
+    if cwd_path in ("/", "~", ".", ".."):
+        return cwd_path
+    
+    if not (cwd_path.startswith(("/", "~/", "./", "../"))):
+        cwd_path = "./" + cwd_path;
+    if cwd_path.endswith("/"):
+        cwd_path = cwd_path[0:-1]
+    return cwd_path
+
+        
+def load_cwd_file():
+    try:
+        with open(CWD_HISTORY_PATH, "a+") as history:
+            history.seek(0)
+            cwd_history = history.read().split()
+            logging.debug("Reading history from file: {}".format(cwd_history))
+            return cwd_history
+    except Exception as e: 
+        # Allows tool to still work, just no history, if there is a problem with the file
+        log.debug("History file error: \n{}".format(e))
+        return []
+    
+def update_cwd_file(cwd_history):
+    with open(CWD_HISTORY_PATH, "w+") as history_file:
+        for path in cwd_history:
+            history_file.write(path + "\n")
 
 def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
     log.info("Verifying pintool arguments")
@@ -122,17 +152,13 @@ def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_
         print(sub_stderr)
 
 def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_trace):
+    cwd_path = os.path.expanduser(parse_cwd(cwd_path))
+    #TODO: Move this into a parse_e_file function
     exec_inputs = e_file.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
     if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
         exec_file_path = "./" + exec_file_path; 
-    
-    cwd_path = os.path.expanduser(cwd_path)
-    if not (cwd_path.startswith("/") or cwd_path.startswith("./")):
-        cwd_path = "./" + cwd_path;
-    if cwd_path.endswith("/"):
-        cwd_path = cwd_path[0:-1]
     
     next_args = [c_lines, c_block, m_lines, cwd_path, exec_file_path, exec_args, o_name, is_full_trace]
     if verify_input(*next_args):
@@ -187,4 +213,3 @@ def delete_traces(trace_paths):
             subprocess.run(['rm', tag_path])
         if (os.path.isfile(meta_path)):
             subprocess.run(['rm', meta_path])
-

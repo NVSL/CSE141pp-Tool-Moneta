@@ -69,7 +69,7 @@ CUSTOM_CMAP = ListedColormap(newc)
 BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='90%', border='1px solid black')
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
-MONETA_TOOL_DIR = os.path.expanduser("~") + "/work/moneta"
+MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
