@@ -56,6 +56,13 @@ def parse_cwd(cwd_path):
         cwd_path = cwd_path[0:-1]
     return cwd_path
 
+def parse_exec_input(e_input):
+    exec_inputs = e_input.split(" ")
+    exec_file_path = os.path.expanduser(exec_inputs[0])
+    exec_args = exec_inputs[1:]
+    if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
+        exec_file_path = "./" + exec_file_path; 
+    return (exec_file_path, exec_args)
         
 def load_cwd_file():
     try:
@@ -74,38 +81,54 @@ def update_cwd_file(cwd_history):
         for path in cwd_history:
             history_file.write(path + "\n")
 
-def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
+            
+def get_widget_values(m_widget):
+    e_file, e_args = parse_exec_input(m_widget.ex.value)
+    
+    w_vals = {
+        'c_lines': m_widget.cl.value,
+        'c_block': m_widget.cb.value,
+        'm_lines': m_widget.ml.value,
+        'cwd_path': os.path.expanduser(parse_cwd(m_widget.cwd.value)),
+        'e_file': e_file,
+        'e_args': e_args,
+        'o_name': m_widget.to.value,
+        'is_full_trace': m_widget.ft.value
+    }
+    return w_vals
+            
+def verify_input(w_vals):
     log.info("Verifying pintool arguments")
   
-    if (c_lines <= 0 or c_block <= 0 or m_lines <= 0):
+    if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print("Cache lines, cache block, and maximum lines to output must be greater than 0")
         return False
   
-    if (len(e_file) == 0):
+    if (len(w_vals['e_file']) == 0):
         print("Error: No executable provided")
         return False
   
-    if (len(o_name) == 0):
+    if (len(w_vals['o_name']) == 0):
         print("Error: No trace name provided")
         return False
   
-    if not (re.search("^[a-zA-Z0-9_]*$", o_name)):
+    if not (re.search("^[a-zA-Z0-9_]*$", w_vals['o_name'])):
         print("Error: Output name can only contain alphanumeric characters and underscore")
         return False
   
-    if (not os.path.isdir(cwd_path)):
-        print("Directory '{}' not found".format(cwd_path))
+    if (not os.path.isdir(w_vals['cwd_path'])):
+        print("Directory '{}' not found".format(w_vals['cwd_path']))
         return False
 
-    os.chdir(cwd_path)
+    os.chdir(w_vals['cwd_path'])
 
-    if (not os.path.isfile(e_file)):
-        print("Executable '{}' not found".format(e_file))
+    if (not os.path.isfile(w_vals['e_file'])):
+        print("Executable '{}' not found".format(w_vals['e_file']))
         os.chdir(MONETA_TOOL_DIR)
         return False
   
-    if (not os.access(e_file, os.X_OK)):
-        print("\"{}\" is not an executable".format(e_file))
+    if (not os.access(w_vals['e_file'], os.X_OK)):
+        print("\"{}\" is not an executable".format(w_vals['e_file']))
         os.chdir(MONETA_TOOL_DIR)
         return False
     
@@ -113,32 +136,33 @@ def verify_input(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is
     return True
 
 
-def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_full_trace):
+def run_pintool(w_vals):
     log.info("Running pintool")
   
-    prefix = "full_trace_" if is_full_trace else "trace_"
+    prefix = "full_trace_" if w_vals['is_full_trace'] else "trace_"
     # Temporary fix until Pintool handles double-open error
-    if(os.path.isfile(OUTPUT_DIR + prefix + o_name + ".hdf5")):
-        subprocess.run(["rm", OUTPUT_DIR + prefix + o_name + ".hdf5"]);
+    if(os.path.isfile(OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5")):
+        subprocess.run(["rm", OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5"]);
       
-    is_full_trace_int = 1 if is_full_trace else 0
+    is_full_trace_int = 1 if w_vals['is_full_trace'] else 0
   
-    args_string = "" if len(e_args) == 0 else " " + " ".join(e_args) 
-    print("Running \"{}{}\" in Directory \"{}\" with Cache Lines={} and Block Size={}B for Number of Lines={} into Trace: {}".format(e_file,  args_string, cwd_path, c_lines, c_block, m_lines, o_name))
+    args_string = "" if len(w_vals['e_args']) == 0 else " " + " ".join(w_vals['e_args']) 
+    print("Running \"{}{}\" in Directory \"{}\" with Cache Lines={} and Block Size={}B for Number of Lines={} into Trace: {}".format(
+            w_vals['e_file'], args_string, w_vals['cwd_path'], w_vals['c_lines'], w_vals['c_block'], w_vals['m_lines'], w_vals['o_name']))
       
     args = [
         PIN_PATH, "-ifeellucky", "-injection", "child", "-t", TOOL_PATH,
-        "-o", o_name,
-        "-c", str(c_lines),
-        "-m", str(m_lines),
-        "-l", str(c_block),
+        "-o", w_vals['o_name'],
+        "-c", str(w_vals['c_lines']),
+        "-m", str(w_vals['m_lines']),
+        "-l", str(w_vals['c_block']),
         "-f", str(is_full_trace_int),
-        "--", e_file, *e_args
+        "--", w_vals['e_file'], *w_vals['e_args']
     ]
     
-    os.chdir(cwd_path)
+    os.chdir(w_vals['cwd_path'])
     
-    log.debug("Executable: {}".format(e_file))
+    log.debug("Executable: {}".format(w_vals['e_file']))
     log.debug("Running in dir: {}".format(os.getcwd()))
     sub_output = subprocess.run(args, capture_output=True)
     sub_stdout = sub_output.stdout.decode('utf-8')
@@ -151,19 +175,10 @@ def run_pintool(c_lines, c_block, m_lines, cwd_path, e_file, e_args, o_name, is_
     if sub_stderr.startswith("Error"):
         print(sub_stderr)
 
-def generate_trace(c_lines, c_block, m_lines, cwd_path, e_file, o_name, is_full_trace):
-    cwd_path = os.path.expanduser(parse_cwd(cwd_path))
-    #TODO: Move this into a parse_e_file function
-    exec_inputs = e_file.split(" ")
-    exec_file_path = os.path.expanduser(exec_inputs[0])
-    exec_args = exec_inputs[1:]
-    if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
-        exec_file_path = "./" + exec_file_path; 
-    
-    next_args = [c_lines, c_block, m_lines, cwd_path, exec_file_path, exec_args, o_name, is_full_trace]
-    if verify_input(*next_args):
-        run_pintool(*next_args)
-        print("Done generating trace: {}".format(o_name))
+def generate_trace(w_vals):
+    if verify_input(w_vals):
+        run_pintool(w_vals)
+        print("Done generating trace: {}".format(w_vals['o_name']))
         return True
     return False
 
