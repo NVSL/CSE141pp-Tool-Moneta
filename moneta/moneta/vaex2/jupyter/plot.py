@@ -87,10 +87,15 @@ class PlotBase(widgets.Widget):
                 self.x_label = kwargs.get('x_label')
             if 'cache_size' in kwargs:
                 self.cache_size = kwargs.get('cache_size')
+            if 'default_title' in kwargs:
+                self.default_title = kwargs.get('default_title')
+            else:
+                self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
-                        'extra-widget': self.extra_widget
+                        'extra-widget': self.extra_widget,
+                        'default_title': self.default_title
                     },
                     model=show_drawer
             )
