@@ -322,47 +322,31 @@ def update_click_brush(self, *args):
                 (x1, y1), (x2, y2) = self.click_brush.selected
                 mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
                 df = self.dataset
-                if x2 > x1 and y1 > y2:
-                         res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y2) & (df["Address"] <= y1)]	
-                         if res.count() != 0:
+                coor_xmin = min(x1, x2)
+                coor_xmax = max(x1, x2)
+                coor_ymin = min(y1, y2)
+                coor_ymax = max(y1, y2)
+                res = df[(df["index"] >= coor_xmin) & (df["index"] <= coor_xmax) & (df["Address"] >= coor_ymin) & (df["Address"] <= coor_ymax)]	
+
+                #if there are values selected within the region
+                if res.count() != 0:
+                         #mouse move towards the right
+                         if x2 > x1:
                                  zoom_x = res.index.values[-1]
-                                 zoom_y = res.Address.min()[()]
+                        #mouse move towards the left
                          else:
-                                 zoom_x = x2
-                                 zoom_y = y2
-                #mouse move towards top right
-                elif x2 > x1 and y2 > y1:
-                         res = df[(df["index"] >= x1) & (df["index"] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]	
-                         if res.count() != 0:
-                                 zoom_x = res.index.values[-1]
-                                 zoom_y = res.Address.max()[()]
-                         else:
-                                 zoom_x = x2
-                                 zoom_y = y2
-                #mouse move towards top left
-                elif x1 > x2 and y2 > y1:
-                         res = df[(df["index"] >= x2) & (df["index"] <= x1) & (df["Address"] >= y1) & (df["Address"] <= y2)]	
-                         if res.count() != 0:
                                  zoom_x = res.index.values[0]
+                         #mouse move towards the top
+                         if y2 > y1:
                                  zoom_y = res.Address.max()[()]
+                         #mouse move towards the bottom
                          else:
-                                 zoom_x = x2
-                                 zoom_y = y2
-                #mouse move towards bottom left
+                                 zoom_y = res.Address.min()[()]
+                #zoom towards where the mouse cursor ends
                 else:
-                         res = df[(df["index"] >= x2) & (df["index"] <= x1) & (df["Address"] >= y2) & (df["Address"] <= y1)]	 
-                         if res.count() != 0:
-                                 zoom_x = res.index.values[0]
-                                 zoom_y = res.Address.min()[()]
-                         else:
-                                 zoom_x = x2
-                                 zoom_y = y2
-	        
-
-                #else:
-                #        zoom_x = x2
-                #        zoom_y = y2
-
+                         zoom_x = x2
+                         zoom_y = y2
+              
                 self.click_zoom_update_coords_x(zoom_x)
                 self.click_zoom_update_coords_y(zoom_y)
             self.figure.interaction = self.click_brush

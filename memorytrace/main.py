@@ -672,6 +672,40 @@ def generate_plot(trace_name):
 
   vaex_extended.vaex_cache_size = int(m_split[0])*int(m_split[1])
 
+  czoom_xaxis = widgets.IntSlider(value=50, min=20, max=500, step=10, description='Index Range', disabled=False, 
+                                  continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
+  czoom_yaxis = widgets.IntSlider(value=100, min=50, max=1000, step=10, description='Address Range', disabled=False, 
+                                  continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
+  czoom_xaxis.layout.visibility = "hidden"
+  czoom_yaxis.layout.visibility = "hidden"
+  global click_zoom_x
+  click_zoom_x = czoom_xaxis.value
+  global click_zoom_y
+  click_zoom_y = czoom_yaxis.value
+
+  def on_x_value_change(change):
+    global click_zoom_x
+    click_zoom_x = change['new']
+  
+  def on_y_value_change(change):
+    global click_zoom_y
+    click_zoom_y = change['new']
+
+  czoom_xaxis.observe(on_x_value_change, names='value')
+  czoom_yaxis.observe(on_y_value_change, names='value')
+  
+  click_zoom_button_layout = widgets.Layout(width='auto', height='40px') #set width and height
+
+  czoom_button = widgets.Button(
+    description='Zoom to Area',
+    disabled=False,
+    display='flex',
+    flex_flow='column',
+    align_items='stretch', 
+      layout = click_zoom_button_layout
+  )
+  czoom_button.layout.display = 'none'
+
   class click_zoom_observer:
     def __init__(self, observable):
         self.coor_x = 1.0
@@ -688,10 +722,14 @@ def generate_plot(trace_name):
     def update_click_zoom_coords(self, data):
 
         #set limits for data
-        self.x_coormin = self.observable.coor_x - 50
-        self.x_coormax = self.observable.coor_x + 50
-        self.y_coormin = self.observable.coor_y - 100
-        self.y_coormax = self.observable.coor_y + 100
+        #self.x_coormin = self.observable.coor_x - 50
+        #self.x_coormax = self.observable.coor_x + 50
+        #self.y_coormin = self.observable.coor_y - 100
+        #self.y_coormax = self.observable.coor_y + 100
+        self.x_coormin = self.observable.coor_x - click_zoom_x/2
+        self.x_coormax = self.observable.coor_x + click_zoom_x/2
+        self.y_coormin = self.observable.coor_y - click_zoom_y/2
+        self.y_coormax = self.observable.coor_y + click_zoom_y/2
 
         #filter data to only those limits
         df_filter1 = df[df.index < self.x_coormax]
@@ -700,13 +738,17 @@ def generate_plot(trace_name):
         df_filter4 = df_filter3[df.Address < self.y_coormax]
         colors = newc[df_filter4.Access.values]
         plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
-
+    
 
         
   click_zoom_widget = widgets.Output()
   #display(click_zoom_widget)
   @click_zoom_widget.capture(clear_output = True, wait=True)
   def plot_click_zoom(dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
+    if czoom_xaxis.layout.visibility == "hidden":
+        czoom_xaxis.layout.visibility = "visible"
+        czoom_yaxis.layout.visibility = "visible"
+        czoom_button.layout.display = "block"
     with click_zoom_widget:
         #filter for indices and addresses and their access type that are currently displayed in main widget
         index = dataset.evaluate(df.index, selection=True)
@@ -715,6 +757,9 @@ def generate_plot(trace_name):
         colors = newc[access]
         #plot the data
         plt.scatter(index,  address, c=colors, s=0.5)
+        plt.title('Mini Zoom')
+        plt.xlabel('Index')
+        plt.ylabel('Address')
         #set limits
         plt.xlim(xlim_min, xlim_max)
         plt.ylim(ylim_min, ylim_max)
@@ -729,8 +774,8 @@ def generate_plot(trace_name):
               RWCheckbox(description="Capacity Misses ("+str(missCount)+")", primary_color=newc[4], secondary_color=newc[5]),
               RWCheckbox(description="Compulsory Misses ("+str(compMissCount)+")", primary_color=newc[6], secondary_color=newc[8])]
   cacheChecks2 = [CacheLabel(description="Cache ("+str(int(m_split[0]) * int(m_split[1]))+" bytes)", color_value=newc[3])]
-  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox + [click_zoom_widget],
-                       layout=Layout(padding='10px',border='1px solid black')
+  checks2 = VBox([VBox(children=[legendLabel] + hmChecks2 +  rwChecks2 + cacheChecks2 + tagChecksBox + [click_zoom_widget] + [czoom_xaxis] 
+                       + [czoom_yaxis] + [czoom_button], layout=Layout(padding='10px',border='1px solid black')
                       )])
   for check in rwChecks2:
       check.observe(updateReadWrite2)
@@ -747,6 +792,15 @@ def generate_plot(trace_name):
   #create click_zoom object and connect to the widget's backend
   click_zoom_obj = click_zoom_observer(plot.backend)
 
+  def czoom_zoom(b):
+    plot.backend.scale_x.min = click_zoom_obj.x_coormin
+    plot.backend.scale_x.max = click_zoom_obj.x_coormax
+    plot.backend.scale_y.min = click_zoom_obj.y_coormin
+    plot.backend.scale_y.max = click_zoom_obj.y_coormax
+    plot.backend._update_limits()
+    
+    
+  czoom_button.on_click(czoom_zoom)
 
   if tag_path:
     for i in range(numTags):
