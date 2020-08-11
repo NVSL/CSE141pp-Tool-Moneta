@@ -2,10 +2,11 @@ from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
-from utils import load_cwd_file
+from utils import load_cwd_file, parse_cwd, parse_exec_input
 import settings
 import logging
 import subprocess
+import os
 log = logging.getLogger(__name__)
 
 class MonetaWidgets():
@@ -34,15 +35,17 @@ class MonetaWidgets():
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
-        
-    def load_cwd_history(self):
-        try:
-            with open(settings.CWD_HISTORY_PATH, "a+") as history:
-                history.seek(0)
-                cwd_history = history.read().split()
-                logging.debug("Reading history from file: {}".format(cwd_history))
-                return cwd_history
-        except Exception as e: 
-            # Allows tool to still work, just no history, if there is a problem with the file
-            log.debug("History file error: \n{}".format(e))
-            return []
+    def get_widget_values(self):
+        e_file, e_args = parse_exec_input(self.ex.value)
+
+        w_vals = {
+            'c_lines': self.cl.value,
+            'c_block': self.cb.value,
+            'm_lines': self.ml.value,
+            'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
+            'e_file': e_file,
+            'e_args': e_args,
+            'o_name': self.to.value,
+            'is_full_trace': self.ft.value
+        }
+        return w_vals
