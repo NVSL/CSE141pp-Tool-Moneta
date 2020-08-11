@@ -23,15 +23,14 @@ class Legend():
         self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
-        first_row = HBox([
-                Label(value='Legend', layout=self.wid_150), 
-                Label(value='R', layout=self.wid_30), 
-                Label(value='W', layout=self.wid_30)
-            ])
-        self.widgets = VBox([
-                self.get_memoryaccesses(tags),
-                self.get_datastructures(tags)
-            ], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        self.add_accordion('Legend', self.get_memoryaccesses(tags))
+        self.add_accordion('Data Structures', self.get_datastructures(tags))
+
+    def add_accordion(self, name, contents):
+        accordion = Accordion([contents])
+        accordion.set_title(0, name)
+        self.widgets.children = tuple(list(self.widgets.children) + [accordion])
 
     def hit_miss_row(self, desc, primary_clr, sec_clr, group, read_selection, write_selection):
         read = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_read, [read_selection])
@@ -70,38 +69,35 @@ class Legend():
         hits_row = self.hit_miss_row("Hits", 1, 2, SelectionGroup.hit_miss, READ_HIT, WRITE_HIT)
         cap_misses_row = self.hit_miss_row("Cap Misses", 4, 5, SelectionGroup.hit_miss, READ_MISS, WRITE_MISS)
         comp_misses_row = self.hit_miss_row("Comp Misses", 6, 8, SelectionGroup.hit_miss, COMP_R_MISS, COMP_W_MISS)
-        first_row = self.all_rw_row(self.checkboxes) # All required checkboxes must already be in self.checkboxes
-        memoryaccesses = Accordion([VBox([
-            first_row,
+        all_rw_row = self.all_rw_row(self.checkboxes) # All required checkboxes must already be in self.checkboxes
+        memoryaccesses = VBox([
+            all_rw_row,
             hits_row,
             cap_misses_row,
             comp_misses_row,
             self.cache_row("Cache", 3),
-            self.create_reset_btn()],layout=Layout(padding='10px'))])
-        memoryaccesses.set_title(0,'Legend')
+            self.create_reset_btn()],layout=Layout(padding='10px'))
         return memoryaccesses
 
     def get_datastructures(self, tags):
         max_id = max(tags, key=lambda x: x.id_).id_
         stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         
-        datastructures = [HBox([
+        tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
             layout=Layout(height='28px'))
         for tag in tags]
         
-        row_all = HBox([
+        all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
-                SelectionGroup.data_structures, 0, # Does it matter if tag ID is 0?
+                SelectionGroup.data_structures, max_id+1,
                 [checkbox.widget for checkbox in self.checkboxes if checkbox.group == SelectionGroup.data_structures]),
             ], layout=Layout(height='28px'))
 
-        accordion = Accordion([VBox(
-            [row_all] + datastructures,
+        accordion = VBox(
+            [all_ds_row] + tag_rows,
             layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
-        ])
-        accordion.set_title(0, 'Data Structures')
         return accordion
 
     def create_colorpicker(self, clr):
