@@ -85,6 +85,8 @@ class PlotBase(widgets.Widget):
                 self.legend = kwargs.get('legend')
             if 'x_label' in kwargs:
                 self.x_label = kwargs.get('x_label')
+            if 'y_label' in kwargs:
+                self.y_label = kwargs.get('y_label')
             if 'cache_size' in kwargs:
                 self.cache_size = kwargs.get('cache_size')
             self.widget = PlotTemplate(components={
