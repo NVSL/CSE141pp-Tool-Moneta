@@ -83,6 +83,7 @@ NO_TAGS = "No tags were traced"
 ## Vaex
 
 INDEX_LABEL = "Access Number"
+ADDRESS_LABEL = "Bytes"
 
 # Pintool Enumerations
 COMP_W_MISS = 6
