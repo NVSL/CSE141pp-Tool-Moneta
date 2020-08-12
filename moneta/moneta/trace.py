@@ -1,4 +1,4 @@
-from settings import NO_TAGS, INDEX_LABEL, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_ID
+from settings import NO_TAGS, INDEX_LABEL, ADDRESS_LABEL, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_ID
 import numpy as np
 import vaex
 import csv
@@ -50,8 +50,9 @@ class Trace():
 
     def init_df(self):
         self.df = vaex.open(self.trace_path)
-        num_accs = self.df.Address.count()
+        self.df.rename_column('Address', ADDRESS_LABEL)
+        num_accs = self.df[ADDRESS_LABEL].count()
         self.df[INDEX_LABEL] = np.arange(0, num_accs)
         self.x_lim = [self.df[INDEX_LABEL].min()[()], self.df[INDEX_LABEL].max()[()]]
-        self.y_lim = [self.df.Address.min()[()], self.df.Address.max()[()]]
+        self.y_lim = [self.df[ADDRESS_LABEL].min()[()], self.df[ADDRESS_LABEL].max()[()]]
 
