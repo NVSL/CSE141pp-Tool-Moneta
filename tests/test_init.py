@@ -32,7 +32,6 @@ class TestInit:
         assert type(in_tag.id_) is int
 
     def test_legend(self, mock_tags, mock_df):
-        print("in test legend")
         in_legend = Legend(mock_tags, mock_df)
         assert hasattr(in_legend, 'df')
         assert hasattr(in_legend, 'colormap')
