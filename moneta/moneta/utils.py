@@ -49,7 +49,8 @@ def text_factory(placeholder, description):
 def parse_cwd(cwd_path):
     if cwd_path in ("/", "~", ".", ".."):
         return cwd_path
-    
+   
+    # Assume '.' if there are no special path characters
     if not (cwd_path.startswith(("/", "~/", "./", "../"))):
         cwd_path = "./" + cwd_path;
     if cwd_path.endswith("/"):
@@ -60,8 +61,11 @@ def parse_exec_input(e_input):
     exec_inputs = e_input.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
-    if not (exec_file_path.startswith("/") or exec_file_path.startswith("./")):
+
+    # Pin sometimes doensn't run correctly if './' isn't specified
+    if not (exec_file_path.startswith(("/", "~/", "./", "../"))):
         exec_file_path = "./" + exec_file_path; 
+
     return (exec_file_path, exec_args)
         
 def load_cwd_file():
