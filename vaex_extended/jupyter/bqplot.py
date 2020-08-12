@@ -92,12 +92,6 @@ def update_image(self, rgb_image):
         self.image.x = (self.scale_x.min, self.scale_x.max)
         self.image.y = (self.scale_y.min, self.scale_y.max)
 
-@extend_class(BqplotBackend)
-def _update_limits(self, *args):
-    with self.output:
-        limits = copy.deepcopy(self.limits)
-        limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
-        self.limits = limits;
 
 @extend_class(BqplotBackend)
 def create_tools(self):
@@ -109,7 +103,6 @@ def create_tools(self):
     self._main_widget = widgets.VBox()
     self._main_widget_1 = widgets.HBox()
     self._main_widget_2 = widgets.HBox()
-    self._main_widget_3 = widgets.HBox()
     if 1:  # tool_select:
         tool_actions_map[PAN_ZOOM] = self.panzoom
         tool_actions.append(PAN_ZOOM)
@@ -287,7 +280,7 @@ def create_tools(self):
         self._main_widget_1.children += (self.button_action,)
         self._main_widget_1.children += (self.button_reset,)
         # self._main_widget_2.children += (self.button_selection_mode,)
-    self._main_widget.children = [self._main_widget_1, self._main_widget_2, self._main_widget_3]
+    self._main_widget.children = [self._main_widget_1, self._main_widget_2]
     self.control_widget.children += (self._main_widget,)
     self._update_grid_counter = 0  # keep track of t
     self._update_grid_counter_scheduled = 0  # keep track of t
