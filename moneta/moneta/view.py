@@ -5,7 +5,7 @@ from moneta_widgets import MonetaWidgets
 from legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.jupyter.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
