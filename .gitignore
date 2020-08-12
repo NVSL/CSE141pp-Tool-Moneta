@@ -9,3 +9,6 @@ moneta/.output/*
 
 # Exclusions
 !.gitkeep
+
+# Swap
+*.swp
