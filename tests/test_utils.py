@@ -10,6 +10,8 @@ class TestUtils:
                 ("/", "/"),
                 ("home", "./home"),
                 ("~", "~"),
+                ("./", "."),
+                ("Examples/", "./Examples"),
             ])
     def test_basic_parse_cwd(self, input_, expected):
         assert u.parse_cwd(input_) == expected
