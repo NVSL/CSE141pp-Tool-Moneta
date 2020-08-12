@@ -1,10 +1,11 @@
+from contextlib import contextmanager
 import subprocess
+import argparse
+import os
+
 PIN_DIR = "/pin/source/tools/ManualExamples/"
 TRACE_TOOL = "~/work/.setup/trace_tool.cpp"
 OUTPUT_PATH = "~/work/.setup/"
-
-from contextlib import contextmanager
-import os
 
 @contextmanager
 def cd(newdir):
@@ -15,32 +16,19 @@ def cd(newdir):
     finally:
         os.chdir(prevdir)
 
-curr_dir = os.getcwd() + "/"
-print("Enter input file and output directory. Press enter for defaults")
-print()
-print("Default input [" + TRACE_TOOL + "]")
-input_path = input(">> Enter path to pintool file: ")
+parser = argparse.ArgumentParser(description="Input and Output for compiling pintool")
+parser.add_argument('input', nargs='?', default=TRACE_TOOL)
+parser.add_argument('output_dir', nargs='?', default=OUTPUT_PATH)
+args = parser.parse_args()
+input_path = args.input
+output_path = args.output_dir
 
-if len(input_path) == 0:
-    input_path = TRACE_TOOL
-else:
-    if input_path.rfind(".cpp") == -1:
-        print("Error: Not a cpp file")
-        raise SystemExit
-    if input_path[0] != "/":
-        input_path = curr_dir + input_path
+if input_path.rfind(".cpp") == -1:
+    print(f'Error: Not a cpp file - {input_path}')
+    raise SystemExit
 
 full_input_path = os.path.expanduser(input_path)
 print("Using - " + full_input_path)
-
-print()
-print("Default output dir [" + OUTPUT_PATH + "]")
-output_path = input(">> Enter path to store .so file: ")
-
-if len(output_path) == 0:
-    output_path = OUTPUT_PATH
-elif output_path[0] != "/":
-    output_path = curr_dir + output_path
 
 if output_path[-1] != "/":
     output_path+="/"
@@ -48,10 +36,12 @@ if output_path[-1] != "/":
 full_output_path = os.path.expanduser(output_path)
 print("Using - " + full_output_path)
 
-subprocess.run(["cp", full_input_path, PIN_DIR], check=True)
-print()
-print("---------------Changing Directories-----------------")
+try:
+    subprocess.run(["cp", full_input_path, PIN_DIR], check=True)
+except:
+    raise SystemExit
 
+print("\n---------------Changing Directories-----------------")
 with cd(PIN_DIR):
 
     full_input_path.rfind("/")
@@ -67,4 +57,8 @@ with cd(PIN_DIR):
         raise SystemExit
 
     print("---------------Copying to output dir----------------")
-    subprocess.run(["cp", PIN_DIR+"obj-intel64/"+pintool_so, full_output_path], check=True)
+    try:
+        subprocess.run(["cp", PIN_DIR+"obj-intel64/"+pintool_so, full_output_path], check=True)
+    except:
+        raise SystemExit
+    print("Success!!")
