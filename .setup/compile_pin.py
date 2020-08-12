@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description="Input and Output for compiling pin
 parser.add_argument('input', nargs='?', default=TRACE_TOOL)
 parser.add_argument('output_dir', nargs='?', default=OUTPUT_PATH)
 args = parser.parse_args()
+curr_dir = os.getcwd()
 input_path = args.input
 output_path = args.output_dir
 
@@ -34,6 +35,8 @@ if output_path[-1] != "/":
     output_path+="/"
 
 full_output_path = os.path.expanduser(output_path)
+if full_output_path[0] != "/":
+    full_output_path = curr_dir + "/" + full_output_path
 print("Using - " + full_output_path)
 
 try:
