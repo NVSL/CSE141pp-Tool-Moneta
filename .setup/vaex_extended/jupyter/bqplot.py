@@ -16,12 +16,43 @@ accessRanges = {}
 
 PAN_ZOOM = "pan/zoom"
 ZOOM_SELECT = 'zoom select'
+CLICK_ZOOM = 'click select'
 SELECT = "select"
 
 ZOOM_UNDO = "undo"
 ZOOM_REDO = "redo"
 ZOOM_SEARCH = "zoom"
 ZOOM_HISTORY_SIZE = 50
+
+coor_x = 0
+coor_y = 0
+
+@property
+@extend_class(BqplotBackend)
+def click_zoom_coords_x(self):
+    return self.coor_x
+
+@property
+@extend_class(BqplotBackend)
+def click_zoom_coords_y(self):
+    return self.coor_y
+
+@extend_class(BqplotBackend)
+def click_zoom_update_coords_x(self, value_x):
+    self.coor_x = value_x
+    for callback in self._observers:
+        callback(self.coor_x)
+
+@extend_class(BqplotBackend)
+def click_zoom_update_coords_y(self, value_y):
+    self.coor_y = value_y
+    for callback in self._observers:
+        callback(self.coor_y)
+
+@extend_class(BqplotBackend)
+def bind_to(self, callback):
+    self._observers.append(callback)
+
 
 @extend_class(BqplotBackend)
 def __init__(self, figure=None, figure_key=None):
@@ -33,6 +64,9 @@ def __init__(self, figure=None, figure_key=None):
     self._cleanups = []
     
     self.dataset_original = None
+    self.coor_x = 0
+    self.coor_y = 0
+    self._observers = []
     #self.limit_callback = None
 
 @extend_class(BqplotBackend)
@@ -161,6 +195,12 @@ def create_tools(self):
         tool_actions.append(SELECT)
 
         self.brush.observe(self.update_brush, ["selected", "selected_x"])
+        self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
+        tool_actions_map[CLICK_ZOOM] = self.click_brush
+        tool_actions.append(CLICK_ZOOM)
+
+        self.click_brush.observe(self.update_click_brush, ["brushing"])
+
         # fig.interaction = brush
         # callback = self.dataset.signal_selection_changed.connect(lambda dataset: update_image())
         # callback = self.dataset.signal_selection_changed.connect(lambda *x: self.update_grid())
@@ -208,7 +248,7 @@ def create_tools(self):
                 name = tool_actions[self.button_action.v_model]
                 self.figure.interaction = tool_actions_map[name]
 
-        tool_actions = [PAN_ZOOM, ZOOM_SELECT]
+        tool_actions = [PAN_ZOOM, ZOOM_SELECT, CLICK_ZOOM]
         # tool_actions = [("m", "m"), ("b", "b")]
         self.button_action = \
             v.BtnToggle(v_model=0, mandatory=True, multiple=False, children=[
@@ -229,6 +269,15 @@ def create_tools(self):
                                 ])
                             }], children=[
                                 "Zoom to selection"
+                             ]),
+                            v.Tooltip(bottom=True, v_slots=[{
+                                'name': 'activator',
+                                'variable': 'tooltip',
+                                'children': v.Btn(v_on='tooltip.on', children=[
+                                    v.Icon(children=['mdi-mouse'])
+                                ])
+                            }], children=[
+                                "Click zoom"
                             ])
                     ])
         self.widget_tool_basic = v.Layout(children=[
@@ -459,3 +508,43 @@ def update_undo_redo(self):
     self.button_undo.disabled = False if len(self.undo) else True;
     self.button_redo.disabled = False if len(self.redo) else True;
 
+@extend_class(BqplotBackend)
+def update_click_brush(self, *args):
+    if not self.click_brush.brushing:
+        with self.output:
+            self.figure.interaction = None
+            if self.click_brush.selected is not None:
+                (x1, y1), (x2, y2) = self.click_brush.selected
+                mode = self.modes_names[self.modes_labels.index(self.button_selection_mode.value)]
+                df = self.dataset
+                coor_xmin = min(x1, x2)
+                coor_xmax = max(x1, x2)
+                coor_ymin = min(y1, y2)
+                coor_ymax = max(y1, y2)
+                res = df[(df["index"] >= coor_xmin) & (df["index"] <= coor_xmax) & (df["Address"] >= coor_ymin) & (df["Address"] <= coor_ymax)]	
+
+                #if there are values selected within the region
+                if res.count() != 0:
+                         #mouse move towards the right
+                         if x2 > x1:
+                                 zoom_x = res.index.values[-1]
+                        #mouse move towards the left
+                         else:
+                                 zoom_x = res.index.values[0]
+                         #mouse move towards the top
+                         if y2 > y1:
+                                 zoom_y = res.Address.max()[()]
+                         #mouse move towards the bottom
+                         else:
+                                 zoom_y = res.Address.min()[()]
+                #zoom towards where the mouse cursor ends
+                else:
+                         zoom_x = x2
+                         zoom_y = y2
+
+                self.click_zoom_update_coords_x(zoom_x)
+                self.click_zoom_update_coords_y(zoom_y)
+            self.figure.interaction = self.click_brush
+            with self.click_brush.hold_trait_notifications():
+                self.click_brush.selected_x = None
+                self.click_brush.selected_y = None	 
