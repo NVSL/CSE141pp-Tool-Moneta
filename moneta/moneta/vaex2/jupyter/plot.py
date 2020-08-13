@@ -44,7 +44,6 @@ class PlotBase(widgets.Widget):
                  show_drawer=False,
                  controls_selection=True, **kwargs):
         super(PlotBase, self).__init__(x=x, y=y, z=z, w=w, what=what, vcount_limits=vcount_limits, grid_limits=grid_limits, f=f, **kwargs)
-        print("vaex extended plot base init")
         self.backend = backend
         self.vgrids = [None, None, None]
         self.vcount = None
@@ -143,7 +142,6 @@ class PlotBase(widgets.Widget):
         display(self.widget)
 
     def add_extra_widget(self, widget):
-        print("in extra widget adding")
         self.extra_widget.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
         self.extra_widget.send_state('children')

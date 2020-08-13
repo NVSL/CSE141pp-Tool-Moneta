@@ -27,4 +27,12 @@ def mock_tags():
         for row in rows:
             tags.append(Tag(row))
     return tags
+
+@pytest.fixture
+def mock_executable():
+    return "./sorting"
+
+@pytest.fixture
+def mock_working_dir():
+    return MONETA_BASE_DIR+"tests/data/"
  

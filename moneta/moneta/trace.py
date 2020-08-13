@@ -1,4 +1,4 @@
-from settings import NO_TAGS, INDEX_LABEL, ADDRESS_LABEL, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_ID
+from moneta.settings import NO_TAGS, INDEX_LABEL, ADDRESS_LABEL, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_ID
 import numpy as np
 import vaex
 import csv

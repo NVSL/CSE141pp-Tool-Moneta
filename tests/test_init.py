@@ -24,6 +24,7 @@ class TestInit:
         name = ''
         in_trace = Trace('', '', '', '')
         assert hasattr(in_trace, 'name')
+        assert hasattr(in_trace, 'err_message')
         assert in_trace.name == name
 
     def test_tag(self, mock_tags):

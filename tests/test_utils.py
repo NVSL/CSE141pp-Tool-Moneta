@@ -44,4 +44,19 @@ class TestWidgetFactories:
         assert text.description == "desc"
         assert text.style is not None
 
-
+class TestRunPintool:
+    def test_run_pintool_basic(self, mock_executable, mock_working_dir):
+        cache_lines = 10
+        cache_block_size = 16
+        output_limit = 10
+        u.run_pintool(
+                cache_lines,
+                cache_block_size,
+                output_limit,
+                mock_working_dir,
+                mock_executable,
+                "",
+                mock_executable[2:],
+                False
+                )
+        pass

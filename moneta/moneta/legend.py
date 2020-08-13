@@ -1,6 +1,6 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT
 from enum import Enum
 import numpy as np
 
