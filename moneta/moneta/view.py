@@ -1,11 +1,11 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
 from utils import generate_trace, delete_traces, update_cwd_file, parse_cwd
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaex2.jupyter.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -72,10 +72,10 @@ class View():
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(tags, df)
-        plot = df.plot_widget(df[INDEX_LABEL], df.Address, what='max(Access)',
+        plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
-                 x_label=INDEX_LABEL, cache_size=cache_size)
+                 x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
