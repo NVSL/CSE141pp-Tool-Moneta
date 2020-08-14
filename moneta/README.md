@@ -1,80 +1,163 @@
-# Our Project lies here
+# Using Moneta
 
-Compile the program you want to trace  
-Start up the notebook and run it after specifying the full path to the executable that is to be analyzed.
+Instructions on how to run and use Moneta
 
-# Program Tagging Usage
-Add `#include "/setup/pin_macros.h"` to the top of your code. Note that the include contains the full path to the header file. By default, the file is located in `/setup/pin_macros.h`. The following three functions will be used to tag your code:
+## Important Notes
 
+Throughout this README, you will see Pin referenced a few times. Pin is the instrumentation tool that we used to read and interpret memory accesses at runtime. It runs in the background whenever you generate traces and produces the trace files for your program.
+
+After connecting to the Docker container, you should be in the `~/work/moneta` directory. This is Moneta's base directory. When using Moneta, any relative paths you input into the text boxes will be relative to this directory.
+
+A number of example programs are available under the `~work/moneta/Examples/src` directory. These programs were used by the developers to test Moneta's capabilities and have been left here to use as sample programs for exploring the tool. If you would like to use these programs, you will need to compile them first by running `make` in the `~/work/moneta` directory (or `make filename` without the `.cpp` to compile individual programs). Note that the Makefile compiles the programs with `-O0`. The resulting executables will be located in the `~/work/moneta/Examples/build` directory. 
+
+**Know your port number.** The port number was set when you ran the Docker commands to build the container (see main `README`). If you do not remember your port number, open a new terminal and run `docker port moneta` (do **not** connect to the Moneta container). You will a result that looks like the following:
 ```
-void DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
-void DUMP_ACCESS_STOP_TAG(const char* tag)
-void FLUSH_CACHE()
+8888/tcp -> 0.0.0.0:####
+```
+The `####` is your port number. **You will need this to connect to the Jupyter Notebook.**
+
+
+## Tagging Programs
+
+`pin_tags.h` is the header file containing the functions to tag memory traces for your program. By default, it is located in the `~/work/moneta` directory, but you are free to copy this file to any directory that you find convenient. The functions in this file will indicate to Pin when it should start and stop writing memory accesses to file, and which memory address ranges it should trace.
+
+To use `pin_tags.h` you will need to add `#include "PATH_TO_FILE/pin_tags.h"` (Default: `#include "/home/jovyan/work/moneta/pin_tags.h`) to the top of your C++ file. 
+
+### Pin Tag Functions
+The following three functions can be used to tag your code:
+```
+DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
+DUMP_ACCESS_STOP_TAG(const char* tag)
+FLUSH_CACHE()
 ```
 
 #### Parameters:
-**tag:** A string name to identify the trace  
-**begin:** The address of the first element of the data structure (Vector Example: `&arr[0]`)  
-**end:** The address of the last element of the data structure (Vector Example: `&arr[arr.size()-1]`)  
-  
-Use `DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` to identify the range you want to trace. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache. Examples can be found in `memorytrace/Examples/src`.
+>**tag:** A string name to identify the trace
+>
+>**begin:** Identifies the memory address lower bound to trace (Array/Vector Example: `&arr[0]`)
+>
+>**end:** Identifies the memory address upper bound to trace (Array/Vector Example: `&arr[arr.size()-1]`)
 
-# Memory Trace Tool Usage
+#### Usage:
 
-The Dockerfile should, by default, put you in the `memorytrace` directory whenever you run the container. If not, `cd` to the directory
+`DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` is used to indicate to Pin the lines of code and the memory regions to trace.
+
+Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
+
+For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/Examples/src`.
+
+## Running Moneta
+
+Run `moneta` from any directory to start the local Jupyter Notebook server where the Moneta Jupyter Notebook will be hosted on.
+
+You should see a list of URLs appear. Go to your preferred web browser and paste the link that looks like the following:
+
+<pre>
+http://127.0.0.1<b>:8888</b>/?token=...
+</pre>
+
+**Notice the 8888 in the link. If you used a port number other than 8888 when creating the Docker container, replace 8888 with your port number.**
+
+**Note For Docker Toolbox**: If you are using Docker Toolbox (this is different from Docker Desktop) as your Docker environment, you will also have to replace `127.0.0.1` with `192.168.99.100` to access the link.
+
+<pre>
+http://192.168.99.100<b>:8888</b>/?token=...
+</pre>
+
+If you were able to successfully connect, you will see a Jupyter tab on your browser with a list of the files/subdirectories in the `~/work/moneta` directory. Open the `Moneta.ipynb` file.
+
+
+## Tracing a Program with Moneta
+
+We will use `sorting.cpp` to demonstrate how to use Moneta to trace a program. Make sure you have run either `make` or `make sorting` in the `~/work/moneta` directory beforehand. 
+
+This program is pre-tagged with the `pin_tag.h` functions. The code is tagged as follows:
 ```
-cd ~/work/memorytrace/
+DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
+bubbleSort(bubble, SIZE);
+DUMP_ACCESS_STOP_TAG("Bubble");
+	
+DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
+insertionSort(insertion, SIZE);
+DUMP_ACCESS_STOP_TAG("Insertion");
+
+DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
+heapSort(heap, SIZE);
+DUMP_ACCESS_STOP_TAG("Heap sort");
+
+DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
+selectionSort(selection, SIZE);
+DUMP_ACCESS_STOP_TAG("Selection");
 ```
-Run the notebook.
-**Note:** `vaex.plot_widget` only works for Jupyter notebook.
-```
-jupyter notebook --allow-root
-```
-You should see two links appear. Go to your preferred web browser and paste the second link. It should look something like this.  
-**Note:** You will have to replace the `8888` with the [port you specified](#port) when setting up the Docker image. 
-```
-http://127.0.0.1:8888/?token=...
-```
-**Note:** If you are using Docker Toolbox as your docker environment, you will also have to replace 127.0.0.1 with 192.168.99.100 to access the link.
-```
-http://192.168.99.100:8888/?token=...
-```
 
-You should see a file called `MemoryTracer.ipynb`. This is the notebook that you will need to open.
+More implementation details can be found by viewing the source code (Path: `~/work/moneta/Examples/src/sorting.cpp`).
 
-# Running an Example
+### Generating a Trace
+After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.
 
-After setup is complete, you can run an example from the "Examples" directory. The examples must be first compiled by running `make`. The resulting executables are stored in the `Examples/build` directory. As an example, if we wanted to compile `sorting.cpp` in `Examples/src/sorting.cpp`, we can run `make sorting` and the resulting executable will be stored as `Examples/build/sorting`.
+You should see input boxes appear like below:
 
-Once compiliation is done, open up the notebook with the command mentioned in the previous section to generate and load the trace.
+![](https://via.placeholder.com/150 "Moneta Inputs")
 
-## Generating a Trace
+Once you have inputted your desired values, click the `Generate Trace` button to generate the trace. Trace files can be found in the `~/work/moneta/.output` directory.
 
-After opening `MemoryTracer.ipynb`, select the first cell and press `Shift+Enter`. 
+#### Input Details
 
-You should see input boxes appear like below.
-![](https://i.gyazo.com/03f415e4aa6f258b41a6d7c4fa62f3f3.png "Memory Trace Tool")
-<br/>
+>**Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)
+>
+>**Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
+>
+>**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. Note that larger numbers will take longer to run. (Default: 10,000,000)
+>
+>**Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
+>
+>**Executable Path and Args:** The path to the exectuable (executable name included). Relative paths will be relative to the directory specified in the `Working Directory` input.
+>
+>**Name for Output:** The name to save the trace as
+>
+>**Trace Everything:** Disregard all `pin_tag.h` function specifications and trace the entire program for all memory accesses.
 
-**Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)  
-**Block Size:** The size of each cache line. (Default: 64 Bytes)  
-**Lines to Output:** The maximum number of memory accesses to record. Larger numbers will take longer to run. (Default: 100,000,000)  
-**Executable Path:** Path to the executable to trace (Default: "./Examples/build/sorting")  
-**Name for Output:** Name to save the trace as (Default: "Baseline")  
-**Trace Everything:** Trace all memory accesses in the program  
+#### Example Inputs
 
-Input your desired values and press `Generate Trace`. This will create a trace in the box using the name you specified. All files related to the trace can be found in the `/setup/converter/outfiles` directory.
+>**Cache Lines:** 4096
+>
+>**Block Size (Bytes):** 64
+>
+>**Lines to Output:** 10,000,000
+>
+>**Working Directory (Optional):** ./Examples/build
+>
+>**Executable Path and Args:** ./sorting (This will run as if you `cd` into `./Examples/build` and then ran `./sorting`)
+>
+>**Name for Output:** trace_sorting
+>
+>**Trace Everything:** Unchecked
 
-If **Trace Everything** is enabled, the name of your trace can be found with parentheses surrounding it indicating that it's a full trace.
+### Loading a Trace
 
-If you find that the trace is taking a very long time to load, or the kernel is consistently dying, then start small with the lines of output. Again, the default is 100,000,000 but try 1,000,000 and generate the trace again. 
+If the trace generated successfully, you should see `trace_sorting` appear in the Trace box to the right of the input boxes. Select `trace_sorting` and then click `Load Trace`.
 
-## Analyzing a Trace
+If you find that the trace is taking a very long time to load, or the kernel is consistently dying, try reducing `Lines to Output`.
 
-From the box on the right, select your desired trace and press `Load Trace`.
+### Analyzing a Trace
 
-If this is tagged trace and there are tags or it's full trace, a plot should display, like the one below (Legend needs to be updated):
-![](https://i.gyazo.com/07a79dfa731c778448546884985febfc.png "Sample Plot")
+If the trace loaded successfully, you should see a memory access plot appear like the one below:
+
+![](https://via.placeholder.com/150 "Sorting Plot")
+
+#### Moneta Plot Features
+
+
+
+### Deleting a Trace
+
+From the Trace box, select the traces you want to delete. Note that you can select multiple traces by holding `SHIFT` or `CTRL` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
+
+
+
+
+
+
 
 The plot plots all data points in the trace with time/index on the x-axis and memory address on the y-axis
 
@@ -96,7 +179,3 @@ The Zoom to Selection buttons next to each checkbox displays the minimum window 
 **Refresh Stats:** (WIP) Recalulates and displays the Hit/Miss rate stats for the current plot window.  
 **Generate Independent Subplot:** Copies the current plot window into a new plot (created below the original), NOT affected by the checkboxes  
 **Generate Dependent Subplot:** Copies the current plot window into a new plot (created below the original), affected by the checkboxes
-
-## Deleting a Trace
-
-From the box on the right, select the traces you want to delete. Note that you can select multiple traces by holding `Shift` or `Ctrl` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
