@@ -8,6 +8,8 @@ import logging
 import subprocess
 log = logging.getLogger(__name__)
 
+import ipyvuetify as v
+
 class MonetaWidgets():
     def __init__(self):
         log.info("__init__")
@@ -22,8 +24,10 @@ class MonetaWidgets():
         self.ex = text_field(settings.EXEC_PATH_DEF, settings.EXEC_PATH_DESC)
         self.to = text_field(settings.TRACE_NAME_DEF, settings.TRACE_NAME_DESC)
 
-        self.ft = Checkbox(description=settings.FULL_TRACE_DESC, value=False, indent=False)
-        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft], layout=Layout(width='100%'))
+        self.vh = v.Html(tag='style', children=[".v-input__slot .v-label{color: black!important}"])
+        self.ft = v.Switch(label=settings.NORMAL_TRACE_DESC, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
+        self.ft.on_event("change", self.switch_handler)
+        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.vh], layout=Layout(width='100%'))
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
         self.lb = button(settings.LOAD_DESC, color=settings.LOAD_COLOR)
         self.db = button(settings.DELETE_DESC, color=settings.DELETE_COLOR)
@@ -34,3 +38,6 @@ class MonetaWidgets():
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
+    def switch_handler(self, switch, *_):
+        switch.value = not switch.value
+        switch.label = settings.FULL_TRACE_DESC if switch.value else settings.NORMAL_TRACE_DESC
