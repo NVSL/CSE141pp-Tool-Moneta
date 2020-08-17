@@ -49,6 +49,7 @@ class TestRunPintool:
         cache_lines = 10
         cache_block_size = 16
         output_limit = 10
+        """
         u.run_pintool(
                 cache_lines,
                 cache_block_size,
@@ -59,4 +60,5 @@ class TestRunPintool:
                 mock_executable[2:],
                 False
                 )
+        """
         pass

@@ -6,9 +6,11 @@
 #from moneta import utils
 import vaex
 import pytest
+import uuid
 import csv
 from moneta.settings import MONETA_BASE_DIR
 from moneta.trace import Tag
+from moneta.utils import run_pintool
 
 # scope=module, function, class, package, session
 @pytest.fixture()
@@ -28,11 +30,25 @@ def mock_tags():
             tags.append(Tag(row))
     return tags
 
-@pytest.fixture
-def mock_executable():
-    return "./sorting"
-
-@pytest.fixture
+@pytest.fixture(scope='module')
 def mock_working_dir():
     return MONETA_BASE_DIR+"tests/data/"
+
+@pytest.fixture(scope='class')
+def mock_executable():
+    return "sorting"+uuid.uuid4().hex
+
+@pytest.fixture
+def mock_widget_inputs(mock_executable, mock_working_dir):
+    return [
+            16,
+            64,
+            10,
+            mock_working_dir,
+            mock_executable,
+            '',
+            mock_executable,
+            False
+            ]
+
  
