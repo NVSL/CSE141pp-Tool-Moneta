@@ -187,7 +187,7 @@ The legend matches memory access type with the plot colors and allows toggling t
 
 **Zoom To Tag:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays metadata about the tag
 
-##### TODO ONCE REFACTORED
+# TODO ONCE REFACTORED
  - Stats
  - Independent Subplot
  - Dependent Subplot

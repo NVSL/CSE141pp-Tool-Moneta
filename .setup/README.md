@@ -21,7 +21,7 @@ This is the full command that starts a local Jupyter Notebook server for Moneta 
 
 ## moneta_pintool.tar.gz
 
-In order to get the HDF5 external library to compile with Pin, we had to downgrade to Pin 2.14 and modify the `makefile.default.rules` and `makefile.unix.config` files in the `PIN_ROOT/source/tools/Config/` directory (See https://chunkaichang.com/tool/pin-notes/). This tarball contains Pin 2.14 with the Makefiles already modified. The modified Makefiles along with the specific changes to the Makefiles can be found under `pin_makefiles` in the `archive` folder of the Github repository.
+In order to get the HDF5 external library to compile with Pin, we had to downgrade to Pin 2.14 and modify the `makefile.default.rules` and `makefile.unix.config` files in the `PIN_ROOT/source/tools/Config/` directory (See https://chunkaichang.com/tool/pin-notes/). This tarball contains Pin 2.14 with the Makefiles already modified. The modified Makefiles can be found under `pin_makefiles` in the `archive` folder of the Github repositor, and  the specific changes to the Makefiles can be found in `docs/README_PINTOOL.md` under **Makefile Changes**.
 
 ## requirements.txt
 A list of library requirements that are necessary for Moneta to run. These dependencies are installed by the Dockerfile during the creation of the image.
