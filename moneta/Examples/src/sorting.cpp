@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define SIZE 1000
+constexpr int SIZE {1000};
 
 
 void bubbleSort(int data[], int n){
