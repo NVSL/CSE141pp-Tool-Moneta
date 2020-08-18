@@ -42,8 +42,9 @@ class View():
         w_vals = self.m_widget.get_widget_values()
 
         if generate_trace(w_vals):
+            print(w_vals)
             # Reparse cwd here because w_vals.cwd_path expands home symbol '~' to full path
-            self.update_cwd_widget(parse_cwd(self.m_widget.cwd.value))
+            self.update_cwd_widget(w_vals['cwd_path'])
             self.update_select_widget()
 
     def handle_load_trace(self, _):

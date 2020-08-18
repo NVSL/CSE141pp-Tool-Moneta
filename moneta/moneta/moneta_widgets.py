@@ -26,7 +26,7 @@ class MonetaWidgets():
         self.to = text_field(settings.TRACE_NAME_DEF, settings.TRACE_NAME_DESC)
 
         self.vh = v.Html(tag='style', children=[".v-input__slot .v-label{color: black!important}"])
-        self.ft = v.Switch(label=settings.NORMAL_TRACE_DESC, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
+        self.ft = v.Switch(label=settings.NORMAL_TRACE_DESC, value=False, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
         self.ft.on_event("change", self.switch_handler)
         self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.vh], layout=Layout(width='100%'))
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
@@ -50,7 +50,10 @@ class MonetaWidgets():
             'c_lines': self.cl.value,
             'c_block': self.cb.value,
             'm_lines': self.ml.value,
-            'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
+            #'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
+            'tests': os.path.expanduser(parse_cwd(self.cwd.value)),
+            'cwd_path': self.cwd.value,
+            'ex': self.ex.value,
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,
