@@ -274,12 +274,13 @@ class BqplotBackend(BackendBase):
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                 df = self.dataset
                 ind = self.plot.x_label
-                res = df[(df[ind] >= x1) & (df[ind] <= x2) & (df["Address"] >= y1) & (df["Address"] <= y2)]
+                addr = self.plot.y_label
+                res = df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
                 if res.count() != 0:
                     x1 = res[ind].values[0]
                     x2 = res[ind].values[-1]
-                    y1 = res.Address.min()[()]
-                    y2 = res.Address.max()[()]
+                    y1 = res[addr].min()[()]
+                    y2 = res[addr].max()[()]
 
                 # Fix for plot getting stuck at one value axis
                 if (x2 - x1 < 128):

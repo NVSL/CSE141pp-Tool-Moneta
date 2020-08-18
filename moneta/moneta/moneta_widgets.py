@@ -2,10 +2,11 @@ from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
-from utils import load_cwd_file
+from utils import load_cwd_file, parse_cwd, parse_exec_input
 import settings
 import logging
 import subprocess
+import os
 log = logging.getLogger(__name__)
 
 import ipyvuetify as v
@@ -41,3 +42,18 @@ class MonetaWidgets():
     def switch_handler(self, switch, *_):
         switch.value = not switch.value
         switch.label = settings.FULL_TRACE_DESC if switch.value else settings.NORMAL_TRACE_DESC
+        
+    def get_widget_values(self):
+        e_file, e_args = parse_exec_input(self.ex.value)
+
+        w_vals = {
+            'c_lines': self.cl.value,
+            'c_block': self.cb.value,
+            'm_lines': self.ml.value,
+            'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
+            'e_file': e_file,
+            'e_args': e_args,
+            'o_name': self.to.value,
+            'is_full_trace': self.ft.value
+        }
+        return w_vals

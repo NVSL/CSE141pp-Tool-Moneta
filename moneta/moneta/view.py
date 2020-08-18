@@ -1,11 +1,11 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
 from utils import generate_trace, delete_traces, update_cwd_file, parse_cwd
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaex2.jupyter.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ class View():
         self.m_widget.sw.value = []
 
     def update_cwd_widget(self, cwd_path):
-        cwd_path = parse_cwd(cwd_path)
         if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             update_cwd_file(self.m_widget.cwd.options)
@@ -40,18 +39,11 @@ class View():
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
         
-        w_vals = [
-            self.m_widget.cl.value,
-            self.m_widget.cb.value,
-            self.m_widget.ml.value,
-            self.m_widget.cwd.value,
-            self.m_widget.ex.value,
-            self.m_widget.to.value,
-            self.m_widget.ft.value
-        ]
-        
-        if generate_trace(*w_vals):
-            self.update_cwd_widget(self.m_widget.cwd.value)
+        w_vals = self.m_widget.get_widget_values()
+
+        if generate_trace(w_vals):
+            # Reparse cwd here because w_vals.cwd_path expands home symbol '~' to full path
+            self.update_cwd_widget(parse_cwd(self.m_widget.cwd.value))
             self.update_select_widget()
 
     def handle_load_trace(self, _):
@@ -72,10 +64,10 @@ class View():
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(tags, df)
-        plot = df.plot_widget(df[INDEX_LABEL], df.Address, what='max(Access)',
+        plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
-                 x_label=INDEX_LABEL, cache_size=cache_size)
+                 x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
