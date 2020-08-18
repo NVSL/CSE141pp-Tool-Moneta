@@ -140,7 +140,8 @@ If you find that the trace is taking a very long time to load, or the kernel is 
 ### Analyzing a Trace
 
 If the trace loaded successfully, you should see a memory access plot appear like the one below:
-# TODO: UPDATE IMAGE WHEN LEGEND SCROLLBARS ARE FIXED
+
+**TODO: UPDATE IMAGE WHEN LEGEND SCROLLBARS ARE FIXED**
 ![](https://via.placeholder.com/150 "Sorting Plot")
 
 #### Moneta Plot Features
@@ -187,7 +188,7 @@ The legend matches memory access type with the plot colors and allows toggling t
 
 **Zoom To Tag:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays metadata about the tag
 
-# TODO ONCE REFACTORED
+**TODO ONCE REFACTORED**
  - Stats
  - Independent Subplot
  - Dependent Subplot

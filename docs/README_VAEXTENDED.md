@@ -31,7 +31,7 @@ This allows us to save our custom `PlotBase` from our `plot.py`, as referenced b
 
 ### widgets.py
 
-The main feature of interest in the `PlotTemplate` class in `widgets.py` is the plot title. For Vaextended's `PlotTemplate`, we replaced the plot title with `Moneta` instead of `Vaex` to better reflect the tool. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original.
+The `PlotTemplate` class in `widgets.py` contains most widget features of the plot, particularly the top nav bar with the title and various zoom widgets, as well as interactive plot itself within the `v-main` area. Note that these widgets mainly use [ipyvuetify](https://ipyvuetify.readthedocs.io/en/latest/). For Vaextended's `PlotTemplate`, we replaced the plot title with `Moneta` instead of `Vaex` to better reflect the tool. We also removed the sidebar and the expandable output section from the original Vaex, as Moneta does not have much use for those two widgets. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original.
 
 ```
 from vaextended.widgets import PlotTemplate
@@ -69,9 +69,11 @@ backend = plot.backend
 
 ### Vaex Inverted Navigation
 
-The default installation of Vaex has a bug where the plot created by `plot_widget()` has it's vertical navigation inverted, such that moving the plot upwards will cause the plot points to reload as if you moved the plot downward.
+The default installation of Vaex has a bug where the plot created by `plot_widget()` has it's vertical navigation inverted, such that moving the plot upwards will cause the plot points to reload as if you moved the plot downward. We have fixed this bug in Vaextended's `plot.py` in by rotating the plot grid by 90 degrees on line 304:
+```diff
++ I = np.rot90(color_grid).copy()
+```
 
-# TODO: Locate line that fixes this error
 
 ### `@extend_class` Decorator
 
