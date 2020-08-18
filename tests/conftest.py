@@ -40,15 +40,15 @@ def mock_executable():
 
 @pytest.fixture
 def mock_widget_inputs(mock_executable, mock_working_dir):
-    return [
-            16,
-            64,
-            10,
-            mock_working_dir,
-            mock_executable,
-            '',
-            mock_executable,
-            False
-            ]
+    return {
+            'c_lines': 16,
+            'c_block': 64,
+            'm_lines': 10,
+            'cwd_path': mock_working_dir,
+            'e_file': mock_executable,
+            'e_args': '',
+            'o_name': mock_executable,
+            'is_full_trace': False
+           }
 
  

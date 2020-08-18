@@ -42,20 +42,20 @@ class TestVerifyWidgetValues:
             cache_block, e1,
             output_lines, e2
         ):
-        mock_widget_inputs[0] = cache_lines
-        mock_widget_inputs[1] = cache_block
-        mock_widget_inputs[2] = output_lines
-        assert u.verify_input(*mock_widget_inputs) == (e0 and e1 and e2)
+        mock_widget_inputs['c_lines'] = cache_lines
+        mock_widget_inputs['c_block'] = cache_block
+        mock_widget_inputs['m_lines'] = output_lines
+        assert u.verify_input(mock_widget_inputs) == (e0 and e1 and e2)
 
     def test_cwd_path(self, mock_widget_inputs):
-        mock_widget_inputs[3] = INCORRECT_VAL
-        assert u.verify_input(*mock_widget_inputs) == False
+        mock_widget_inputs['cwd_path'] = INCORRECT_VAL
+        assert u.verify_input(mock_widget_inputs) == False
 
     def test_executable_file(self, mock_widget_inputs):
-        mock_widget_inputs[4] += INCORRECT_VAL
-        assert u.verify_input(*mock_widget_inputs) == False
-        mock_widget_inputs[4] = INCORRECT_VAL
-        assert u.verify_input(*mock_widget_inputs) == False
+        mock_widget_inputs['e_file'] += INCORRECT_VAL
+        assert u.verify_input(mock_widget_inputs) == False
+        mock_widget_inputs['e_file'] = INCORRECT_VAL
+        assert u.verify_input(mock_widget_inputs) == False
 
     #TODO - Test arguments
 
@@ -75,11 +75,11 @@ class TestVerifyWidgetValues:
                 ("\t", False),
             ])
     def test_output_name(self, mock_widget_inputs, output_name, expected):
-        mock_widget_inputs[6] = output_name
-        assert u.verify_input(*mock_widget_inputs) == expected
+        mock_widget_inputs['o_name'] = output_name
+        assert u.verify_input(mock_widget_inputs) == expected
 
     def test_full_trace(self, mock_widget_inputs):
-        mock_widget_inputs[7] = False
-        assert u.verify_input(*mock_widget_inputs) == True
-        mock_widget_inputs[7] = True
-        assert u.verify_input(*mock_widget_inputs) == True
+        mock_widget_inputs['is_full_trace'] = False
+        assert u.verify_input(mock_widget_inputs) == True
+        mock_widget_inputs['is_full_trace'] = True
+        assert u.verify_input(mock_widget_inputs) == True
