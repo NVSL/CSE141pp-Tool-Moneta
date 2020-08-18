@@ -26,7 +26,8 @@ TRACE_NAME_DEF = "e.g. baseline"
 TRACE_NAME_DESC = "Name for Trace:"
 
 # Full Trace
-FULL_TRACE_DESC = "Trace everything (Ignore program tags)?"
+FULL_TRACE_DESC = "Full trace"
+NORMAL_TRACE_DESC = "Tagged trace"
 
 # Select Multiple
 SELECT_MULTIPLE_DESC = "Trace:"
