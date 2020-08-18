@@ -6,7 +6,7 @@
 */
 
 
-#include "../../pin_macros.h"
+#include "../../pin_tags.h"
 #include <iostream>
 #include <stdlib.h>
 
