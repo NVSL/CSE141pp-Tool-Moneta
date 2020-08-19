@@ -15,6 +15,7 @@ class SelectionGroup(Enum):
 class Legend():
     def __init__(self, tags, df):
         self.wid_150 = Layout(width='110px')
+        self.wid_180 = Layout(width='125px')
         self.wid_15 = Layout(width='15px')
         self.wid_30 = Layout(width='30px')
         self.wid_270 = Layout(width='270px')
@@ -42,11 +43,11 @@ class Legend():
             self.create_colorpicker(primary_clr),
             write,
             self.create_colorpicker(sec_clr)
-        ])
+        ], layout=Layout(overflow_x = 'hidden'))
 
     def cache_row(self, desc, clr):
         return HBox([
-            Label(value=desc, layout=self.wid_150),
+            Label(value=desc, layout=self.wid_180),
             self.create_colorpicker(clr)
         ])
 
@@ -76,7 +77,7 @@ class Legend():
             cap_misses_row,
             comp_misses_row,
             self.cache_row("Cache", 3),
-            self.create_reset_btn()],layout=Layout(padding='10px'))
+            self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
         return memoryaccesses
 
     def get_datastructures(self, tags):
@@ -86,7 +87,7 @@ class Legend():
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
-            layout=Layout(height='28px'))
+            layout=Layout(height='28px', overflow_y = 'hidden'))
         for tag in tags]
         
         all_ds_row = HBox([

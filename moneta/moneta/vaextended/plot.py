@@ -12,7 +12,7 @@ import ipywidgets as widgets
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 import vaex
-from vaex2.jupyter.widgets import PlotTemplate
+from vaextended.widgets import PlotTemplate
 from vaex.delayed import delayed, delayed_list
 from vaex.utils import _ensure_list, _expand, _parse_f, _parse_n, _parse_reduction, _expand_shape
 from IPython.display import display
@@ -85,6 +85,8 @@ class PlotBase(widgets.Widget):
                 self.legend = kwargs.get('legend')
             if 'x_label' in kwargs:
                 self.x_label = kwargs.get('x_label')
+            if 'y_label' in kwargs:
+                self.y_label = kwargs.get('y_label')
             if 'cache_size' in kwargs:
                 self.cache_size = kwargs.get('cache_size')
             if 'default_title' in kwargs:
