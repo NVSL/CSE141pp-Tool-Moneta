@@ -525,26 +525,25 @@ def update_click_brush(self, *args):
 
                 #if there are values selected within the region
                 if res.count() != 0:
-                         #mouse move towards the right
-                         if x2 > x1:
-                                 zoom_x = res.index.values[-1]
-                        #mouse move towards the left
-                         else:
-                                 zoom_x = res.index.values[0]
-                         #mouse move towards the top
-                         if y2 > y1:
-                                 zoom_y = res.Address.max()[()]
-                         #mouse move towards the bottom
-                         else:
-                                 zoom_y = res.Address.min()[()]
-                #zoom towards where the mouse cursor ends
+                         #zoom towards data on the left
+                         #zoom_x = res.index.values[0]
+                         #zoom towards data on the top
+                         #zoom_y = max_x.Address.max()[()]
+
+                         #default to data in the right
+                         zoom_x = res.index.values[-1]
+                         #filter for y-coordinates of a data point
+                         max_x = df[res["index"] == res.index.values[-1]]
+                         zoom_y = max_x.Address.min()[()]
                 else:
+		         #default to the bottom right corner coordinates of the highlighted region
                          zoom_x = x2
-                         zoom_y = y2
+                         zoom_y = y1
 
                 self.click_zoom_update_coords_x(zoom_x)
                 self.click_zoom_update_coords_y(zoom_y)
             self.figure.interaction = self.click_brush
+	    #remove selected data
             with self.click_brush.hold_trait_notifications():
                 self.click_brush.selected_x = None
                 self.click_brush.selected_y = None	 
