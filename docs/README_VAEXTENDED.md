@@ -2,7 +2,7 @@
 
 Adapted version of Vaex to allow local control over the backend (Default Path: `~/work/moneta/moneta/vaextended`);
 
-## <a name="modify"></a> Modifying Vaex's Existing Backend
+## Modifying Vaex's Existing Backend
 
 ### bqplot.py
 
