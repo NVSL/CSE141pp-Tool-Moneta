@@ -6,7 +6,7 @@ INCORRECT_VAL = "randomtest"
 
 class TestVerifyWidgetValues:
     @pytest.fixture(autouse=True, scope='class')
-    def setup_file(self, mock_working_dir, mock_executable):
+    def setup_executable(self, mock_working_dir, mock_executable):
         Path(mock_working_dir + mock_executable).touch(mode=0o777)
         Path(mock_working_dir + mock_executable + INCORRECT_VAL).touch()
         yield

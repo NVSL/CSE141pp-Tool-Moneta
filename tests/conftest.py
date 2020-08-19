@@ -51,4 +51,5 @@ def mock_widget_inputs(mock_executable, mock_working_dir):
             'is_full_trace': False
            }
 
+#def mock_pin_files
  

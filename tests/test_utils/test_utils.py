@@ -1,6 +1,9 @@
 import pytest
+import Path
 
 import moneta.utils as u
+from moneta.settings import OUTPUT_DIR
+import os.path
 
 class TestUtils:
     @pytest.mark.parametrize("input_, expected", 
@@ -45,20 +48,15 @@ class TestWidgetFactories:
         assert text.style is not None
 
 class TestRunPintool:
-    def test_run_pintool_basic(self, mock_executable, mock_working_dir):
-        cache_lines = 10
-        cache_block_size = 16
-        output_limit = 10
-        """
-        u.run_pintool(
-                cache_lines,
-                cache_block_size,
-                output_limit,
-                mock_working_dir,
-                mock_executable,
-                "",
-                mock_executable[2:],
-                False
-                )
-        """
+    def check_file_exists(self, name):
+        return os.path.exists(name)
+
+    def delete_files(self, name):
+        Path.unlink("trace_" + name + ".hdf")
+        pass
+    def test_run_pintool_basic(self, mock_widget_inputs):
+        mock_widget_inputs['e_file'] = './sorting'
+        u.run_pintool(mock_widget_inputs)
+        assert self.check_file_exists(OUTPUT_DIR + "trace_" +
+                mock_widget_inputs['o_name'] + ".hdf5")
         pass
