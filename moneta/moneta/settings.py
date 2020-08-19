@@ -68,6 +68,11 @@ CUSTOM_CMAP = ListedColormap(newc)
 
 BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='90%', border='1px solid black')
+TW_BOX_LAYOUT = Layout(display='flex',
+                    flex_flow='row',
+                    align_items='stretch',
+                    width='70%')
+TW_LAYOUT = Layout(flex='1 1 0%', width='auto')
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
 MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"

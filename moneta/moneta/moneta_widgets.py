@@ -1,4 +1,4 @@
-from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
+from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, HTML, Box
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
@@ -29,8 +29,18 @@ class MonetaWidgets():
         self.db = button(settings.DELETE_DESC, color=settings.DELETE_COLOR)
 
         self.sw = SelectMultiple(
-                options=[], value=[], description=settings.SELECT_MULTIPLE_DESC, layout=settings.WIDGET_LAYOUT, rows=10)
-        self.tw = HBox([self.gt_in, self.sw], layout=Layout(justify_content='space-around'))
+                options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
+  #added      
+        self.sw2 = SelectMultiple (
+                options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
+        self.tt = HTML( value="<center>Tagged Trace</center>", layout=settings.TW_LAYOUT)
+        self.tf =  HTML( value="<center>Full Trace</center>", layout=settings.TW_LAYOUT)
+        #box for titles
+        self.tBox = Box(children=[self.tt, self.tf], layout=settings.TW_BOX_LAYOUT)
+        self.swBox = Box(children=[self.sw, self.sw2], layout=settings.TW_BOX_LAYOUT)
+        self.traces = VBox([self.tBox, self.swBox])
+        #box for widgets
+        self.tw = HBox([self.gt_in, self.traces], layout=Layout(justify_content='space-around'))
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 

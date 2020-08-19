@@ -9,11 +9,16 @@ class Model():
         log.info("__init__")
         self.curr_trace = None
         self.output_traces = None
+        self.output_traces_full = None
         self.trace_map = None
 
     def update_trace_list(self):
-        self.output_traces, self.trace_map = collect_traces()
+        self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
         return sorted(self.output_traces, key=str.casefold)
+    
+    def update_trace_list_full(self):
+        self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
+        return sorted(self.output_traces_full, key=str.casefold)
 
     def ready_next_trace(self):
         if self.curr_trace is not None:

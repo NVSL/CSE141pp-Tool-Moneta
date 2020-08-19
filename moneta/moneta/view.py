@@ -15,6 +15,7 @@ class View():
         log.info("__init__")
         self.model = model
         self.init_widgets()
+        
 
     def init_widgets(self):
         log.info("Initializing widgets")
@@ -23,11 +24,46 @@ class View():
         self.m_widget.lb.on_click(self.handle_load_trace)
         self.m_widget.db.on_click(self.handle_delete_trace)
         self.update_select_widget()
+        self.update_select_widget_full()
+        
+        self.w_1 = []
+        self.w_2 = []
+        self.selectors = [self.m_widget.sw, self.m_widget.sw2]
+        self.lastChanged = -1
+        
         display(self.m_widget.widgets)
 
     def update_select_widget(self):
         self.m_widget.sw.options = self.model.update_trace_list()
         self.m_widget.sw.value = []
+
+    #added for second select_widget (full)
+    def update_select_widget_full(self):
+        self.m_widget.sw2.options = self.model.update_trace_list_full()
+        self.m_widget.sw2.value = []
+
+    def set_observes(self):
+        #make list of widgets to run thru 
+        for widg in self.selectors:
+            widg.observe(self.observed_function)
+        
+    def observed_function(self):
+        self.set_observes()
+
+        #list of selectors in 
+        #lastChanged is a bool that changes 
+        for widg in self.selectors:
+            if(widg == self.m_widget.sw):
+                if( self.w_1 != widg.get_interact_value()):
+                self.lastChanged = 1
+                    #self.w_1 = widg.get_interact_value()
+            else:
+                if( self.w_2 != widg.get_interact_value()):
+                self.lastChanged = 0
+                    #self.w_2 = widg.get_interact_value()
+        
+        log.info("Verdict:")
+        log.info(self.lastChanged) 
 
     def update_cwd_widget(self, cwd_path):
         cwd_path = parse_cwd(cwd_path)
@@ -53,6 +89,7 @@ class View():
         if generate_trace(*w_vals):
             self.update_cwd_widget(self.m_widget.cwd.value)
             self.update_select_widget()
+            self.update_select_widget_full()
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
@@ -83,9 +120,34 @@ class View():
     
     def handle_delete_trace(self, _):
         log.info("Delete Trace clicked")
-        if (not self.model.delete_traces(self.m_widget.sw.value)):
-            clear_output(wait=True)
-            log.info("Refreshing")
-            display(self.m_widget.widgets)
-        self.update_select_widget()
-        pass
+        self.observed_function()
+        tag_or_full = self.lastChanged
+        #initialized as -1
+        if(tag_or_full == -1):
+            log.info("No trace chosen!")
+        #1 means tag
+        elif (tag_or_full == 1): 
+            log.info("tagged trace chosen")
+        else:
+        #0 means full
+            log.info("full trace chosen")
+
+        #This is the functionality to actually delete the trace, 
+        # it's commented out to make sure we get the right verdict
+        #from our obseerved_function
+        #           vvvvvvvvvv
+
+        # if(self.lastChanged==1):
+        #     if (not self.model.delete_traces(self.m_widget.sw.value)):
+        #         clear_output(wait=True)
+        #         log.info("Refreshing")
+        #         display(self.m_widget.widgets)
+        #     self.update_select_widget()
+        #     pass
+        # else:
+        #     if (not self.model.delete_traces(self.m_widget.sw2.value)):
+        #         clear_output(wait=True)
+        #         log.info("Refreshing")
+        #         display(self.m_widget.widgets)
+        #     self.update_select_widget()
+        #     pass
