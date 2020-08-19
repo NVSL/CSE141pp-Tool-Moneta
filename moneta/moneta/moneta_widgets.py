@@ -2,11 +2,10 @@ from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
-from utils import load_cwd_file, parse_cwd, parse_exec_input
+from utils import load_cwd_file, parse_exec_input
 import settings
 import logging
 import subprocess
-import os
 log = logging.getLogger(__name__)
 
 import ipyvuetify as v
@@ -50,10 +49,7 @@ class MonetaWidgets():
             'c_lines': self.cl.value,
             'c_block': self.cb.value,
             'm_lines': self.ml.value,
-            #'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
-            'tests': os.path.expanduser(parse_cwd(self.cwd.value)),
             'cwd_path': self.cwd.value,
-            'ex': self.ex.value,
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,

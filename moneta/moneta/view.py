@@ -1,6 +1,6 @@
 from IPython.display import clear_output, display
 from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
-from utils import generate_trace, delete_traces, update_cwd_file, parse_cwd
+from utils import generate_trace, delete_traces, update_cwd_file
 from moneta_widgets import MonetaWidgets
 from legend import Legend
 import vaex
@@ -42,9 +42,7 @@ class View():
         w_vals = self.m_widget.get_widget_values()
 
         if generate_trace(w_vals):
-            print(w_vals)
-            # Reparse cwd here because w_vals.cwd_path expands home symbol '~' to full path
-            self.update_cwd_widget(w_vals['cwd_path'])
+            self.update_cwd_widget(w_vals['display_cwd_path'])
             self.update_select_widget()
 
     def handle_load_trace(self, _):
