@@ -93,3 +93,7 @@ WRITE_MISS = 4
 READ_MISS = 3
 WRITE_HIT = 2
 READ_HIT = 1
+
+# Legend variables
+LEGEND_MEM_ACCESS_TITLE = 'Legend'
+LEGEND_TAGS_TITLE = 'Tags'

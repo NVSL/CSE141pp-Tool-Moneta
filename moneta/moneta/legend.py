@@ -1,6 +1,6 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT
+from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
 from trace import Tag
 from enum import Enum
 import numpy as np
@@ -25,8 +25,8 @@ class Legend():
         self.df = df
         self.colormap = np.copy(newc)
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        self.add_accordion('Legend', self.get_memoryaccesses(tags))
-        self.add_accordion('Data Structures', self.get_datastructures(tags))
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_datastructures(tags))
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
