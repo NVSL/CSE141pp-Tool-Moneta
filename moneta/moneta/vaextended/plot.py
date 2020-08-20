@@ -1,12 +1,3 @@
-#import vaex.jupyter.plot
-#from vaex.jupyter.plot import *
-#from vaex.jupyter.plot import _ensure_list, _expand, _parse_f, _parse_n, _parse_reduction, _expand_shape
-#from traitlets import *
-
-#from vaex_extended.jupyter.widgets import PlotTemplate as PlotTemplate_v2
-#import vaex_extended
-#import copy
-
 import traitlets
 import ipywidgets as widgets
 import ipyvuetify as v
