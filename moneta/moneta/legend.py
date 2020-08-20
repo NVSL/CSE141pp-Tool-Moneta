@@ -26,7 +26,7 @@ class Legend():
         self.colormap = np.copy(newc)
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_datastructures(tags))
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
@@ -80,7 +80,7 @@ class Legend():
             self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
         return memoryaccesses
 
-    def get_datastructures(self, tags):
+    def get_tags(self, tags):
         max_id = max(tags, key=lambda x: x.id_).id_
         stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         
@@ -181,17 +181,16 @@ class Legend():
                 parent_checkbox.widget.manual_change = False
         parent_checkbox = CheckBox(desc, layout, group, selections, handle_parent_checkbox_change)
         def handle_child_checkbox_change(_):
-            if _.name == 'value':
-                if parent_checkbox.widget.value == True:
-                    if _.new == False:
-                        parent_checkbox.widget.manual_change = True
-                        parent_checkbox.widget.value = False
-                if parent_checkbox.widget.value == False:
-                    if all([checkbox.value for checkbox in child_checkboxes]):
-                        parent_checkbox.widget.manual_change = True
-                        parent_checkbox.widget.value = True
+            if parent_checkbox.widget.value == True:
+                if _.new == False:
+                    parent_checkbox.widget.manual_change = True
+                    parent_checkbox.widget.value = False
+            if parent_checkbox.widget.value == False:
+                if all([checkbox.value for checkbox in child_checkboxes]):
+                    parent_checkbox.widget.manual_change = True
+                    parent_checkbox.widget.value = True
         for checkbox in child_checkboxes:
-            checkbox.observe(handle_child_checkbox_change)
+            checkbox.observe(handle_child_checkbox_change, names='value')
         return parent_checkbox.widget
 
     def handle_checkbox_change(self, _): # TODO - move constants out
