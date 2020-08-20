@@ -69,7 +69,7 @@ class PlotBase(widgets.Widget):
             self.progress.layout.max_width = '500px'
             self.progress.description = "progress"
 
-            self.extra_widget = v.Row(pa_1=True, children=[])
+            self.toolbar = v.Row(pa_1=True, children=[])
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
             if 'legend' in kwargs:
@@ -83,7 +83,7 @@ class PlotBase(widgets.Widget):
             self.widget = PlotTemplate(components={
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
-                        'extra-widget': self.extra_widget
+                        'toolbar': self.toolbar
                     },
                     model=show_drawer
             )
@@ -133,11 +133,11 @@ class PlotBase(widgets.Widget):
     def show(self):
         display(self.widget)
 
-    def add_extra_widget(self, widget):
-        print("in extra widget adding")
-        self.extra_widget.children += [widget]
+    def add_to_toolbar(self, widget):
+        print("in toolbar adding")
+        self.toolbar.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
-        self.extra_widget.send_state('children')
+        self.toolbar.send_state('children')
 
     def _progress(self, v):
         self.progress.value = v
