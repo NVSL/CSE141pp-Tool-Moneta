@@ -1,4 +1,7 @@
-from vaex.jupyter.widgets import *
+#from vaex.jupyter.widgets import *
+import ipyvuetify as v
+import ipywidgets as widgets
+from traitlets import *
 
 class PlotTemplate(v.VuetifyTemplate):
     show_output = Bool(False).tag(sync=True)
@@ -20,41 +23,9 @@ class PlotTemplate(v.VuetifyTemplate):
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     edit_title = Bool(False).tag(sync=True)
     template = Unicode('''
+
 <v-app>
-    <v-navigation-drawer
-      v-model="model"
-      :permanent="type === 'permanent'"
-      :temporary="type === 'temporary'"
-      :clipped="clipped"
-      :floating="floating"
-      :mini-variant="mini"
-      absolute
-      overflow
-    >
-
-        <control-widget/>
-
-      </v-list>
-
-    </v-navigation-drawer>
-
-    <v-navigation-drawer
-      v-model="show_output"
-      :temporary="type === 'temporary'"
-      clipped
-      right
-      absolute
-      overflow
-    >
-      <h3>Output</h3>
-      <output-widget />
-    </v-navigation-drawer>
-
     <v-app-bar :clipped-left="clipped" absolute dense>
-      <v-app-bar-nav-icon v-show="false"
-        v-if="type !== 'permanent'"
-        @click.stop="model = !model"
-      ></v-app-bar-nav-icon>
       <v-tooltip bottom>
         <template v-slot:activator="{ on }">
           <v-toolbar-title v-on="on" v-show="edit_title == false"
@@ -71,25 +42,23 @@ class PlotTemplate(v.VuetifyTemplate):
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
       <v-spacer></v-spacer>
-      <toolbox/>      
+      <toolbar />
       <v-spacer></v-spacer>
-
-
-      <v-btn icon @click.stop="show_output = !show_output; new_output=false">
-        <v-badge color="red" overlap>
-          <template v-slot:badge v-if="new_output">
-            <span>!</span>
-          </template>
-          <v-icon>error_outline</v-icon>
-        </v-badge>
-      </v-btn>
-
-
     </v-app-bar>
-    <v-content class="mt-12">
+    <v-main>
+    <v-container>
           <main-widget/>
-    </v-content>
+          </v-container>
+    </v-main>
 </v-app>
 ''').tag(sync=True)
 
+    def __init__(self, *args, **kwargs): 
+      # change the title (must be done before the widget gets built!!!)
+      if 'components' in kwargs:
+          if 'default_title' in kwargs['components']:
+              self.default_title = kwargs['components']['default_title']
+
+      # proceed with original constructor    
+      super().__init__(*args, **kwargs)
 
