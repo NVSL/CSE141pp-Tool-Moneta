@@ -42,7 +42,7 @@ class PlotTemplate(v.VuetifyTemplate):
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
       <v-spacer></v-spacer>
-      <extra-widget />
+      <toolbar />
       <v-spacer></v-spacer>
     </v-app-bar>
     <v-main>

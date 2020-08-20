@@ -263,7 +263,7 @@ class BqplotBackend(BackendBase):
                     self.undo_tooltip,
                     self.redo_tooltip
                 ], align='center', justify='center')
-            self.plot.add_extra_widget(self.tooltips)
+            self.plot.add_to_toolbar(self.tooltips)
 
 
     def update_zoom_brush(self, *args):

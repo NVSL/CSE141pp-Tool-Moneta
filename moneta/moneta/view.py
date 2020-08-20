@@ -5,7 +5,7 @@ from moneta_widgets import MonetaWidgets
 from legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class View():
         legend = Legend(tags, df)
         plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
-                 backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
+                 backend='moneta_backend', type='vaextended', legend=legend.widgets,
                  default_title=curr_trace.name, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
