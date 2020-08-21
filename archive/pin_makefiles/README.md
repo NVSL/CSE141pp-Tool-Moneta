@@ -1,6 +1,6 @@
 # Pin Modified Makefiles
 
-To replace the corresponding files in PIN_ROOT/source/tools/Config/
+To replace the corresponding files in `PIN_ROOT/source/tools/Config/`
   
 ## makefile.default.rules
 The following lines are added under Line 166 of `makefile.default.rules` to include the C++ library for HDF5.

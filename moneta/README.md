@@ -127,7 +127,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Executable Path and Args:** ./sorting (This will run as if you `cd` into `./Examples/build` and then ran `./sorting`)
 
-**Name for Output:** trace_sorting
+**Name for Output:** trace\_sorting
 
 **Trace Everything:** Unchecked
 

@@ -11,10 +11,10 @@ Add or modify backends in the following way (the code below is from `view.py`):
 ```
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
 ```
 
-This will create a new Vaex backend called `bqplot_v2` that uses the the `bqplot.py` file in the `vaextended` directory, as referenced by `vaextended.bqplot`, instead of the original `bqplot.py` from Vaex in the `/opt/conda/lib/python3.7/site-packages/vaex/jupyter` directory.
+This will create a new Vaex backend called `moneta_backend` that uses the the `bqplot.py` file in the `vaextended` directory, as referenced by `vaextended.bqplot`, instead of the original `bqplot.py` from Vaex in the `/opt/conda/lib/python3.7/site-packages/vaex/jupyter` directory.
 
 ### plot.py
 
@@ -23,15 +23,15 @@ In order to expand on various aspects the plot itself, such as saving metadata (
 ```
 import vaex.jupyter.plot
 from vaextended.plot import PlotBase
-vaex.jupyter.plot.type_map['custom_plot1'] = PlotBase
+vaex.jupyter.plot.type_map['vaextended'] = PlotBase
 ```
 
-This allows us to save our custom `PlotBase` from our `plot.py`, as referenced by `vextended.plot` as a key-value pair into the Vaex plot's `type_map` upon initialization. If we pass in the `type=TYPE` argument into `plot_widget()`, Vaex will search in `type_maps` for the `TYPE` key and use the corresponding value as it's `PlotBase`. So, if we were to pass in `type='custom_plot1'`, Vaex would use our custom `PlotBase` instead of the original instance.
+This allows us to save our custom `PlotBase` from our `plot.py`, as referenced by `vextended.plot` as a key-value pair into the Vaex plot's `type_map` upon initialization. If we pass in the `type=TYPE` argument into `plot_widget()`, Vaex will search in `type_maps` for the `TYPE` key and use the corresponding value as it's `PlotBase`. So, if we were to pass in `type='vaextended'`, Vaex would use our custom `PlotBase` instead of the original instance.
 
 
 ### widgets.py
 
-The `PlotTemplate` class in `widgets.py` contains most widget features of the plot, particularly the top nav bar with the title and various zoom widgets, as well as interactive plot itself within the `v-main` area. Note that these widgets mainly use [ipyvuetify](https://ipyvuetify.readthedocs.io/en/latest/). For Vaextended's `PlotTemplate`, we replaced the plot title with `Moneta` instead of `Vaex` to better reflect the tool. We also removed the sidebar and the expandable output section from the original Vaex, as Moneta does not have much use for those two widgets. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original.
+The `PlotTemplate` class in `widgets.py` contains most widget features of the plot, particularly the top nav bar with the title and various zoom widgets, as well as interactive plot itself within the `v-main` area. Note that these widgets mainly use [ipyvuetify](https://ipyvuetify.readthedocs.io/en/latest/). For Vaextended's `PlotTemplate`, we replaced the plot title with the trace name instead of `Vaex` to better reflect the plot and made it editable. We also removed the sidebar and the expandable output section from the original Vaex, as Moneta does not have much use for those two widgets. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original.
 
 ```
 from vaextended.widgets import PlotTemplate
@@ -54,7 +54,7 @@ To use the modified backends and plots of Vaextended, simply specify the backend
 ```
 import vaex
 df = vaex.example()
-df.plot_widget(df.x, df.y, backend='bqplot_v2', type='custom_plot1')
+df.plot_widget(df.x, df.y, backend='moneta_backend', type='vaextended')
 ```
 
 ### Accessing the Backend
@@ -75,9 +75,9 @@ The default installation of Vaex has a bug where the plot created by `plot_widge
 ```
 
 
-### `@extend_class` Decorator
+### `@extend\_class` Decorator
 
-**Note:** This is a legacy feature is not being used in the current iteration of Vaextended. To add or modify additional functions, simply make those changes in the corresponding file in the `vaextended` directory.
+**Note:** This is a legacy feature not being used in the current iteration of Vaextended. To add or modify additional functions, simply make those changes in the corresponding file in the `vaextended` directory.
 
 `vaextended/utils.py` has a decorator to make it easy to modify or add functions to existing classes in Vaex. If additional methods need to be modified or added to the `BqplotBackend` class, use the following format:
 

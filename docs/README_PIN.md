@@ -6,7 +6,7 @@ Intel’s PIN allows a user to instrument a program to analyze many aspects of t
 ## Important Notes
  - In our Pintool, `trace_tool`, a fully associative cache is simulated and is used to determine if the memory access is a hit or a miss, as Pin cannot tell us if the access is a hit or miss in the system's real cache.
 
- - The PIN_ROOT environment variable is set to the directory where Pin is installed. For our Docker image, `PIN_ROOT = /pin`.
+ - The PIN\_ROOT environment variable is set to the directory where Pin is installed. For our Docker image, `PIN_ROOT = /pin`.
 
 ## <a name="issues"></a> Issues with External Libraries
 
@@ -72,7 +72,7 @@ cp PATH_TO_PINTOOL/TOOL_NAME.cpp .
 ```
 make obj-intel64/TOOL_NAME.so TARGET=intel64
 ```
-4. Copy the pintool `.so` file into the `.setup` folder (This is where the Jupyter Notebook looks for the `.so` files)
+4. Copy the pintool `.so` file into the `.setup` folder (This is where the Python scripts in the `moneta` directory looks for the `.so` files)
 ```
 cp obj-intel64/TOOL_NAME.so ~/work/.setup
 ```
@@ -95,7 +95,7 @@ Again, for our Docker image, `PIN_ROOT = /pin`.
 
 **Pin tool:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)
 
-### trace_tool.so: Pin Tool Options
+### trace\_tool.so: Pin Tool Options
 
 `-o [string]`: Name of trace
 
@@ -134,17 +134,17 @@ Using the HDF5 file format is much more efficient than writing to a typical CSV 
 
 ## Important Pin Functions
 
-### PIN_InitSymbols(), PIN_Init()
+### PIN\_InitSymbols(), PIN\_Init()
 
 Must be called prior to `PIN_StartProgram()` in order for Pin to be able to read symbols and verify the arguments passed to the pintool are valid
 
-### IMG_AddInstrumentFunction()
+### IMG\_AddInstrumentFunction(), INS\_AddInstrumentFunction()
 
-Specifies what to do for each instruction via Instruction method
+Specifies a function to be called for each [Image](https://software.intel.com/sites/landingpage/pintool/docs/81205/Pin/html/group__IMG__BASIC__API.html) and [Instruction](https://software.intel.com/sites/landingpage/pintool/docs/81205/Pin/html/group__INS__BASIC__API.html) respectively
 
-### PIN_AddFiniFunction() 
+### PIN\_AddFiniFunction() 
 
-Specifies a function to be run right before the pintool finishes execution
+Specifies a function to be run right before the pintool finishes execution (typically right after the traced program is done executing).
 
 
 
