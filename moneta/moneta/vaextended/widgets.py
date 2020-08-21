@@ -45,6 +45,9 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-spacer></v-spacer>
       <toolbar />
       <v-spacer></v-spacer>
+      <v-btn icon @click="show_legend = !show_legend;">
+        <v-icon>settings</v-icon>
+     </v-btn>
     </v-app-bar>
     <v-main>
       <v-container>
@@ -55,6 +58,8 @@ class PlotTemplate(v.VuetifyTemplate):
           clipped
           right
           absolute
+          expand-on-hover
+          hide-overlay
           overflow
           color="rgb(255,255,255,0.8)"
         >
