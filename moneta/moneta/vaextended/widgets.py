@@ -22,6 +22,7 @@ class PlotTemplate(v.VuetifyTemplate):
     button_text = Unicode('menu').tag(sync=True)
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     edit_title = Bool(False).tag(sync=True)
+    show_legend = Bool(True).tag(sync=True)
     template = Unicode('''
 
 <v-app>
@@ -46,9 +47,20 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-spacer></v-spacer>
     </v-app-bar>
     <v-main>
-    <v-container>
-          <main-widget/>
-          </v-container>
+      <v-container>
+        <main-widget/>
+        <v-navigation-drawer
+          v-model="show_legend"
+          :temporary="false"
+          clipped
+          right
+          absolute
+          overflow
+          color="rgb(255,255,255,0.8)"
+        >
+          <main-legend/>
+        </v-navigation-drawer>
+      </v-container>
     </v-main>
 </v-app>
 ''').tag(sync=True)
