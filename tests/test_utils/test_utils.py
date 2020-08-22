@@ -1,5 +1,5 @@
 import pytest
-import Path
+import os
 
 import moneta.utils as u
 from moneta.settings import OUTPUT_DIR
@@ -48,15 +48,24 @@ class TestWidgetFactories:
         assert text.style is not None
 
 class TestRunPintool:
+    def get_file_names(self, name):
+        return [
+            OUTPUT_DIR + "trace_" + name + ".hdf5",
+            OUTPUT_DIR + "tag_map_" + name + ".csv",
+            OUTPUT_DIR + "meta_data_" + name + ".txt"
+        ]
     def check_file_exists(self, name):
         return os.path.exists(name)
 
-    def delete_files(self, name):
-        Path.unlink("trace_" + name + ".hdf")
-        pass
+    def delete_file(self, name):
+        if os.path.exists(name):
+            os.remove(name)
+
     def test_run_pintool_basic(self, mock_widget_inputs):
         mock_widget_inputs['e_file'] = './sorting'
         u.run_pintool(mock_widget_inputs)
-        assert self.check_file_exists(OUTPUT_DIR + "trace_" +
-                mock_widget_inputs['o_name'] + ".hdf5")
-        pass
+        files = self.get_file_names(mock_widget_inputs['o_name'])
+        for f in files:
+            assert self.check_file_exists(f)
+            self.delete_file(f)
+        assert self.check_file_exists(OUTPUT_DIR + "cwd_history")
