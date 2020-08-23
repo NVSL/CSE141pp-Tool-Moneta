@@ -34,5 +34,6 @@ RUN sed -i 's/\r$//' bashrc_aliases
 RUN cat bashrc_aliases >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA}
+# Make Moneta a package to add path for pytest to locate
 RUN pip install -e .
 
