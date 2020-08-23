@@ -27,9 +27,12 @@ RUN pip install -r requirements.txt
 # Create aliases for Pin and Moneta
 COPY .setup/bashrc_aliases ${DIR_SETUP}/
 
+COPY moneta/setup.py ${DIR_MONETA}/
+
 # Fix Windows to Linux file endings
 RUN sed -i 's/\r$//' bashrc_aliases 
 RUN cat bashrc_aliases >> ~/.bashrc
 
 WORKDIR ${DIR_MONETA}
+RUN pip install -e .
 
