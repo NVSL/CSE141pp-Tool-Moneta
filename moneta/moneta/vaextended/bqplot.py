@@ -35,7 +35,7 @@ class Action(Enum):
     undo = 1
     redo = 2
 
-PANZOOM_HISTORY_LIMIT = 5
+PANZOOM_HISTORY_LIMIT = 50
 
 
 class BqplotBackend(BackendBase):
