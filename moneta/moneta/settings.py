@@ -101,3 +101,7 @@ F_ACC = "First_Access"
 L_ACC = "Last_Access"
 TAG_NAME = "Tag_Name"
 TAG_ID = "Tag_Value"
+
+# Legend variables
+LEGEND_MEM_ACCESS_TITLE = 'Legend'
+LEGEND_TAGS_TITLE = 'Tags'

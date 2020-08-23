@@ -35,7 +35,7 @@ class Action(Enum):
     undo = 1
     redo = 2
 
-PANZOOM_HISTORY_LIMIT = 5
+PANZOOM_HISTORY_LIMIT = 50
 
 
 class BqplotBackend(BackendBase):
@@ -260,7 +260,7 @@ class BqplotBackend(BackendBase):
                     self.undo_tooltip,
                     self.redo_tooltip
                 ], align='center', justify='center')
-            self.plot.add_extra_widget(self.tooltips)
+            self.plot.add_to_toolbar(self.tooltips)
 
 
     def update_zoom_brush(self, *args):
