@@ -8,10 +8,8 @@ class TestVerifyWidgetValues:
     @pytest.fixture(autouse=True, scope='class')
     def setup_executable(self, mock_working_dir, mock_executable):
         Path(mock_working_dir + mock_executable).touch(mode=0o777)
-        Path(mock_working_dir + mock_executable + INCORRECT_VAL).touch()
         yield
         Path(mock_working_dir + mock_executable).unlink()
-        Path(mock_working_dir + mock_executable + INCORRECT_VAL).unlink()
 
     @pytest.mark.parametrize("cache_lines, e0",
             [
@@ -52,9 +50,7 @@ class TestVerifyWidgetValues:
         assert u.verify_input(mock_widget_inputs) == False
 
     def test_executable_file(self, mock_widget_inputs):
-        mock_widget_inputs['e_file'] += INCORRECT_VAL
-        assert u.verify_input(mock_widget_inputs) == False
-        mock_widget_inputs['e_file'] = INCORRECT_VAL
+        mock_widget_inputs['e_file'] = INCORRECT_VAL # File not found
         assert u.verify_input(mock_widget_inputs) == False
 
     #TODO - Test arguments
