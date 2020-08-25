@@ -25,7 +25,7 @@ class PlotTemplate(v.VuetifyTemplate):
     show_legend = Bool(True).tag(sync=True)
     template = Unicode('''
 
-<v-app>
+<v-app app>
     <v-app-bar :clipped-left="clipped" absolute dense>
       <v-tooltip bottom>
         <template v-slot:activator="{ on }">
@@ -48,23 +48,25 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-btn icon @click="show_legend = !show_legend;">
         <v-icon>settings</v-icon>
      </v-btn>
+    <v-navigation-drawer
+      v-model="show_legend"
+      :temporary="false"
+      :clipped="clipped"
+      right
+      absolute
+      app
+      hide-overlay
+      overflow
+      height='auto'
+      color="rgb(255,255,255,0)"
+    >
+      <main-legend/>
+    </v-navigation-drawer>
     </v-app-bar>
     <v-main>
       <v-container>
         <main-widget/>
-        <v-navigation-drawer
-          v-model="show_legend"
-          :temporary="false"
-          clipped
-          right
-          absolute
-          expand-on-hover
-          hide-overlay
-          overflow
-          color="rgb(255,255,255,0.8)"
-        >
-          <main-legend/>
-        </v-navigation-drawer>
+        
       </v-container>
     </v-main>
 </v-app>

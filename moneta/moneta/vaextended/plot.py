@@ -85,7 +85,7 @@ class PlotBase(widgets.Widget):
             else:
                 self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
-                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
+                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
                         'default_title': self.default_title,
