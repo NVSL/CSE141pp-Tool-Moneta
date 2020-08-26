@@ -1,4 +1,5 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
+import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
 from trace import Tag
@@ -24,9 +25,33 @@ class Legend():
         self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
+        self.control = Checkbox(value=True,description='Legend', indent=False, layout=Layout(margin = "10px 0px 0px 0px", width='80px'))
+        def click():
+            if self.control.status == False:
+                self.collapse_all()
+            else:
+                self.expand_all()
+            self.control.status = not self.control.status
+        self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['keyboard_arrow_down'])
+                                ])
+        self.control.status = False
+        self.control.on_event('click', lambda *ignore: click())
+        self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                'name': 'activator',
+                                'variable': 'tooltip',
+                                'children': self.control
+                            }], children=['Legend'])
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
         self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+
+    def collapse_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = None
+    def expand_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = 0
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
