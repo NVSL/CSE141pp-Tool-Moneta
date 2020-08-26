@@ -5,8 +5,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(name)15s] - %(l
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 #logging.disable(logging.CRITICAL) # To disable logging
-import model
-import view
+import moneta.model as model
+import moneta.view as view
 
 
 def main():
