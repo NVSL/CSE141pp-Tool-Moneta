@@ -25,7 +25,6 @@ class Legend():
         self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
-        self.control = Checkbox(value=True,description='Legend', indent=False, layout=Layout(margin = "10px 0px 0px 0px", width='80px'))
         def click():
             if self.control.status == False:
                 self.collapse_all()
