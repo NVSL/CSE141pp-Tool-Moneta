@@ -167,17 +167,12 @@ def run_pintool(w_vals):
     os.chdir(w_vals['cwd_path'])
     
     log.debug("Executable: {}".format(w_vals['e_file']))
-    print(w_vals['e_file'])
-    print(args)
     log.debug("Running in dir: {}".format(os.getcwd()))
     sub_output = subprocess.run(args, capture_output=True)
     sub_stdout = sub_output.stdout.decode('utf-8')
     sub_stderr = sub_output.stderr.decode('utf-8')
     log.debug("Raw pintool stdout: \n{}".format(sub_stdout))
     log.debug("Raw pintool stderr: \n{}".format(sub_stderr))
-    print(sub_stdout)
-    print(sub_stderr)
-    print("done with debug")
   
     os.chdir(MONETA_TOOL_DIR)
   
