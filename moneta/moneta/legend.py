@@ -27,10 +27,11 @@ class Legend():
         self.colormap = np.copy(newc)
         def click():
             if self.control.status == False:
+                self.control.status = not self.control.status
                 self.collapse_all()
             else:
+                self.control.status = not self.control.status
                 self.expand_all()
-            self.control.status = not self.control.status
         self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
                                     v.Icon(children=['keyboard_arrow_down'])
                                 ])
@@ -48,9 +49,11 @@ class Legend():
     def collapse_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = None
+            self.control.children[0].children=['keyboard_arrow_down']
     def expand_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = 0
+            self.control.children[0].children=['keyboard_arrow_up']
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
