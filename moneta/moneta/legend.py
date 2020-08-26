@@ -1,9 +1,16 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM
 from trace import Tag
 from enum import Enum
+from vaex.jupyter.bqplot import *
+import matplotlib.pyplot as mpl_plt
 import numpy as np
+
+global click_zoom_x
+click_zoom_x = 0
+global click_zoom_y
+click_zoom_y = 0
 
 class SelectionGroup(Enum):
     hit_miss = 0
@@ -14,6 +21,7 @@ class SelectionGroup(Enum):
 
 class Legend():
     def __init__(self, tags, df):
+        mpl_plt.ioff()
         self.wid_150 = Layout(width='110px')
         self.wid_180 = Layout(width='125px')
         self.wid_15 = Layout(width='15px')
@@ -24,9 +32,11 @@ class Legend():
         self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
-        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
         self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+        self.click_zoom_widget = widgets.Output()
+        self.add_accordion(LEGEND_CLICK_ZOOM, self.create_click_zoom())
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
@@ -101,6 +111,111 @@ class Legend():
             layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
         return accordion
 
+    def create_click_zoom(self):
+        czoom_xaxis = widgets.IntSlider(value=50, min=20, max=500, step=10, description='Index Range', disabled=False, 
+                                  continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
+        czoom_yaxis = widgets.IntSlider(value=100, min=50, max=1000, step=10, description='Address Range', disabled=False, 
+                                  continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
+        #czoom_xaxis.layout.visibility = "hidden"
+        #czoom_yaxis.layout.visibility = "hidden"
+        global click_zoom_x
+        click_zoom_x = czoom_xaxis.value
+        global click_zoom_y
+        click_zoom_y = czoom_yaxis.value
+        click_zoom_button_layout = widgets.Layout(width='auto', height='40px') #set width and height
+
+        self.czoom_button = widgets.Button(
+            description='Zoom to Area',
+            disabled=False,
+            display='flex',
+            flex_flow='column',
+            align_items='stretch', 
+            layout = click_zoom_button_layout
+        )
+        self.czoom_button.layout.display = 'none'
+        def on_x_value_change(change):
+            global click_zoom_x
+            click_zoom_x = change['new']
+
+        def on_y_value_change(change):
+            global click_zoom_x
+            click_zoom_y = change['new']
+ 
+        czoom_xaxis.observe(on_x_value_change, names='value')
+        czoom_yaxis.observe(on_y_value_change, names='value')
+
+        def czoom_zoom(b):
+            self.plot.backend.scale_x.min = self.click_zoom_obj.x_coormin
+            self.plot.backend.scale_x.max = self.click_zoom_obj.x_coormax
+            self.plot.backend.scale_y.min = self.click_zoom_obj.y_coormin
+            self.plot.backend.scale_y.max = self.click_zoom_obj.y_coormax
+            self.plot.backend._update_limits()
+
+        self.czoom_button.on_click(czoom_zoom)
+
+
+        accordion = VBox([self.click_zoom_widget] + [czoom_xaxis] + [czoom_yaxis] + [self.czoom_button],
+                         layout=Layout(overflow_y='auto', padding='10px'))
+        return accordion
+
+    class click_zoom_observer:
+        def __init__(self, observable, widget, button, df):
+            self.coor_x = 1.0
+            self.coor_y = 1.0
+            self.observable = observable
+            self.df = df
+            self.widget = widget
+            self.button = button
+            #this line is to get this object to update whenever the selected coords are updated
+            self.observable.bind_to(self.update_click_zoom_coords)
+            self.x_coormin = 0
+            self.x_coormax = 0
+            self.y_coormin = 0
+            self.y_coormax = 0
+
+        @debounced(0.5, method=True)
+        def update_click_zoom_coords(self, data):
+            global click_zoom_x
+            global click_zoom_y
+            #set limits for data
+            self.x_coormin = self.observable.coor_x - click_zoom_x/2
+            self.x_coormax = self.observable.coor_x + click_zoom_x/2
+            self.y_coormin = self.observable.coor_y - click_zoom_y/2
+            self.y_coormax = self.observable.coor_y + click_zoom_y/2
+
+            #filter data to only those limits
+            df_filter1 = self.df[self.df.Access_Number < self.x_coormax]
+            df_filter2 = df_filter1[self.df.Access_Number > self.x_coormin]
+            df_filter3 = df_filter2[self.df.Bytes > self.y_coormin]
+            df_filter4 = df_filter3[self.df.Bytes < self.y_coormax]
+            colors = newc[df_filter4.Access.values]
+            self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
+
+    #click_zoom_widget = self.click_zoom_widget
+    
+    #@click_zoom_widget.capture(clear_output = True, wait=True)
+        def plot_click_zoom(self, dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
+            print("plotting click zoom")
+            self.widget.clear_output()
+            if self.button.layout.display == "none":
+                self.button.layout.display = "block"
+            with self.widget:
+                #filter for indices and addresses and their access type that are currently displayed in main widget
+                #index = dataset.evaluate(self.df.Access_Number, selection=True)
+                #address = dataset.evaluate(self.df.Bytes, selection=True)
+                #access = dataset.evaluate(self.df.Access, selection=True)
+                #colors = newc[access]
+                #plot the data
+                #plt.scatter(index,  address, c=colors, s=0.5)
+                mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, s=0.5)
+                mpl_plt.title('Mini Zoom')
+                mpl_plt.xlabel('Index')
+                mpl_plt.ylabel('Address')
+                #set limits
+                mpl_plt.xlim(xlim_min, xlim_max)
+                mpl_plt.ylim(ylim_min, ylim_max)
+                mpl_plt.show()
+    
     def create_colorpicker(self, clr):
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
         clr_picker.observing = True
@@ -156,6 +271,7 @@ class Legend():
 
     def set_plot(self, plot):
         self.plot = plot
+        self.click_zoom_obj = self.click_zoom_observer(self.plot.backend, self.click_zoom_widget, self.czoom_button, self.df)
 
     def tag_tooltip(self, tag):
         return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
@@ -213,3 +329,5 @@ class CheckBox():
         self.widget.manual_change = False
         self.group = group
         self.selections = selections
+
+

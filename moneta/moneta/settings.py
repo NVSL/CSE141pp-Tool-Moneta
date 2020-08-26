@@ -97,3 +97,4 @@ READ_HIT = 1
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Legend'
 LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_CLICK_ZOOM = 'Click Zoom'

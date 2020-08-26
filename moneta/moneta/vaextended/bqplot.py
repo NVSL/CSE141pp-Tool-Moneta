@@ -14,6 +14,7 @@ import vaex
 import numpy as np
 import bqplot
 import bqplot.pyplot as plt
+import matplotlib.pyplot as mpl_plt
 import ipywidgets as widgets
 import ipyvuetify as v
 import copy
@@ -24,6 +25,7 @@ blackish = '#666'
 accessRanges = {}
 ZOOM_SELECT = 'Zoom to Selection'
 PAN_ZOOM = 'Pan Zoom'
+CLICK_ZOOM = 'click select'
 RESET_ZOOM = 'Reset Zoom'
 
 UNDO = 'Undo'
@@ -37,6 +39,8 @@ class Action(Enum):
 
 PANZOOM_HISTORY_LIMIT = 5
 
+coor_x = 0
+coor_y = 0
 
 class BqplotBackend(BackendBase):
     def __init__(self, figure=None, figure_key=None):
@@ -47,6 +51,9 @@ class BqplotBackend(BackendBase):
         self.signal_limits = vaex.events.Signal()
 
         self._cleanups = []
+        self.coor_x = 0
+        self.coor_y = 0
+        self._observers = []
 
     def update_image(self, rgb_image):
         with self.output:
@@ -154,9 +161,12 @@ class BqplotBackend(BackendBase):
         if 1:  # tool_select:
             self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
             self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
+            self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="green")
+            self.click_brush.observe(self.update_click_brush, ["brushing"])
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
             tool_actions_map[PAN_ZOOM] = self.panzoom
-            tool_actions = [PAN_ZOOM, ZOOM_SELECT]
+            tool_actions_map[CLICK_ZOOM] = self.click_brush
+            tool_actions = [PAN_ZOOM, ZOOM_SELECT, CLICK_ZOOM]
 
             self.start_limits = copy.deepcopy(self.limits)
 
@@ -181,6 +191,13 @@ class BqplotBackend(BackendBase):
                                         v.Icon(children=['crop'])
                                     ])
                                 }], children=[ZOOM_SELECT]),
+                                v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': v.Btn(v_on='tooltip.on', children=[
+                                        v.Icon(children=['mdi-mouse'])
+                                    ])
+                                }], children=[CLICK_ZOOM])
                             ])
             self.interaction_tooltips.observe(change_interact, "v_model")
 
@@ -319,3 +336,66 @@ class BqplotBackend(BackendBase):
         with self.scale_y.hold_trait_notifications():
             self.scale_y.min = y1
             self.scale_y.max = y2
+
+    def update_click_brush(self, *args):
+        if not self.click_brush.brushing:
+            with self.output:
+                self.figure.interaction = None
+                if self.click_brush.selected is not None:
+                    (x1, y1), (x2, y2) = self.click_brush.selected
+                    df = self.dataset
+                    coor_xmin = min(x1, x2)
+                    coor_xmax = max(x1, x2)
+                    coor_ymin = min(y1, y2)
+                    coor_ymax = max(y1, y2)
+                    ind = self.plot.x_label
+                    addr = self.plot.y_label
+                    res = df[(df[ind] >= coor_xmin) & (df[ind] <= coor_xmax) & (df[addr] >= coor_ymin) & (df[addr] <= coor_ymax)]	
+
+                    #if there are values selected within the region
+                    if res.count() != 0:
+                             #zoom towards data on the left
+                             #zoom_x = res.index.values[0]
+                             #zoom towards data on the top
+                            #zoom_y = max_x.Address.max()[()]
+
+                         #default to data in the right
+                         zoom_x = res[ind].values[-1]
+                         #filter for y-coordinates of a data point
+                         max_x = df[res[ind] == res[ind].values[-1]]
+                         zoom_y = max_x[addr].min()[()]
+                    else:
+		         #default to the bottom right corner coordinates of the highlighted region
+                         zoom_x = x2
+                         zoom_y = y1
+
+                    self.click_zoom_update_coords_x(zoom_x)
+                    self.click_zoom_update_coords_y(zoom_y)
+                self.figure.interaction = self.click_brush
+	        #remove selected data
+                with self.click_brush.hold_trait_notifications():
+                    self.click_brush.selected_x = None
+                    self.click_brush.selected_y = None
+
+    @property
+    def click_zoom_coords_x(self):
+        return self.coor_x
+
+    @property
+    def click_zoom_coords_y(self):
+        return self.coor_y
+
+    def click_zoom_update_coords_x(self, value_x):
+        self.coor_x = value_x
+        for callback in self._observers:
+            callback(self.coor_x)
+
+    def click_zoom_update_coords_y(self, value_y):
+        self.coor_y = value_y
+        for callback in self._observers:
+            callback(self.coor_y)
+	
+    def bind_to(self, callback):
+        self._observers.append(callback)
+
+
