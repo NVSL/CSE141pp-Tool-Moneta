@@ -119,6 +119,8 @@ class BqplotBackend(BackendBase):
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
             if self.counter == 2:
+                self.plot.update_stats()
+
                 if self.curr_action in [Action.redo, Action.other]:
                     self.undo_btn.disabled = False
                     self.undo_actions.append(self.limits)

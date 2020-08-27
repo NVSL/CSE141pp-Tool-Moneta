@@ -1,4 +1,4 @@
-from ipywidgets import Text, Button, IntText
+from ipywidgets import Text, Button, IntText, Label
 import os
 import re
 import sys
@@ -13,7 +13,15 @@ from settings import (
     TOOL_PATH,
     WIDGET_DESC_PROP,
     WIDGET_LAYOUT,
-    CWD_HISTORY_PATH
+    CWD_HISTORY_PATH,
+    INDEX_LABEL,
+    ADDRESS_LABEL,
+    COMP_W_MISS,
+    COMP_R_MISS,
+    WRITE_MISS,
+    READ_MISS,
+    WRITE_HIT,
+    READ_HIT
 )
 sys.path.append(MONETA_BASE_DIR + "moneta/moneta/")
 
@@ -68,6 +76,8 @@ def parse_exec_input(e_input):
 
     return (exec_file_path, exec_args)
         
+
+
 def load_cwd_file():
     try:
         with open(CWD_HISTORY_PATH, "a+") as history:
@@ -85,7 +95,43 @@ def update_cwd_file(cwd_history):
         for path in cwd_history:
             history_file.write(path + "\n")
 
-            
+
+
+def get_curr_view(plot, access_type):
+    df = plot.dataset
+    df = df[df['Access'] == access_type]
+    curr_view = df[df[INDEX_LABEL] >= int(plot.limits[0][0])]
+    curr_view = curr_view[curr_view[INDEX_LABEL] <= int(plot.limits[0][1])+1]
+    curr_view = curr_view[curr_view[ADDRESS_LABEL] >= int(plot.limits[1][0])]
+    curr_view = curr_view[curr_view[ADDRESS_LABEL] <= int(plot.limits[1][1])+1]
+    return curr_view
+
+def get_curr_stats(plot):
+    curr_read_hits = get_curr_view(plot, READ_HIT)
+    curr_write_hits = get_curr_view(plot, WRITE_HIT)
+    curr_read_cap_misses = get_curr_view(plot, READ_MISS)
+    curr_write_cap_misses = get_curr_view(plot, WRITE_MISS)
+    curr_read_comp_misses = get_curr_view(plot, COMP_R_MISS)
+    curr_write_comp_misses = get_curr_view(plot, COMP_W_MISS)
+
+    hit_count = curr_read_hits.count() + curr_write_hits.count()
+    cap_miss_count = curr_read_cap_misses.count() + curr_write_cap_misses.count()
+    comp_miss_count = curr_read_comp_misses.count() + curr_write_comp_misses.count()
+    total_count = hit_count + cap_miss_count + comp_miss_count
+
+    return total_count, hit_count, cap_miss_count, comp_miss_count
+
+
+def stats_percent(count, total):
+    return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
+def stats_hit_string(count, total):
+    return 'Hit Rate: '+ stats_percent(count, total)
+def stats_cap_miss_string(count, total):
+    return 'Capacity Miss Rate: '+ stats_percent(count, total)
+def stats_comp_miss_string(count, total):
+    return 'Compulsory Miss Rate: '+ stats_percent(count, total)
+
+
 def get_widget_values(m_widget):
     e_file, e_args = parse_exec_input(m_widget.ex.value)
     
