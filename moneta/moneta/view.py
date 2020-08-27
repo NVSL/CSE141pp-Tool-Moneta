@@ -1,6 +1,6 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
-from utils import (
+from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.utils import (
     generate_trace, 
     delete_traces, 
     update_cwd_file, 
@@ -10,8 +10,8 @@ from utils import (
     stats_cap_miss_string,
     stats_comp_miss_string
 )
-from moneta_widgets import MonetaWidgets
-from legend import Legend
+from moneta.moneta_widgets import MonetaWidgets
+from moneta.legend import Legend
 import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
