@@ -101,9 +101,9 @@ def get_curr_view(plot, access_type):
     df = plot.dataset
     df = df[df['Access'] == access_type]
     curr_view = df[df[INDEX_LABEL] >= int(plot.limits[0][0])]
-    curr_view = curr_view[curr_view[INDEX_LABEL] <= int(plot.limits[0][1])+1]
+    curr_view = curr_view[curr_view[INDEX_LABEL] <= int(plot.limits[0][1])]
     curr_view = curr_view[curr_view[ADDRESS_LABEL] >= int(plot.limits[1][0])]
-    curr_view = curr_view[curr_view[ADDRESS_LABEL] <= int(plot.limits[1][1])+1]
+    curr_view = curr_view[curr_view[ADDRESS_LABEL] <= int(plot.limits[1][1])]
     return curr_view
 
 def get_curr_stats(plot):

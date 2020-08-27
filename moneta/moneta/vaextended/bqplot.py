@@ -49,6 +49,7 @@ class BqplotBackend(BackendBase):
         self._cleanups = []
 
     def update_image(self, rgb_image):
+        
         with self.output:
             rgb_image = (rgb_image * 255.).astype(np.uint8)
             pil_image = vaex.image.rgba_2_pil(rgb_image)
@@ -60,6 +61,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
+            self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
         self.plot = plot
@@ -119,8 +121,6 @@ class BqplotBackend(BackendBase):
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
             if self.counter == 2:
-                self.plot.update_stats()
-
                 if self.curr_action in [Action.redo, Action.other]:
                     self.undo_btn.disabled = False
                     self.undo_actions.append(self.limits)
@@ -146,6 +146,7 @@ class BqplotBackend(BackendBase):
                 self._update_limits(self, *args)
             else:
                 self.counter = 2
+
             self.limits = limits
 
     def create_tools(self):
