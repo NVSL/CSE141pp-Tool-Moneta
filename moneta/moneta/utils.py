@@ -4,7 +4,7 @@ import re
 import sys
 import subprocess
 
-from settings import (
+from moneta.settings import (
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
     MONETA_TOOL_DIR,

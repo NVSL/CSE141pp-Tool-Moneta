@@ -1,5 +1,5 @@
-from utils import collect_traces, delete_traces
-from trace import Trace
+from moneta.utils import collect_traces, delete_traces
+from moneta.trace import Trace
 
 import logging
 log = logging.getLogger(__name__)

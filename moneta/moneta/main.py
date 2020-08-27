@@ -5,8 +5,8 @@ reload(logging) # To display in Jupyter
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s: [%(name)15s] - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-import model
-import view
+import moneta.model as model
+import moneta.view as view
 
 
 def main():
