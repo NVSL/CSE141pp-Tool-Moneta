@@ -42,7 +42,7 @@ class View():
         w_vals = self.m_widget.get_widget_values()
 
         if generate_trace(w_vals):
-            self.update_cwd_widget(w_vals['display_cwd_path'])
+            self.update_cwd_widget(w_vals['cwd_path'])
             self.update_select_widget()
 
     def handle_load_trace(self, _):

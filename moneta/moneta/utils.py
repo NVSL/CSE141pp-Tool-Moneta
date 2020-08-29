@@ -100,20 +100,31 @@ def get_widget_values(m_widget):
         'is_full_trace': m_widget.ft.value
     }
     return w_vals
+
+def parse_path(path):
+    """ Returns a final path and an absolute path
+        Final path is either an absolute path, relative from home,
+        or relative from current directory depending on closest parent of the three
+        NOTE: Assumes '..' is not part of a file name
+    """
+    expanded = os.path.expanduser(path)
+    realpath = os.path.realpath(expanded)
+    home_rel = os.path.relpath(expanded, start='/home/jovyan')
+    curr_rel = os.path.relpath(expanded)
+    
+    if ".." in home_rel:
+        return realpath, realpath
+    
+    if ".." in curr_rel:
+        if home_rel == '.':
+            return "~", realpath
+        return "~/" + home_rel, realpath
+    
+    return curr_rel, realpath
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
-    orig_path = w_vals['cwd_path']
-    start = '.'
-    w_vals['cwd_path'] = os.path.expanduser(parse_cwd(orig_path))
-    realpath = os.path.realpath(w_vals['cwd_path'])
-    if orig_path[0] == '~':
-        start = '/home/jovyan'
-        final_path = '~/' + os.path.relpath(w_vals['cwd_path'], start=start)
-    else:
-        final_path = os.path.relpath(w_vals['cwd_path'], start=start)
-        if len(final_path) > len(realpath):
-            final_path = realpath
+    final_path, w_vals['cwd_path'] = parse_path(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print("Cache lines, cache block, and maximum lines to output must be greater than 0")
@@ -148,7 +159,7 @@ def verify_input(w_vals):
         return False
     
     os.chdir(MONETA_TOOL_DIR)
-    w_vals['display_cwd_path'] = final_path
+    w_vals['cwd_path'] = final_path
     return True
 
 
