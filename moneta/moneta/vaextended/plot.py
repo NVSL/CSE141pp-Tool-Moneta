@@ -1,12 +1,3 @@
-#import vaex.jupyter.plot
-#from vaex.jupyter.plot import *
-#from vaex.jupyter.plot import _ensure_list, _expand, _parse_f, _parse_n, _parse_reduction, _expand_shape
-#from traitlets import *
-
-#from vaex_extended.jupyter.widgets import PlotTemplate as PlotTemplate_v2
-#import vaex_extended
-#import copy
-
 import traitlets
 import ipywidgets as widgets
 import ipyvuetify as v
@@ -44,7 +35,6 @@ class PlotBase(widgets.Widget):
                  show_drawer=False,
                  controls_selection=True, **kwargs):
         super(PlotBase, self).__init__(x=x, y=y, z=z, w=w, what=what, vcount_limits=vcount_limits, grid_limits=grid_limits, f=f, **kwargs)
-        print("vaex extended plot base init")
         self.backend = backend
         self.vgrids = [None, None, None]
         self.vcount = None
@@ -78,7 +68,7 @@ class PlotBase(widgets.Widget):
             self.progress.layout.max_width = '500px'
             self.progress.description = "progress"
 
-            self.extra_widget = v.Row(pa_1=True, children=[])
+            self.toolbar = v.Row(pa_1=True, children=[])
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
             if 'legend' in kwargs:
@@ -89,10 +79,15 @@ class PlotBase(widgets.Widget):
                 self.y_label = kwargs.get('y_label')
             if 'cache_size' in kwargs:
                 self.cache_size = kwargs.get('cache_size')
+            if 'default_title' in kwargs:
+                self.default_title = kwargs.get('default_title')
+            else:
+                self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
-                        'extra-widget': self.extra_widget
+                        'toolbar': self.toolbar,
+                        'default_title': self.default_title
                     },
                     model=show_drawer
             )
@@ -142,11 +137,11 @@ class PlotBase(widgets.Widget):
     def show(self):
         display(self.widget)
 
-    def add_extra_widget(self, widget):
-        print("in extra widget adding")
-        self.extra_widget.children += [widget]
+    def add_to_toolbar(self, widget):
+        print("in toolbar adding")
+        self.toolbar.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
-        self.extra_widget.send_state('children')
+        self.toolbar.send_state('children')
 
     def _progress(self, v):
         self.progress.value = v

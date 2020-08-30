@@ -42,7 +42,7 @@ class PlotTemplate(v.VuetifyTemplate):
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
       <v-spacer></v-spacer>
-      <extra-widget />
+      <toolbar />
       <v-spacer></v-spacer>
     </v-app-bar>
     <v-main>
@@ -53,4 +53,12 @@ class PlotTemplate(v.VuetifyTemplate):
 </v-app>
 ''').tag(sync=True)
 
+    def __init__(self, *args, **kwargs): 
+      # change the title (must be done before the widget gets built!!!)
+      if 'components' in kwargs:
+          if 'default_title' in kwargs['components']:
+              self.default_title = kwargs['components']['default_title']
+
+      # proceed with original constructor    
+      super().__init__(*args, **kwargs)
 

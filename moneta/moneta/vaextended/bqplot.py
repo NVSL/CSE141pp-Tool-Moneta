@@ -35,12 +35,11 @@ class Action(Enum):
     undo = 1
     redo = 2
 
-PANZOOM_HISTORY_LIMIT = 5
+PANZOOM_HISTORY_LIMIT = 50
 
 
 class BqplotBackend(BackendBase):
     def __init__(self, figure=None, figure_key=None):
-        print("vaex extended bqplot init")
         self._dirty = False
         self.figure_key = figure_key
         self.figure = figure
@@ -113,7 +112,6 @@ class BqplotBackend(BackendBase):
 
     @debounced(0.2, method=True)
     def _update_limits(self, *args):
-        print("bqplot: updating limits")
         with self.output:
             limits = copy.deepcopy(self.limits)
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
@@ -221,7 +219,6 @@ class BqplotBackend(BackendBase):
                                 }], children=[REDO])
             @debounced(0.5)
             def undo_redo(*args):
-                print("undoing/redoing:", args, args[0] )
                 print(self.undo_actions)
                 self.curr_action = args[0]
                 (x1, x2), (y1, y2) = args[1][-1]
@@ -263,7 +260,7 @@ class BqplotBackend(BackendBase):
                     self.undo_tooltip,
                     self.redo_tooltip
                 ], align='center', justify='center')
-            self.plot.add_extra_widget(self.tooltips)
+            self.plot.add_to_toolbar(self.tooltips)
 
 
     def update_zoom_brush(self, *args):
@@ -311,7 +308,6 @@ class BqplotBackend(BackendBase):
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
 
-        print("zoom brushing")
     def zoom_sel(self, x1, x2, y1, y2):
         with self.scale_x.hold_trait_notifications():
             self.scale_x.min = x1

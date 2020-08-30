@@ -70,7 +70,7 @@ CUSTOM_CMAP = ListedColormap(newc)
 BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='90%', border='1px solid black')
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
-MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta"
+MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta/"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
@@ -93,3 +93,15 @@ WRITE_MISS = 4
 READ_MISS = 3
 WRITE_HIT = 2
 READ_HIT = 1
+
+# Tag file
+LO_ADDR = "Low_Address"
+HI_ADDR = "High_Address"
+F_ACC = "First_Access"
+L_ACC = "Last_Access"
+TAG_NAME = "Tag_Name"
+TAG_ID = "Tag_Value"
+
+# Legend variables
+LEGEND_MEM_ACCESS_TITLE = 'Legend'
+LEGEND_TAGS_TITLE = 'Tags'

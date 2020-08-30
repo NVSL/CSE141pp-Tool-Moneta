@@ -1,9 +1,13 @@
 from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
-from utils import int_text_factory as int_field
-from utils import text_factory as text_field
-from utils import button_factory as button
-from utils import load_cwd_file, parse_exec_input
-import settings
+from moneta.utils import (
+    int_text_factory as int_field, 
+    text_factory as text_field,
+    button_factory as button,
+    load_cwd_file,
+    parse_cwd,
+    parse_exec_input
+)
+import moneta.settings as settings
 import logging
 import subprocess
 log = logging.getLogger(__name__)
