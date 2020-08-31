@@ -15,6 +15,10 @@ class View():
         log.info("__init__")
         self.model = model
         self.init_widgets()
+
+        #added to resolve first one not being correct error 
+        self.m_widget.sw.observe(self.on_value_change, names='value')
+        self.m_widget.sw2.observe(self.on_value_change2, names='value')
         
 
     def init_widgets(self):
@@ -42,28 +46,15 @@ class View():
         self.m_widget.sw2.options = self.model.update_trace_list_full()
         self.m_widget.sw2.value = []
 
-    def set_observes(self):
-        #make list of widgets to run thru 
-        for widg in self.selectors:
-            widg.observe(self.observed_function)
-        
-    def observed_function(self):
-        self.set_observes()
+    def on_value_change(self, change):
+        self.m_widget.sw2.value = ()
+        self.m_widget.sw.value = change['new']
+        self.lastChanged = 1
 
-        #list of selectors in 
-        #lastChanged is a bool that changes 
-        for widg in self.selectors:
-            if(widg == self.m_widget.sw):
-                if( self.w_1 != widg.get_interact_value()):
-                self.lastChanged = 1
-                    #self.w_1 = widg.get_interact_value()
-            else:
-                if( self.w_2 != widg.get_interact_value()):
-                self.lastChanged = 0
-                    #self.w_2 = widg.get_interact_value()
-        
-        log.info("Verdict:")
-        log.info(self.lastChanged) 
+    def on_value_change2(self, change):
+        self.m_widget.sw.value = ()
+        self.m_widget.sw2.value = change['new']
+        self.lastChanged = 0
 
     def update_cwd_widget(self, cwd_path):
         cwd_path = parse_cwd(cwd_path)
@@ -75,7 +66,9 @@ class View():
         
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-        
+        self.m_widget.sw.observe(self.on_value_change, names='value')
+        self.m_widget.sw2.observe(self.on_value_change2, names='value')
+
         w_vals = [
             self.m_widget.cl.value,
             self.m_widget.cb.value,
@@ -93,16 +86,32 @@ class View():
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
+        self.m_widget.sw.observe(self.on_value_change, names='value')
+        self.m_widget.sw2.observe(self.on_value_change2, names='value')
         if (not self.model.ready_next_trace()):
             clear_output(wait=True)
             log.info("Refreshing")
             display(self.m_widget.widgets)
 
-        curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
-        if err_message is not None:
-            print(err_message)
-            return
+        log.info(self.lastChanged)
 
+        if(self.lastChanged==1):
+            curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
+            log.info("in tag conditional")
+            if err_message is not None:
+                print(err_message)
+                return
+        elif(self.lastChanged==0):
+            curr_trace, err_message = self.model.load_trace_full(self.m_widget.sw2.value[0])
+            log.info("in full conditional")
+            if err_message is not None:
+                print(err_message)
+                return
+        else:
+            print("no trace chosen")
+
+        log.info(self.lastChanged)
+        log.info("reach the end of conditionals")
         df = curr_trace.df
         x_lim = curr_trace.x_lim
         y_lim = curr_trace.y_lim
@@ -120,34 +129,39 @@ class View():
     
     def handle_delete_trace(self, _):
         log.info("Delete Trace clicked")
-        self.observed_function()
+        self.m_widget.sw.observe(self.on_value_change, names='value')
+        self.m_widget.sw2.observe(self.on_value_change2, names='value')
+        print(self.lastChanged)
         tag_or_full = self.lastChanged
         #initialized as -1
-        if(tag_or_full == -1):
-            log.info("No trace chosen!")
+        if(tag_or_full == 1):
+            print("tagged trace chosen")
         #1 means tag
-        elif (tag_or_full == 1): 
-            log.info("tagged trace chosen")
+        elif (tag_or_full == 0): 
+            print("full trace chosen")
         else:
         #0 means full
-            log.info("full trace chosen")
+            print("No trace chosen!")
 
         #This is the functionality to actually delete the trace, 
         # it's commented out to make sure we get the right verdict
         #from our obseerved_function
         #           vvvvvvvvvv
-
-        # if(self.lastChanged==1):
-        #     if (not self.model.delete_traces(self.m_widget.sw.value)):
-        #         clear_output(wait=True)
-        #         log.info("Refreshing")
-        #         display(self.m_widget.widgets)
-        #     self.update_select_widget()
-        #     pass
-        # else:
-        #     if (not self.model.delete_traces(self.m_widget.sw2.value)):
-        #         clear_output(wait=True)
-        #         log.info("Refreshing")
-        #         display(self.m_widget.widgets)
-        #     self.update_select_widget()
-        #     pass
+        if(self.lastChanged==1):
+            print("deleting tag")
+            if (not self.model.delete_traces(self.m_widget.sw.value)):
+                clear_output(wait=True)
+                log.info("Refreshing")
+                display(self.m_widget.widgets)
+            self.update_select_widget()
+            pass
+        elif (self.lastChanged==0):
+            print("deleting full")
+            if (not self.model.delete_traces_full(self.m_widget.sw2.value)):
+                clear_output(wait=True)
+                log.info("Refreshing")
+                display(self.m_widget.widgets)
+            self.update_select_widget_full()
+            pass
+        else:
+            print("none to delete")
