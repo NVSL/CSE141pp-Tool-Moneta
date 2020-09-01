@@ -81,6 +81,8 @@ class PlotBase(widgets.Widget):
                 self.cache_size = kwargs.get('cache_size')
             if 'default_title' in kwargs:
                 self.default_title = kwargs.get('default_title')
+            if 'update_stats' in kwargs:
+                self.update_stats = kwargs.get('update_stats')
             else:
                 self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
