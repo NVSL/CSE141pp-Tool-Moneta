@@ -50,7 +50,7 @@ class MonetaWidgets():
         self.total_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
         self.total_stats = VBox(
                            [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
-                           layout=Layout(width='200px')
+                           layout=Layout(width='500px')
                            )
 
         self.curr_stat_title = Label(
@@ -62,7 +62,7 @@ class MonetaWidgets():
         self.curr_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
         self.curr_stats = VBox(
                           [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
-                          layout=Layout(width='200px')
+                          layout=Layout(width='500px')
                           )
 
         self.stats = HBox([self.total_stats, self.curr_stats])

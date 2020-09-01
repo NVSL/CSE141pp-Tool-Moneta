@@ -125,11 +125,11 @@ def get_curr_stats(plot):
 def stats_percent(count, total):
     return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
 def stats_hit_string(count, total):
-    return 'Hit Rate: '+ stats_percent(count, total)
+    return 'Hits: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_cap_miss_string(count, total):
-    return 'Capacity Miss Rate: '+ stats_percent(count, total)
+    return 'Capacity Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_comp_miss_string(count, total):
-    return 'Compulsory Miss Rate: '+ stats_percent(count, total)
+    return 'Compulsory Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
 
 
 def get_widget_values(m_widget):
