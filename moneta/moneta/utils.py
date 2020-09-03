@@ -159,7 +159,7 @@ def verify_input(w_vals):
         return False
     
     os.chdir(MONETA_TOOL_DIR)
-    w_vals['cwd_path'] = final_path
+    w_vals['display_path'] = final_path
     return True
 
 
