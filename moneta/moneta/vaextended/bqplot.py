@@ -354,23 +354,23 @@ class BqplotBackend(BackendBase):
 
                     #if there are values selected within the region
                     if res.count() != 0:
-                             #zoom towards data on the left
-                             #zoom_x = res.index.values[0]
-                             #zoom towards data on the top
-                            #zoom_y = max_x.Address.max()[()]
+                         #zoom towards data on the left
+                         #zoom_x = res.index.values[0]
+                         #zoom towards data on the top
+                         #zoom_y = max_x.Address.max()[()]
 
                          #default to data in the right
                          zoom_x = res[ind].values[-1]
                          #filter for y-coordinates of a data point
-                         max_x = df[res[ind] == res[ind].values[-1]]
-                         zoom_y = max_x[addr].min()[()]
+                         #max_x = df[res[ind] == res[ind].values[-1]]
+                         #zoom_y = max_x[addr].min()[()]
+                         zoom_y = df['Address'].values[zoom_x]
+                         self.click_zoom_update_coords_x(zoom_x, True)
+                         self.click_zoom_update_coords_y(zoom_y, True)
                     else:
-		         #default to the bottom right corner coordinates of the highlighted region
-                         zoom_x = x2
-                         zoom_y = y1
-
-                    self.click_zoom_update_coords_x(zoom_x)
-                    self.click_zoom_update_coords_y(zoom_y)
+                         #no data within highlighted region, do not update coords
+                         self.click_zoom_update_coords_x(x2, False)
+                         self.click_zoom_update_coords_y(y1, False)
                 self.figure.interaction = self.click_brush
 	        #remove selected data
                 with self.click_brush.hold_trait_notifications():
@@ -385,15 +385,15 @@ class BqplotBackend(BackendBase):
     def click_zoom_coords_y(self):
         return self.coor_y
 
-    def click_zoom_update_coords_x(self, value_x):
+    def click_zoom_update_coords_x(self, value_x, updating):
         self.coor_x = value_x
         for callback in self._observers:
-            callback(self.coor_x)
+            callback(self.coor_x, updating)
 
-    def click_zoom_update_coords_y(self, value_y):
+    def click_zoom_update_coords_y(self, value_y, updating):
         self.coor_y = value_y
         for callback in self._observers:
-            callback(self.coor_y)
+            callback(self.coor_y, updating)
 	
     def bind_to(self, callback):
         self._observers.append(callback)

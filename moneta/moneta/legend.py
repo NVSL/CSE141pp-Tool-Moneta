@@ -138,7 +138,7 @@ class Legend():
             click_zoom_x = change['new']
 
         def on_y_value_change(change):
-            global click_zoom_x
+            global click_zoom_y
             click_zoom_y = change['new']
  
         czoom_xaxis.observe(on_x_value_change, names='value')
@@ -164,6 +164,7 @@ class Legend():
             self.coor_y = 1.0
             self.observable = observable
             self.df = df
+            #self.selections = 
             self.widget = widget
             self.button = button
             #this line is to get this object to update whenever the selected coords are updated
@@ -173,8 +174,15 @@ class Legend():
             self.y_coormin = 0
             self.y_coormax = 0
 
+        def update_df_selections(self, df):
+            self.df = df
+	    
         @debounced(0.5, method=True)
-        def update_click_zoom_coords(self, data):
+        def update_click_zoom_coords(self, data, updating):
+            if updating is not True:
+              print("click zoom: no data to zoom into")
+              return
+
             global click_zoom_x
             global click_zoom_y
             #set limits for data
@@ -189,6 +197,7 @@ class Legend():
             df_filter3 = df_filter2[self.df.Bytes > self.y_coormin]
             df_filter4 = df_filter3[self.df.Bytes < self.y_coormax]
             colors = newc[df_filter4.Access.values]
+	    #df_filter4.evaluate(selection=True)
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
 
     #click_zoom_widget = self.click_zoom_widget
@@ -207,15 +216,27 @@ class Legend():
                 #colors = newc[access]
                 #plot the data
                 #plt.scatter(index,  address, c=colors, s=0.5)
+                #access_number = dataset.evaluate(dataset.Access_Number, selection = True)
+                #print(access_number)
                 mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, s=0.5)
                 mpl_plt.title('Mini Zoom')
-                mpl_plt.xlabel('Index')
-                mpl_plt.ylabel('Address')
+                mpl_plt.xlabel('Bytes')
+                mpl_plt.ylabel('Access Number')
                 #set limits
                 mpl_plt.xlim(xlim_min, xlim_max)
                 mpl_plt.ylim(ylim_min, ylim_max)
                 mpl_plt.show()
     
+    def get_selected_array(self):
+        selected_bytes = self.df.evaluate(self.df.Bytes, selection=True)
+        selected_access_number = self.df.evaluate(self.df.Access_Number, selection=True)
+        selected_access = self.df.evaluate(self.df.Access, selection=True)
+        selected_array = vaex.from_arrays(Bytes=selected_bytes, Access_Number=selected_access_number, Access=selected_access)
+        #self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        return selected_array
+
+	
+
     def create_colorpicker(self, clr):
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
         clr_picker.observing = True
@@ -320,6 +341,8 @@ class Legend():
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
         self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.click_zoom_obj.update_df_selections(self.get_selected_array())
+
 
 class CheckBox():
     def __init__(self, desc, layout, group, selections, handle_fun):
