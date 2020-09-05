@@ -543,7 +543,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   }
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
-    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= std::min(prev_acc.rsp,rsp));
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
     is_prev_acc = false;
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
