@@ -679,12 +679,14 @@ VOID Instruction(INS ins, VOID *v)
     {
         const bool isRead = INS_MemoryOperandIsRead(ins, memOp);
         const bool isWrite = INS_MemoryOperandIsWritten(ins, memOp);
+	RTN_FindNameByAddress(IARG_INST_PTR);
         if (isRead) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
                 IARG_REG_VALUE, REG_RSP,
+		IARG_INST_PTR,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -696,6 +698,7 @@ VOID Instruction(INS ins, VOID *v)
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
                 IARG_REG_VALUE, REG_RSP,
+		IARG_INST_PTR,
                 IARG_END);
         }
     }
