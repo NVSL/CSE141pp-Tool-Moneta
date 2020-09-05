@@ -75,6 +75,12 @@ class View():
             log.info("Refreshing")
             display(self.m_widget.widgets)
 
+        if self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0:
+            print("To load a trace, select a trace")
+            return
+        elif len(self.m_widget.sw.value) > 1:
+            print("To load a trace, select a single trace")
+            return
         err_message = self.model.load_trace(self.m_widget.sw.value[0])
         if err_message is not None:
             print(err_message)
