@@ -75,17 +75,18 @@ class View():
             log.info("Refreshing")
             display(self.m_widget.widgets)
 
-        curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
+        err_message = self.model.load_trace(self.m_widget.sw.value[0])
         if err_message is not None:
             print(err_message)
             return
 
+        curr_trace = self.model.curr_trace
         df = curr_trace.df
         x_lim = curr_trace.x_lim
         y_lim = curr_trace.y_lim
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
-        legend = Legend(tags, df)
+        legend = Legend(self.model)
         plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='moneta_backend', type='vaextended', legend=legend.widgets,
