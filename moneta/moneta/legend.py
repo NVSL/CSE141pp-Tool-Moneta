@@ -25,40 +25,70 @@ class Legend():
         self.colorpickers = {}
         self.df = df
         self.colormap = np.copy(newc)
+
+        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+
+
+        self.ignore_changes = False
         def click():
-            if self.control.status == False:
-                self.control.status = not self.control.status
+            self.ignore_changes = True
+            if self.control.status == True:
                 self.collapse_all()
+                self.control.children[0].children=['keyboard_arrow_down']
             else:
-                self.control.status = not self.control.status
                 self.expand_all()
+                self.control.children[0].children=['keyboard_arrow_up']
+            self.ignore_changes = False
+        
+            self.control.status = not self.control.status
+
         self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
-                                    v.Icon(children=['keyboard_arrow_down'])
+                                    v.Icon(children=['keyboard_arrow_up'])
                                 ])
-        self.control.status = False
+        self.control.status = True
         self.control.on_event('click', lambda *ignore: click())
         self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
                                 'name': 'activator',
                                 'variable': 'tooltip',
                                 'children': self.control
                             }], children=['Legend'])
-        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
 
     def collapse_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = None
-            self.control.children[0].children=['keyboard_arrow_down']
     def expand_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = 0
-            self.control.children[0].children=['keyboard_arrow_up']
+
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
         accordion.set_title(0, name)
         self.widgets.children = tuple(list(self.widgets.children) + [accordion])
+        accordion.observe(lambda *ignore: check_accordion_status())
+
+        def check_accordion_status():
+            if self.ignore_changes:
+                return
+
+            all_open = True
+            all_closed = True
+
+            for acc in self.widgets.children:
+                if acc.selected_index == None:
+                    all_open = False
+                else:
+                    all_closed = False
+
+            if all_open:
+                self.control.status = True
+                self.control.children[0].children=['keyboard_arrow_up']
+            elif all_closed:
+                self.control.status = False
+                self.control.children[0].children=['keyboard_arrow_down']
+
 
     def hit_miss_row(self, desc, primary_clr, sec_clr, group, read_selection, write_selection):
         read = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_read, [read_selection])
