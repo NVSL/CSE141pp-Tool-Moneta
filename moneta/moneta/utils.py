@@ -124,7 +124,7 @@ def parse_path(path):
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
-    final_path, w_vals['cwd_path'] = parse_path(w_vals['cwd_path'])
+    w_vals['display_path'], w_vals['cwd_path'] = parse_path(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print("Cache lines, cache block, and maximum lines to output must be greater than 0")
@@ -159,7 +159,6 @@ def verify_input(w_vals):
         return False
     
     os.chdir(MONETA_TOOL_DIR)
-    w_vals['display_path'] = final_path
     return True
 
 
