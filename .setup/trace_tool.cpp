@@ -4,6 +4,7 @@
 #include <string.h>
 #include <utility>
 #include <vector>
+#include <stack>
 #include <list>
 #include <set>
 #include <unordered_set>
@@ -128,6 +129,15 @@ struct Access {
 bool is_prev_acc {0};
 ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
+
+std::string curr_function;
+std::stack <std::string> function_stack;
+std::unordered_map<std::string, int> function_count;
+//std::unordered_map<std::string, std::vector<std::pair<int, int>>> function_ranges;
+//std::unordered_map<std::string, std::unordered_map<std::string, std::pair<int, int>>> function_ranges;
+std::unordered_map<std::string, std::pair<int, int>> function_ranges;
+std::unordered_set<std::string> curr_functions;
+int prev_fun_start {0};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -388,6 +398,7 @@ VOID flush_cache() {
 
 
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
+  std::cout << "writing\n";
   int id = 0;
   if (is_stack) {
     lower_stack = std::min(lower_stack, addr);
@@ -537,7 +548,20 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
+void calc_function_range() {
+  std::cout << "calc\n";
+  if (function_stack.empty()) return;
+  std::string next_function = function_stack.top();
+  std::cout << "curr: " << curr_function << " - " << next_function << "\n";
+  if (curr_function.empty() || curr_function != next_function) {
+    if (function_ranges.find(next_function) == function_ranges.end()) {
+      function_ranges[next_function].first = curr_lines;
+    }
+    curr_function = next_function;
+  }
+}
+
+VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp, std::string fun_name) {
   if (DEBUG) {
     read_insts++;
   }
@@ -551,22 +575,33 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
+  //std::cout << curr_lines << " " << fun_name << "\n";
+  //std::cout << curr_lines << " curr: " << curr_function << "\n";
       recorded = true;
       is_prev_acc = true;
       prev_acc.tag = t;
       prev_acc.type = access_type;
       prev_acc.addr = addr;
       prev_acc.rsp = rsp;
+      calc_function_range();
       if (RECORD_ONCE) break;
     }
   }
   if (!recorded && KnobTrackAll) {
+  //std::cout << curr_lines << " " << fun_name << "\n";
+  //std::cout << curr_lines << " curr: " << curr_function << "\n";
+    calc_function_range();
     is_prev_acc = true;
     prev_acc.tag = 0;
     prev_acc.type = access_type;
     prev_acc.addr = addr;
     prev_acc.rsp = rsp;
   }
+}
+
+bool comp(std::pair<std::string, std::pair<int, int>> a,
+		std::pair<std::string, std::pair<int, int>> b) {
+  return a.second.first < b.second.first;
 }
 
 /* Called when tracked program finishes or Pin_ExitApplication is called
@@ -582,6 +617,20 @@ VOID Fini(INT32 code, VOID *v) {
     std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
     std::cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
+  std::vector<std::pair<std::string, std::pair<int, int>>> to_sort (function_ranges.begin(), function_ranges.end());
+  for (std::pair<std::string, std::pair<int, int>> fn_range : function_ranges) {
+    std::cout << fn_range.first << " " << fn_range.second.first << " " << fn_range.second.second << "\n";
+    /*for (std::pair<int, int> lim : fn_range.second) {
+      std::cout << lim.first << " " << lim.second << "\n";
+    }*/
+  }
+  std::sort(to_sort.begin(), to_sort.end(), comp);
+  std::cout << "--\n";
+  for (std::pair<std::string, std::pair<int, int>> fn_range : to_sort) {
+    std::cout << fn_range.first << " " << fn_range.second.first << " " << fn_range.second.second << "\n";
+  }
+
+
 
   // Updated cache write - Must check if it's in any of the tagged ranges
   // Write cache values from least recently used to most recently used
@@ -664,6 +713,52 @@ VOID Fini(INT32 code, VOID *v) {
   }
 }
 
+VOID RecordRoutine(std::string fun_name, bool starting) {
+	std::cout << "in record routine - " << fun_name << ": " << (starting ? "true" : "false") << "\n";
+	
+  if (starting) {
+    function_stack.push(fun_name + "_" + std::to_string(function_count[fun_name]++));
+  } else {
+    if (function_stack.empty() || function_count[fun_name]==0) return;
+    function_count[fun_name]--;
+    std::string curr_f = function_stack.top();
+    std::string trun = curr_f.substr(0, curr_f.rfind("_"));
+    while (trun != fun_name) {
+      function_ranges[curr_f].second = curr_lines;
+      function_stack.pop();
+      //if (
+      curr_f = function_stack.top();
+      trun = curr_f.substr(0, curr_f.rfind("_"));
+    }
+    function_ranges[curr_f].second = curr_lines;
+    function_stack.pop();
+    std::cout << "exiting: " << curr_f << "\n";
+    /*if (curr_f.substr(0, curr_f.rfind("_")) == fun_name) { // Exiting function in stack
+      function_ranges[curr_f].second = curr_lines;
+      function_stack.pop();
+    }*/
+  }
+}
+
+// Called for every routine/function
+// NOTE: Use IPOINT_BEFORE to call funptr before execution, or IPOINT_AFTER for immediately 
+// before the return NOTE: IPOINT_AFTER is implemented by instrumenting each return instruction 
+// in a routine. Pin tries to find all return instructions, but success is not guaranteed 
+VOID Routine(RTN rtn, VOID *v) {
+    RTN_Open(rtn);
+    if (!RTN_Valid(rtn)) return;
+    const std::string function_name = PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY);
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)RecordRoutine,
+		    IARG_PTR, new std::string(function_name),
+		    IARG_BOOL, true,
+		    IARG_END);
+    RTN_InsertCall(rtn, IPOINT_AFTER, (AFUNPTR)RecordRoutine,
+		    IARG_PTR, new std::string(function_name),
+		    IARG_BOOL, false,
+		    IARG_END);
+    RTN_Close(rtn);
+}
+
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
@@ -679,14 +774,14 @@ VOID Instruction(INS ins, VOID *v)
     {
         const bool isRead = INS_MemoryOperandIsRead(ins, memOp);
         const bool isWrite = INS_MemoryOperandIsWritten(ins, memOp);
-	RTN_FindNameByAddress(IARG_INST_PTR);
+	const std::string function_name = PIN_UndecorateSymbolName(RTN_FindNameByAddress(INS_Address(ins)), UNDECORATION_NAME_ONLY);
         if (isRead) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
                 IARG_REG_VALUE, REG_RSP,
-		IARG_INST_PTR,
+		IARG_PTR, new std::string(function_name),
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -698,7 +793,7 @@ VOID Instruction(INS ins, VOID *v)
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
                 IARG_REG_VALUE, REG_RSP,
-		IARG_INST_PTR,
+		IARG_PTR, new std::string(function_name),
                 IARG_END);
         }
     }
@@ -786,6 +881,7 @@ int main(int argc, char *argv[]) {
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
+  RTN_AddInstrumentFunction(Routine, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
