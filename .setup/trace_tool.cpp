@@ -13,6 +13,11 @@
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
+#ifdef _WIN32      // RDTSC
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 
 // Pin comes with some old standard libraries.
@@ -108,6 +113,9 @@ typedef std::pair<ADDRINT, ADDRINT> AddressRange;
 
 pintool::unordered_map<std::string, TagData*> all_tags;
 
+bool start_time_checked {0};
+unsigned long long start_time {0};
+
 
 ADDRINT lower_stack {ULLONG_MAX};
 ADDRINT lower_heap  {ULLONG_MAX};
@@ -123,6 +131,7 @@ struct Access {
   int type;
   ADDRINT rsp;
   ADDRINT addr;
+  unsigned long long time;
 } prev_acc;
 
 bool is_prev_acc {0};
@@ -139,6 +148,7 @@ bool is_last_acc {0};
 const std::string TagColumn     {"Tag"};
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
+const std::string TimeColumn    {"Time"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -147,6 +157,7 @@ const std::string AddressColumn {"Address"};
 class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
+  unsigned long long times[chunk_size];
   uint8_t accs[chunk_size];
   int tags[chunk_size];
 
@@ -160,6 +171,7 @@ class HandleHdf5 {
   H5::DataSet tag_d;
   H5::DataSet acc_d;
   H5::DataSet addr_d;
+  H5::DataSet time_d;
     // State vars
   hsize_t curr_chunk_dims [1] = {chunk_size};
   hsize_t total_ds_dims [1] = {chunk_size};
@@ -189,6 +201,7 @@ class HandleHdf5 {
     tag_d = mem_file.createDataSet(TagColumn.c_str(), H5::PredType::NATIVE_INT, m_dataspace, plist);
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+    time_d = mem_file.createDataSet(TimeColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
     //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
@@ -202,6 +215,7 @@ class HandleHdf5 {
     tag_d.extend( total_ds_dims ); // Extend size of dataset
     acc_d.extend( total_ds_dims );
     addr_d.extend( total_ds_dims );
+    time_d.extend( total_ds_dims );
 
     H5::DataSpace old_dataspace = tag_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
@@ -215,6 +229,10 @@ class HandleHdf5 {
     old_dataspace = addr_d.getSpace();
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+
+    old_dataspace = time_d.getSpace();
+    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
+    time_d.write( times, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -270,13 +288,14 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(int tag, int access, ADDRINT address) {
+  int write_data_mem(int tag, int access, ADDRINT address, unsigned long long time) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
     tags[mem_ind] = tag; // Write to memory first
     accs[mem_ind] = access;
-    addrs[mem_ind++] = address;
+    addrs[mem_ind] = address;
+    times[mem_ind++] = time;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
     }
@@ -387,32 +406,38 @@ VOID flush_cache() {
 }
 
 
-VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
+VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack, unsigned long long time){
   int id = 0;
   if (is_stack) {
     lower_stack = std::min(lower_stack, addr);
     upper_stack = std::max(upper_stack, addr);
     if (first_acc_stack == -1) {
-      first_acc_stack = curr_lines;
+      // first_acc_stack = curr_lines;
+      first_acc_stack = time;
     }
-    last_acc_stack = curr_lines;
+    // last_acc_stack = curr_lines;
+    last_acc_stack = time;
   } else {
     lower_heap = std::min(lower_heap, addr);
     upper_heap = std::max(upper_heap, addr);
     if (first_acc_heap == -1) {
-      first_acc_heap = curr_lines;
+      // first_acc_heap = curr_lines;
+      first_acc_heap = time;
     }
-    last_acc_heap = curr_lines;
+    // last_acc_heap = curr_lines;
+    last_acc_heap = time;
     id = 1;
   }
   if (t) { // Only if running with tags
     id = t->id;
     if (t->x_range.first == -1) { // First time accessed
-      t->x_range.first  = curr_lines;
+      // t->x_range.first  = curr_lines;
+      t->x_range.first  = time;
     }
-    t->x_range.second = curr_lines;
+    // t->x_range.second = curr_lines;
+    t->x_range.second = time;
   }
-  hdf_handler->write_data_mem(id, op, addr);
+  hdf_handler->write_data_mem(id, op, addr, time);
   curr_lines++; // Afterward, for 0-based indexing
   
   if(!is_last_acc && curr_lines+1 >= max_lines) { // If reached file size limit, exit
@@ -543,7 +568,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   }
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
-    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= std::min(prev_acc.rsp,rsp));
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= std::min(prev_acc.rsp,rsp), prev_acc.time);
     is_prev_acc = false;
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
@@ -551,21 +576,35 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
+      unsigned long long curr_time = _rdtsc() - start_time;
+      if (!start_time_checked) {
+        start_time_checked = true;
+	start_time = curr_time;
+	curr_time = 0;
+      }
       recorded = true;
       is_prev_acc = true;
       prev_acc.tag = t;
       prev_acc.type = access_type;
       prev_acc.addr = addr;
       prev_acc.rsp = rsp;
+      prev_acc.time = curr_time;
       if (RECORD_ONCE) break;
     }
   }
   if (!recorded && KnobTrackAll) {
+    unsigned long long curr_time = _rdtsc() - start_time;
+    if (!start_time_checked) {
+      start_time_checked = true;
+      start_time = curr_time;
+      curr_time = 0;
+    }
     is_prev_acc = true;
     prev_acc.tag = 0;
     prev_acc.type = access_type;
     prev_acc.addr = addr;
     prev_acc.rsp = rsp;
+    prev_acc.time = curr_time;
   }
 }
 
@@ -606,7 +645,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp, prev_acc.time);
     is_prev_acc = false;
   }
   if (TAG_DEBUG) {
