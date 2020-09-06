@@ -35,12 +35,11 @@ class Action(Enum):
     undo = 1
     redo = 2
 
-PANZOOM_HISTORY_LIMIT = 5
+PANZOOM_HISTORY_LIMIT = 50
 
 
 class BqplotBackend(BackendBase):
     def __init__(self, figure=None, figure_key=None):
-        print("vaex extended bqplot init")
         self._dirty = False
         self.figure_key = figure_key
         self.figure = figure
@@ -49,6 +48,7 @@ class BqplotBackend(BackendBase):
         self._cleanups = []
 
     def update_image(self, rgb_image):
+        
         with self.output:
             rgb_image = (rgb_image * 255.).astype(np.uint8)
             pil_image = vaex.image.rgba_2_pil(rgb_image)
@@ -60,6 +60,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
+            self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
         self.plot = plot
@@ -113,7 +114,6 @@ class BqplotBackend(BackendBase):
 
     @debounced(0.2, method=True)
     def _update_limits(self, *args):
-        print("bqplot: updating limits")
         with self.output:
             limits = copy.deepcopy(self.limits)
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
@@ -144,6 +144,7 @@ class BqplotBackend(BackendBase):
                 self._update_limits(self, *args)
             else:
                 self.counter = 2
+
             self.limits = limits
 
     def create_tools(self):
@@ -221,7 +222,6 @@ class BqplotBackend(BackendBase):
                                 }], children=[REDO])
             @debounced(0.5)
             def undo_redo(*args):
-                print("undoing/redoing:", args, args[0] )
                 print(self.undo_actions)
                 self.curr_action = args[0]
                 (x1, x2), (y1, y2) = args[1][-1]
@@ -311,7 +311,6 @@ class BqplotBackend(BackendBase):
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
 
-        print("zoom brushing")
     def zoom_sel(self, x1, x2, y1, y2):
         with self.scale_x.hold_trait_notifications():
             self.scale_x.min = x1

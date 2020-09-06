@@ -1,8 +1,7 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
-from trace import Tag
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
 from enum import Enum
 import numpy as np
 
@@ -163,7 +162,6 @@ class Legend():
         clr_picker.observing = True
         def handle_color_picker(change):
             if clr_picker.observing:
-                print("changing colorpicker: ", change)
                 self.colormap[clr] = to_rgba(change.new, 1)
                 self.plot.colormap = ListedColormap(self.colormap)
                 self.plot.backend.plot._update_image()
@@ -181,7 +179,6 @@ class Legend():
                     )
                 )
         def refresh_colormap(change):
-            print("reseting: ", change)
             self.colormap = np.copy(newc)
             for clr, clr_picker in self.colorpickers.items():
                 clr_picker.observing = False
