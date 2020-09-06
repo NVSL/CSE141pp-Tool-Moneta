@@ -1,6 +1,10 @@
 from IPython.display import clear_output, display
 from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
-from moneta.utils import generate_trace, delete_traces, update_cwd_file
+from moneta.utils import (
+    generate_trace, 
+    delete_traces, 
+    update_cwd_file
+)
 from moneta.moneta_widgets import MonetaWidgets
 from moneta.legend import Legend
 import vaex

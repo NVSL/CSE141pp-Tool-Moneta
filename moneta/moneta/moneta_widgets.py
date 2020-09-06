@@ -4,7 +4,6 @@ from moneta.utils import (
     text_factory as text_field,
     button_factory as button,
     load_cwd_file,
-    parse_cwd,
     parse_exec_input
 )
 import moneta.settings as settings

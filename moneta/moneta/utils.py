@@ -45,18 +45,6 @@ def text_factory(placeholder, description):
             layout=WIDGET_LAYOUT
             )
 
-    
-def parse_cwd(cwd_path):
-    if cwd_path in ("/", "~", ".", ".."):
-        return cwd_path
-   
-    # Assume '.' if there are no special path characters
-    if not (cwd_path.startswith(("/", "~/", "./", "../"))):
-        cwd_path = "./" + cwd_path;
-    if cwd_path.endswith("/"):
-        cwd_path = cwd_path[0:-1]
-    return cwd_path
-
 def parse_exec_input(e_input):
     exec_inputs = e_input.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
@@ -85,23 +73,7 @@ def update_cwd_file(cwd_history):
         for path in cwd_history:
             history_file.write(path + "\n")
 
-            
-def get_widget_values(m_widget):
-    e_file, e_args = parse_exec_input(m_widget.ex.value)
-    
-    w_vals = {
-        'c_lines': m_widget.cl.value,
-        'c_block': m_widget.cb.value,
-        'm_lines': m_widget.ml.value,
-        'cwd_path': os.path.expanduser(parse_cwd(m_widget.cwd.value)),
-        'e_file': e_file,
-        'e_args': e_args,
-        'o_name': m_widget.to.value,
-        'is_full_trace': m_widget.ft.value
-    }
-    return w_vals
-
-def parse_path(path):
+def parse_cwd(path):
     """ Returns a final path and an absolute path
         Final path is either an absolute path, relative from home,
         or relative from current directory depending on closest parent of the three
@@ -124,7 +96,7 @@ def parse_path(path):
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
-    w_vals['display_path'], w_vals['cwd_path'] = parse_path(w_vals['cwd_path'])
+    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print("Cache lines, cache block, and maximum lines to output must be greater than 0")
