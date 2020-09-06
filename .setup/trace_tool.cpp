@@ -53,6 +53,8 @@ const std::string TagFilePrefix  {"tag_map_"};
 const std::string TagFileSuffix  {".csv"};
 const std::string MetaFilePrefix {"meta_data_"};
 const std::string MetaFileSuffix {".txt"};
+const std::string FunctionFilePrefix {"function_"};
+const std::string FunctionFileSuffix {".txt"};
 const std::string FullPrefix     {"full_"};
 
 // User-initialized
@@ -62,6 +64,7 @@ static UINT64 cache_line {DefaultCacheLineSize};
 static std::string output_trace_path;
 static std::string output_tagfile_path;
 static std::string output_metadata_path;
+static std::string output_functionfile_path;
 
 // Macros to track
 const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
@@ -131,13 +134,10 @@ ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
 
 std::string curr_function;
-std::stack <std::string> function_stack;
-std::unordered_map<std::string, int> function_count;
-//std::unordered_map<std::string, std::vector<std::pair<int, int>>> function_ranges;
-//std::unordered_map<std::string, std::unordered_map<std::string, std::pair<int, int>>> function_ranges;
+std::stack<std::string> function_stack;
+std::unordered_map<std::string, int> function_label;
 std::unordered_map<std::string, std::pair<int, int>> function_ranges;
-std::unordered_set<std::string> curr_functions;
-int prev_fun_start {0};
+std::unordered_map<std::string, int> curr_function_count;
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -398,7 +398,7 @@ VOID flush_cache() {
 
 
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
-  std::cout << "writing\n";
+  //std::cout << "writing\n";
   int id = 0;
   if (is_stack) {
     lower_stack = std::min(lower_stack, addr);
@@ -549,10 +549,10 @@ int translate_cache(int access_type, bool read) {
 }
 
 void calc_function_range() {
-  std::cout << "calc\n";
+  //std::cout << "calc\n";
   if (function_stack.empty()) return;
   std::string next_function = function_stack.top();
-  std::cout << "curr: " << curr_function << " - " << next_function << "\n";
+  //std::cout << "curr: " << curr_function << " - " << next_function << "\n";
   if (curr_function.empty() || curr_function != next_function) {
     if (function_ranges.find(next_function) == function_ranges.end()) {
       function_ranges[next_function].first = curr_lines;
@@ -617,18 +617,28 @@ VOID Fini(INT32 code, VOID *v) {
     std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
     std::cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
+  if (is_prev_acc) {
+    is_last_acc = true;
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
+    is_prev_acc = false;
+  }
   std::vector<std::pair<std::string, std::pair<int, int>>> to_sort (function_ranges.begin(), function_ranges.end());
   for (std::pair<std::string, std::pair<int, int>> fn_range : function_ranges) {
     std::cout << fn_range.first << " " << fn_range.second.first << " " << fn_range.second.second << "\n";
-    /*for (std::pair<int, int> lim : fn_range.second) {
-      std::cout << lim.first << " " << lim.second << "\n";
-    }*/
+    // TODO check if second is 0, set second to curr_lines-1
   }
   std::sort(to_sort.begin(), to_sort.end(), comp);
   std::cout << "--\n";
+  std::ofstream function_file (output_functionfile_path);
+  function_file << "Function_Name,Function_Start,Function_End\n";
   for (std::pair<std::string, std::pair<int, int>> fn_range : to_sort) {
     std::cout << fn_range.first << " " << fn_range.second.first << " " << fn_range.second.second << "\n";
+    function_file << fn_range.first << "," << fn_range.second.first << ","
+      << (fn_range.second.second == 0 ? curr_lines-1 : fn_range.second.second) << "\n";
   }
+  function_file.flush();
+  function_file.close();
+
 
 
 
@@ -653,11 +663,6 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
-  if (is_prev_acc) {
-    is_last_acc = true;
-    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
-    is_prev_acc = false;
-  }
   if (TAG_DEBUG) {
     std::cerr << "Stack,0," << lower_stack << "," << upper_stack <<
       "," << first_acc_stack << "," << last_acc_stack << "\n";
@@ -714,29 +719,30 @@ VOID Fini(INT32 code, VOID *v) {
 }
 
 VOID RecordRoutine(std::string fun_name, bool starting) {
-	std::cout << "in record routine - " << fun_name << ": " << (starting ? "true" : "false") << "\n";
+	//std::cout << "in record routine - " << fun_name << ": " << (starting ? "true" : "false") << "\n";
 	
   if (starting) {
-    function_stack.push(fun_name + "_" + std::to_string(function_count[fun_name]++));
+    function_stack.push(fun_name + "_" + std::to_string(function_label[fun_name]++));
+    curr_function_count[fun_name]++;
   } else {
-    if (function_stack.empty() || function_count[fun_name]==0) return;
-    function_count[fun_name]--;
+    if (curr_function_count[fun_name] == 0) { // Check if in stack
+      return;
+    }
+    curr_function_count[fun_name] = std::max(0, curr_function_count[fun_name]-1);
+    if (function_stack.empty()) { // Probably unnecessary
+      return;
+    }
     std::string curr_f = function_stack.top();
     std::string trun = curr_f.substr(0, curr_f.rfind("_"));
     while (trun != fun_name) {
       function_ranges[curr_f].second = curr_lines;
       function_stack.pop();
-      //if (
       curr_f = function_stack.top();
       trun = curr_f.substr(0, curr_f.rfind("_"));
     }
     function_ranges[curr_f].second = curr_lines;
     function_stack.pop();
-    std::cout << "exiting: " << curr_f << "\n";
-    /*if (curr_f.substr(0, curr_f.rfind("_")) == fun_name) { // Exiting function in stack
-      function_ranges[curr_f].second = curr_lines;
-      function_stack.pop();
-    }*/
+    //std::cout << "exiting: " << curr_f << "\n";
   }
 }
 
@@ -848,6 +854,7 @@ int main(int argc, char *argv[]) {
   std::string pref = KnobTrackAll ? FullPrefix : "";
   output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
   output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
+  output_functionfile_path = DefaultOutputPath + "/" + pref + FunctionFilePrefix + output_trace_path + FunctionFileSuffix;
   output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
 
   UINT64 in_output_limit = KnobMaxOutput.Value();
