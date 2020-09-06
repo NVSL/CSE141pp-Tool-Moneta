@@ -135,8 +135,8 @@ def parse_cwd(path):
         if home_rel == '.':
             return "~", realpath
         return "~/" + home_rel, realpath
-      
-    return curr_rel, realpath    
+    
+    return curr_rel, realpath
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
