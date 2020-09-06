@@ -107,7 +107,7 @@ def parse_path(path):
         or relative from current directory depending on closest parent of the three
         NOTE: Assumes '..' is not part of a file name
     """
-    expanded = os.path.expanduser(path)
+    expanded = os.path.expanduser(path.strip())
     realpath = os.path.realpath(expanded)
     home_rel = os.path.relpath(expanded, start='/home/jovyan')
     curr_rel = os.path.relpath(expanded)
