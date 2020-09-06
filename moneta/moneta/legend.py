@@ -13,7 +13,8 @@ class SelectionGroup(Enum):
     hit_miss_write = 4
 
 class Legend():
-    def __init__(self, tags, df):
+    def __init__(self, model):
+        self.model = model
         self.wid_150 = Layout(width='110px')
         self.wid_180 = Layout(width='125px')
         self.wid_15 = Layout(width='15px')
@@ -22,12 +23,11 @@ class Legend():
         self.mar_5 = Layout(width='5px')
         self.checkboxes = []
         self.colorpickers = {}
-        self.df = df
         self.colormap = np.copy(newc)
 
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
 
 
         self.ignore_changes = False
@@ -122,7 +122,7 @@ class Legend():
             Label(value='W', layout=self.wid_30)
         ])
 
-    def get_memoryaccesses(self, tags):
+    def get_memoryaccesses(self):
         hits_row = self.hit_miss_row("Hits", 1, 2, SelectionGroup.hit_miss, READ_HIT, WRITE_HIT)
         cap_misses_row = self.hit_miss_row("Cap Misses", 4, 5, SelectionGroup.hit_miss, READ_MISS, WRITE_MISS)
         comp_misses_row = self.hit_miss_row("Comp Misses", 6, 8, SelectionGroup.hit_miss, COMP_R_MISS, COMP_W_MISS)
@@ -136,15 +136,16 @@ class Legend():
             self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
         return memoryaccesses
 
-    def get_tags(self, tags):
-        max_id = max(tags, key=lambda x: x.id_).id_
-        stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
+    def get_tags(self):
+        max_id = max(self.model.curr_trace.tags, key=lambda x: x.id_).id_
+        df = self.model.curr_trace.df
+        stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
             layout=Layout(height='28px', overflow_y = 'hidden'))
-        for tag in tags]
+        for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
@@ -257,7 +258,7 @@ class Legend():
                 for selection in checkbox.selections:
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
-        self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
 
 class CheckBox():
     def __init__(self, desc, layout, group, selections, handle_fun):
