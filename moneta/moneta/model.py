@@ -25,8 +25,7 @@ class Model():
         log.info("Loading trace")
         trace_path, tag_path, meta_path = self.trace_map[trace_name]
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
-        if self.curr_trace.err_message is not None:
-            return self.curr_trace.err_message
+        return self.curr_trace.err_message
 
 
     def delete_traces(self, traces):
