@@ -213,8 +213,11 @@ class Legend():
         self.plot = plot
 
     def tag_tooltip(self, tag):
-        return ("Access Range: " + tag.access[0] + ", " + tag.access[1] + "\n" +
-        "Address Range: " + tag.address[0] + ", " + tag.address[1] + "\n")
+        access_range = f'Access Range: {tag.access[0]}, {tag.access[1]} \n'
+        address_range = f'Address Range: {tag.address[0]}, {tag.address[1]} \n'
+
+        return access_range + address_range
+
 
     def stats_to_str(self, ind, stats):
         total = sum(stats[ind])
