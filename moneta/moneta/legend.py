@@ -26,7 +26,19 @@ class Legend():
         self.colorpickers = {}
         self.colormap = np.copy(newc)
 
-        self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        self.panels = v.ExpansionPanels(accordion=True, multiple=True, v_model=[])
+        up = 'keyboard_arrow_up'
+        down = 'keyboard_arrow_down'
+        ic = v.Icon(children=[down])
+        vb = v.Btn(icon=True, children=[ic])
+        def click2(*args):
+            if ic.children[0] == up:
+                ic.children = [down]
+                self.panels.v_model = []
+            else:
+                ic.children = [up]
+                self.panels.v_model = list(range(len(self.panels.children)))
+        self.widgets = VBox([self.panels], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
         self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
         self.add_accordion("test", Checks(model).widgets)
@@ -49,12 +61,20 @@ class Legend():
                                     v.Icon(children=['keyboard_arrow_up'])
                                 ])
         self.control.status = True
-        self.control.on_event('click', lambda *ignore: click())
+        #self.control.on_event('click', lambda *ignore: click())
+        def panel_handle(_panels, _, selected):
+            if len(selected) == len(self.panels.children):
+                ic.children = [up]
+            elif selected == []:
+                ic.children = [down]
+        self.panels.on_event('change', panel_handle)
+        vb.on_event('click', click2)
         self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
                                 'name': 'activator',
                                 'variable': 'tooltip',
                                 'children': self.control
                             }], children=['Legend'])
+        self.control_tooltip = vb
 
     def collapse_all(self):
         for accordion in self.widgets.children:
@@ -65,10 +85,15 @@ class Legend():
 
 
     def add_accordion(self, name, contents):
-        accordion = Accordion([contents])
-        accordion.set_title(0, name)
-        self.widgets.children = tuple(list(self.widgets.children) + [accordion])
-        accordion.observe(lambda *ignore: check_accordion_status())
+        acc = v.ExpansionPanel(children=[
+            v.ExpansionPanelHeader(children=[name]),
+            v.ExpansionPanelContent(children=[contents])
+            ])
+        #accordion = Accordion([contents])
+        #accordion.set_title(0, name)
+        #self.widgets.children = tuple(list(self.widgets.children) + [acc])
+        self.panels.children = self.panels.children + [acc]
+        #accordion.observe(lambda *ignore: check_accordion_status())
 
         def check_accordion_status():
             if self.ignore_changes:

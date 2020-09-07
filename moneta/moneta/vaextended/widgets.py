@@ -45,8 +45,7 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-spacer />
       <toolbar />
       <v-spacer />
-      <!--<v-btn icon @click="show_legend = !show_legend;">
-        <v-icon>settings</v-icon>-->
+      Legend
       <legend-control/>
      </v-btn>
     </v-app-bar>
