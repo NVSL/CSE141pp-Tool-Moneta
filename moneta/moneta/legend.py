@@ -2,6 +2,7 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from moneta.utils import stats_percent
 from enum import Enum
 import numpy as np
 
@@ -193,7 +194,7 @@ class Legend():
         stats_str = self.stats_to_str(tag.id_, stats)
         btn = Button(
                 icon='search-plus',
-                tooltip=self.tag_tooltip(tag) + stats_str,
+                tooltip=self.tag_tooltip(tag) + '\n' + stats_str,
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
                                 borders='none', align_items='center'
@@ -212,15 +213,22 @@ class Legend():
         self.plot = plot
 
     def tag_tooltip(self, tag):
-        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
-        "(" + tag.address[0] + ", " + tag.address[1] + ")")
+        return ("Access Range: " + tag.access[0] + ", " + tag.access[1] + "\n" +
+        "Address Range: " + tag.address[0] + ", " + tag.address[1] + "\n")
 
     def stats_to_str(self, ind, stats):
         total = sum(stats[ind])
-        if total == 0:
-            return ','.join([repr(stat) for stat in stats[ind]])
-        hits = stats[ind][0] + stats[ind][1]
-        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
+        total_string = f'Total: {total}\n\n'
+        read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
+        write_hits = f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
+        cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
+        cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
+        comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
+        comp_write_misses = f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+       
+
+
+        return total_string + read_hits + write_hits + cap_read_misses + cap_write_misses + comp_read_misses + comp_write_misses
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
