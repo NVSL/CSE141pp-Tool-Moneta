@@ -11,6 +11,7 @@ from moneta.utils import (
 )
 from moneta.moneta_widgets import MonetaWidgets
 from moneta.legend import Legend
+from moneta.click_zoom import ClickZoom
 import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
@@ -99,6 +100,7 @@ class View():
                  )
         self.update_stats_widget(plot, True)
         display(self.m_widget.stats)
+        display(ClickZoom().widget)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
