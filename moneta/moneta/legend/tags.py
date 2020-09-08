@@ -12,13 +12,13 @@ class Tags():
         df = self.model.curr_trace.df
         stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
 
-        self.all_check = Checkbox("All", -1)
-        self.all_check.widget.on_event('change', self.check_all)
+        self.all_check = v.Checkbox(v_on='tooltip.on', prepend_icon='fa-globe', label="All", v_model=True, class_='ma-0 mt-1 pa-0')
+        self.all_check_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self.all_check}],
+                children=["Select all tags"])
+        self.all_check.on_event('change', self.check_all)
 
-        all_row = [v.Row(children=[
-                        v.Btn(icon=True, children=[v.Icon(children=['fa-search-plus'],dense=True)]),
-                        self.all_check.widget
-                        ], class_='ml-0')]
+
+        all_row = [v.Row(children=[self.all_check_tp], class_='ml-1')]
 
         tag_rows = []
         for tag in self.model.curr_trace.tags:
@@ -71,8 +71,8 @@ class Tags():
                 on+=1
             else:
                 off+=1
-        self.all_check.widget.v_model = on == len(self.checkboxes)
-        self.all_check.widget.indeterminate = on > 0 and off > 0
+        self.all_check.v_model = on == len(self.checkboxes)
+        self.all_check.indeterminate = on > 0 and off > 0
         self.update_selection()
 
 class Checkbox:
