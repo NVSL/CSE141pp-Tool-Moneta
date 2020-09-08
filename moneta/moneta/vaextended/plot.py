@@ -81,12 +81,18 @@ class PlotBase(widgets.Widget):
                 self.cache_size = kwargs.get('cache_size')
             if 'default_title' in kwargs:
                 self.default_title = kwargs.get('default_title')
-            if 'update_stats' in kwargs:
-                self.update_stats = kwargs.get('update_stats')
             else:
                 self.default_title = 'Moneta'
+
+            if 'update_click_zoom' in kwargs:
+                self.update_click_zoom = kwargs.get('update_click_zoom')
+            if 'click_zoom_output' in kwargs:
+                self.click_zoom_output = kwargs.get('click_zoom_output')
+
+            if 'update_stats' in kwargs:
+                self.update_stats = kwargs.get('update_stats')
             self.widget = PlotTemplate(components={
-                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
+                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output, self.click_zoom_output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
                         'default_title': self.default_title,

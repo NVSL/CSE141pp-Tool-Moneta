@@ -92,15 +92,18 @@ class View():
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(self.model)
+        click_zoom = ClickZoom(self.model)
         plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='moneta_backend', type='vaextended', legend=legend,
                  default_title=curr_trace.name, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size,
-                 update_stats = lambda *ignore: self.update_stats_widget(plot, False)
+                 update_stats = lambda *ignore: self.update_stats_widget(plot, False),
+                 update_click_zoom=click_zoom.update_click_zoom,
+                 click_zoom_output = click_zoom.widget
                  )
         self.update_stats_widget(plot, True)
         display(self.m_widget.stats)
-        display(ClickZoom().widget)
+        #display(click_zoom.widget)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)

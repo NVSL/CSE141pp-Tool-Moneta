@@ -155,9 +155,12 @@ class BqplotBackend(BackendBase):
         if 1:  # tool_select:
             self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
             self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
+            self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="green")
+            self.click_brush.observe(self.update_click_brush, ["brushing"])
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
             tool_actions_map[PAN_ZOOM] = self.panzoom
-            tool_actions = [PAN_ZOOM, ZOOM_SELECT]
+            tool_actions_map["click_zoom"] = self.click_brush
+            tool_actions = [PAN_ZOOM, ZOOM_SELECT, "click_zoom"]
 
             self.start_limits = copy.deepcopy(self.limits)
 
@@ -182,6 +185,13 @@ class BqplotBackend(BackendBase):
                                         v.Icon(children=['crop'])
                                     ])
                                 }], children=[ZOOM_SELECT]),
+                                v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': v.Btn(v_on='tooltip.on', children=[
+                                        v.Icon(children=['mdi-mouse'])
+                                    ])
+                                }], children=["click_zoom"])
                             ])
             self.interaction_tooltips.observe(change_interact, "v_model")
 
@@ -310,6 +320,37 @@ class BqplotBackend(BackendBase):
             with self.zoom_brush.hold_trait_notifications(): # Delete selection
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
+
+    def update_click_brush(self, *args):
+        with self.output:
+            if not self.click_brush.brushing: # Update on mouse up
+                self.figure.interaction = None
+            if self.click_brush.selected is not None:
+                (x1, y1), (x2, y2) = self.click_brush.selected
+                df = self.dataset
+                x = max(x1, x2)
+                y = max(y1, y2)
+                half_dist = 1000/2
+                x_left = x-half_dist
+                x_right = x+half_dist
+                y_min = y-half_dist
+                y_max = y+half_dist
+
+                ind = self.plot.x_label
+                addr = self.plot.y_label
+                res = df[(df[ind] >= x_left) & (df[ind] <= x_right) & (df[addr] >= y_min) & (df[addr] <= y_max)]
+
+                if res.count() != 0:
+                    self.plot.update_click_zoom(x, y, True)
+                else:
+                    self.plot.update_click_zoom(x, y, False)
+            if not self.click_brush.brushing: # Update on mouse up
+                self.figure.interaction = self.click_brush
+            with self.click_brush.hold_trait_notifications(): # Delete selection
+                self.click_brush.selected_x = None
+                self.click_brush.selected_y = None
+
+ 
 
     def zoom_sel(self, x1, x2, y1, y2):
         with self.scale_x.hold_trait_notifications():
