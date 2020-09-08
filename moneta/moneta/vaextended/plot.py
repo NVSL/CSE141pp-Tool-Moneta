@@ -91,7 +91,7 @@ class PlotBase(widgets.Widget):
                         'toolbar': self.toolbar,
                         'default_title': self.default_title,
                         'main-legend': self.legend.widgets,
-                        'legend-control': self.legend.control_tooltip
+                        'legend-control': self.legend.legend_button
                     },
                     model=show_drawer
             )

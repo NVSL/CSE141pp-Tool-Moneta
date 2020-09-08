@@ -7,86 +7,38 @@ from moneta.legend.tags import Tags
 from enum import Enum
 import numpy as np
 
-class SelectionGroup(Enum):
-    hit_miss = 0
-    read_write = 1
-    data_structures = 2
-    hit_miss_read = 3
-    hit_miss_write = 4
-
 class Legend():
     def __init__(self, model):
         self.model = model
-        self.wid_150 = Layout(width='110px')
-        self.wid_180 = Layout(width='125px')
-        self.wid_15 = Layout(width='15px')
-        self.wid_30 = Layout(width='30px')
-        self.wid_270 = Layout(width='270px')
-        self.mar_5 = Layout(width='5px')
-        self.checkboxes = []
-        self.colorpickers = {}
-        self.colormap = np.copy(newc)
 
         self.panels = v.ExpansionPanels(accordion=True, multiple=True, v_model=[])
         up = 'keyboard_arrow_up'
         down = 'keyboard_arrow_down'
-        ic = v.Icon(children=[down])
-        vb = v.Btn(icon=True, children=[ic])
-        def click2(*args):
-            if ic.children[0] == up:
-                ic.children = [down]
-                self.panels.v_model = []
-            else:
-                ic.children = [up]
-                self.panels.v_model = list(range(len(self.panels.children)))
-        vstyle = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
-        self.widgets = VBox([self.panels, vstyle], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        #self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
-        #self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
+        legend_icon = v.Icon(children=[down])
+        self.legend_button = v.Btn(icon=True, children=[legend_icon])
+        # Style to remove gray background in panels, and remove padding in panel contents
+        panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
+        self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.accesses = Accesses(model, self.update_selection)
         self.tags = Tags(model, self.update_selection)
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
-        self.add_accordion(LEGEND_TAGS_TITLE, self.tags.widgets)
+        self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
+        self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
 
-
-        self.ignore_changes = False
-        def click():
-            self.ignore_changes = True
-            if self.control.status == True:
-                self.collapse_all()
-                self.control.children[0].children=['keyboard_arrow_down']
-            else:
-                self.expand_all()
-                self.control.children[0].children=['keyboard_arrow_up']
-            self.ignore_changes = False
-        
-            self.control.status = not self.control.status
-
-        self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
-                                    v.Icon(children=['keyboard_arrow_up'])
-                                ])
-        self.control.status = True
-        #self.control.on_event('click', lambda *ignore: click())
-        def panel_handle(_panels, _, selected):
+        def update_legend_icon(_panels, _, selected):
             if len(selected) == len(self.panels.children):
-                ic.children = [up]
+                legend_icon.children = [up]
             elif selected == []:
-                ic.children = [down]
-        self.panels.on_event('change', panel_handle)
-        vb.on_event('click', click2)
-        self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
-                                'name': 'activator',
-                                'variable': 'tooltip',
-                                'children': self.control
-                            }], children=['Legend'])
-        self.control_tooltip = vb
+                legend_icon.children = [down]
+        self.panels.on_event('change', update_legend_icon)
 
-    def collapse_all(self):
-        for accordion in self.widgets.children:
-            accordion.selected_index = None
-    def expand_all(self):
-        for accordion in self.widgets.children:
-            accordion.selected_index = 0
+        def update_panels(*args):
+            if legend_icon.children[0] == up:
+                legend_icon.children = [down]
+                self.panels.v_model = []
+            else:
+                legend_icon.children = [up]
+                self.panels.v_model = list(range(len(self.panels.children)))
+        self.legend_button.on_event('click', update_panels)
 
     def get_select_string(self): # TODO - move constants out
         selections = set()
@@ -101,216 +53,16 @@ class Legend():
     def update_selection(self):
         self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf?
 
-
-    def add_accordion(self, name, contents):
+    def add_panel(self, name, contents):
         acc = v.ExpansionPanel(children=[
             v.ExpansionPanelHeader(children=[name]),
             v.ExpansionPanelContent(children=[contents], class_='ma-0 pa-0')
             ])
-        #accordion = Accordion([contents])
-        #accordion.set_title(0, name)
-        #self.widgets.children = tuple(list(self.widgets.children) + [acc])
         self.panels.children = self.panels.children + [acc]
-        #accordion.observe(lambda *ignore: check_accordion_status())
-
-        def check_accordion_status():
-            if self.ignore_changes:
-                return
-
-            all_open = True
-            all_closed = True
-
-            for acc in self.widgets.children:
-                if acc.selected_index == None:
-                    all_open = False
-                else:
-                    all_closed = False
-
-            if all_open:
-                self.control.status = True
-                self.control.children[0].children=['keyboard_arrow_up']
-            elif all_closed:
-                self.control.status = False
-                self.control.children[0].children=['keyboard_arrow_down']
-
-
-    def hit_miss_row(self, desc, primary_clr, sec_clr, group, read_selection, write_selection):
-        read = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_read, [read_selection])
-        write = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_write, [write_selection])
-        both = self.create_parent_checkbox(desc, self.wid_150, group, [read_selection, write_selection], [read, write])
-        return HBox([
-            both,
-            read,
-            self.create_colorpicker(primary_clr),
-            write,
-            self.create_colorpicker(sec_clr)
-        ], layout=Layout(overflow_x = 'hidden'))
-
-    def cache_row(self, desc, clr):
-        return HBox([
-            Label(value=desc, layout=self.wid_180),
-            self.create_colorpicker(clr)
-        ])
-
-    def all_rw_row(self, checkboxes):
-        both = self.create_parent_checkbox('All', self.wid_150, SelectionGroup.hit_miss, [COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT],
-                [checkbox.widget for checkbox in checkboxes if checkbox.group == SelectionGroup.hit_miss_read or checkbox.group == SelectionGroup.hit_miss_write])
-        read =  self.create_parent_checkbox('', self.wid_15, SelectionGroup.read_write, [READ_HIT, READ_MISS, COMP_R_MISS],
-                [checkbox.widget for checkbox in checkboxes if checkbox.group == SelectionGroup.hit_miss_read])
-        write = self.create_parent_checkbox('', self.wid_15, SelectionGroup.read_write, [WRITE_HIT, WRITE_MISS, COMP_W_MISS],
-                [checkbox.widget for checkbox in checkboxes if checkbox.group == SelectionGroup.hit_miss_write])
-        return HBox([
-            both,
-            read,
-            Label(value='R', layout=self.wid_30),
-            write,
-            Label(value='W', layout=self.wid_30)
-        ])
-
-    def get_memoryaccesses(self):
-        hits_row = self.hit_miss_row("Hits", 1, 2, SelectionGroup.hit_miss, READ_HIT, WRITE_HIT)
-        cap_misses_row = self.hit_miss_row("Cap Misses", 4, 5, SelectionGroup.hit_miss, READ_MISS, WRITE_MISS)
-        comp_misses_row = self.hit_miss_row("Comp Misses", 6, 8, SelectionGroup.hit_miss, COMP_R_MISS, COMP_W_MISS)
-        all_rw_row = self.all_rw_row(self.checkboxes) # All required checkboxes must already be in self.checkboxes
-        memoryaccesses = VBox([
-            all_rw_row,
-            hits_row,
-            cap_misses_row,
-            comp_misses_row,
-            self.cache_row("Cache", 3),
-            self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
-        return memoryaccesses
-
-    def get_tags(self):
-        max_id = max(self.model.curr_trace.tags, key=lambda x: x.id_).id_
-        df = self.model.curr_trace.df
-        stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
-        
-        tag_rows = [HBox([
-            self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
-            self.create_button(tag, stats)],
-            layout=Layout(height='28px', overflow_y = 'hidden'))
-        for tag in self.model.curr_trace.tags]
-        
-        all_ds_row = HBox([
-            self.create_parent_checkbox('All', self.wid_150, 
-                SelectionGroup.data_structures, max_id+1,
-                [checkbox.widget for checkbox in self.checkboxes if checkbox.group == SelectionGroup.data_structures]),
-            ], layout=Layout(height='28px'))
-
-        accordion = VBox(
-            [all_ds_row] + tag_rows,
-            layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
-        return accordion
-
-    def create_colorpicker(self, clr):
-        clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
-        clr_picker.observing = True
-        def handle_color_picker(change):
-            if clr_picker.observing:
-                self.colormap[clr] = to_rgba(change.new, 1)
-                self.plot.colormap = ListedColormap(self.colormap)
-                self.plot.backend.plot._update_image()
-        clr_picker.observe(handle_color_picker,names='value')
-        self.colorpickers[clr] = clr_picker
-        return clr_picker
-
-    def create_reset_btn(self):
-        btn = Button(
-                icon='refresh',
-                tooltip="Reset all colors to default",
-                tyle={'button_color': 'transparent'},
-                layout=Layout(height='35px', width='50px',
-                    borders='none', align_items='center'
-                    )
-                )
-        def refresh_colormap(change):
-            self.colormap = np.copy(newc)
-            for clr, clr_picker in self.colorpickers.items():
-                clr_picker.observing = False
-                clr_picker.value=to_hex(self.colormap[clr][0:3])
-                clr_picker.observing = True
-            self.plot.colormap = ListedColormap(self.colormap)
-            self.plot.backend.plot._update_image()
-        btn.on_click(refresh_colormap)
-        return btn
-
-    def create_button(self, tag, stats):
-        stats_str = self.stats_to_str(tag.id_, stats)
-        btn = Button(
-                icon='search-plus',
-                tooltip=self.tag_tooltip(tag) + stats_str,
-                style={'button_color': 'transparent'},
-                layout=Layout(height='35px', width='35px',
-                                borders='none', align_items='center'
-                             )
-                )
-        def zoom_to_selection(_):
-            self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
-                                    float(tag.address[0]), float(tag.address[1]))
-        btn.on_click(zoom_to_selection)
-        return btn
 
     def set_zoom_sel_handler(self, f):
-        self.zoom_sel_handler = f
+        self.tags.set_zoom_sel_handler(f)
 
     def set_plot(self, plot):
-        self.plot = plot
-        self.accesses.set_plot(self.plot)
+        self.accesses.set_plot(plot)
 
-    def tag_tooltip(self, tag):
-        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
-        "(" + tag.address[0] + ", " + tag.address[1] + ")")
-
-    def stats_to_str(self, ind, stats):
-        total = sum(stats[ind])
-        if total == 0:
-            return ','.join([repr(stat) for stat in stats[ind]])
-        hits = stats[ind][0] + stats[ind][1]
-        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
-
-    def create_checkbox(self, desc, layout, group, selections):
-        self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
-        return self.checkboxes[-1].widget
-
-    def create_parent_checkbox(self, desc, layout, group, selections, child_checkboxes):
-        def handle_parent_checkbox_change(_):
-            if _.name == 'value':
-                if parent_checkbox.widget.manual_change == False:
-                    for checkbox in child_checkboxes:
-                        checkbox.value = _.new
-                parent_checkbox.widget.manual_change = False
-        parent_checkbox = CheckBox(desc, layout, group, selections, handle_parent_checkbox_change)
-        def handle_child_checkbox_change(_):
-            if parent_checkbox.widget.value == True:
-                if _.new == False:
-                    parent_checkbox.widget.manual_change = True
-                    parent_checkbox.widget.value = False
-            if parent_checkbox.widget.value == False:
-                if all([checkbox.value for checkbox in child_checkboxes]):
-                    parent_checkbox.widget.manual_change = True
-                    parent_checkbox.widget.value = True
-        for checkbox in child_checkboxes:
-            checkbox.observe(handle_child_checkbox_change, names='value')
-        return parent_checkbox.widget
-
-    def handle_checkbox_change(self, _): # TODO - move constants out
-        selections = set()
-        for checkbox in self.checkboxes:
-            if checkbox.group == SelectionGroup.data_structures:
-                if checkbox.widget.value == False:
-                    selections.add('(Tag != %s)' % (checkbox.selections))
-            else:
-                for selection in checkbox.selections:
-                    if checkbox.widget.value == False:
-                        selections.add('(Access != %d)' % (selection))
-        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
-
-class CheckBox():
-    def __init__(self, desc, layout, group, selections, handle_fun):
-        self.widget = Checkbox(description=desc, layout=layout,
-                                value=True, disabled=False, indent=False)
-        self.widget.observe(handle_fun, names='value')
-        self.widget.manual_change = False
-        self.group = group
-        self.selections = selections

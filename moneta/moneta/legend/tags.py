@@ -26,10 +26,37 @@ class Tags():
             self.checkboxes.append(chk)
             chk.widget.on_event('change', self.update_all_checkbox)
             tag_rows.append(v.Row(children=[
-                v.Btn(icon=True, children=[v.Icon(children=['fa-search-plus'])]),
+                self.create_zoom_button(tag, stats),
                 chk.widget
                 ], class_='ml-0'))
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="240px", max_width="200px")])
+
+    def create_zoom_button(self, tag, stats):
+        btn = v.Btn(v_on='tooltip.on', icon=True, children=[v.Icon(
+            children=['fa-search-plus'])])
+        def zoom_to_selection(*_):
+            self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
+                                    float(tag.address[0]), float(tag.address[1]))
+        btn.on_event('click', zoom_to_selection)
+        btn_tp = v.Tooltip(bottom=True, v_slots=[{
+            'name': 'activator', 'variable': 'tooltip', 'children': btn}],
+            children=[self.tag_tooltip(tag, stats)])
+        return btn_tp
+
+    def set_zoom_sel_handler(self, f):
+        self.zoom_sel_handler = f
+
+    def tag_tooltip(self, tag, stats):
+        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
+        "(" + tag.address[0] + ", " + tag.address[1] + ")" + self.stats_to_str(tag.id_, stats))
+
+    def stats_to_str(self, ind, stats):
+        total = sum(stats[ind])
+        if total == 0:
+            return ','.join([repr(stat) for stat in stats[ind]])
+        hits = stats[ind][0] + stats[ind][1]
+        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
+
 
     def check_all(self, _checkbox, _, new):
         for checkbox in self.checkboxes:
