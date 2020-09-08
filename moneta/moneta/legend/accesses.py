@@ -1,21 +1,23 @@
 from ipywidgets import VBox, HBox, Layout, Label, ColorPicker, GridBox
 import ipyvuetify as v
 from moneta.settings import (
-        vdiv, lvdiv,
-        hdiv, lhdiv
+        vdiv, lvdiv, hdiv, lhdiv,
+        READ_HIT, WRITE_HIT, READ_MISS,
+        WRITE_MISS, COMP_R_MISS, COMP_W_MISS
 )
-class Checks():
-    def __init__(self, model):
+class Accesses():
+    def __init__(self, model, update_selection):
         self.model = model
+        self.update_selection = update_selection
         self.widgets = self.init_widgets()
 
     def init_widgets(self):
-        read_hit = ChildCheckbox(self.compute_all)
-        write_hit = ChildCheckbox(self.compute_all)
-        read_capmiss = ChildCheckbox(self.compute_all)
-        write_capmiss = ChildCheckbox(self.compute_all)
-        read_compmiss = ChildCheckbox(self.compute_all)
-        write_compmiss = ChildCheckbox(self.compute_all)
+        read_hit = ChildCheckbox(self.compute_all, READ_HIT)
+        write_hit = ChildCheckbox(self.compute_all, WRITE_HIT)
+        read_capmiss = ChildCheckbox(self.compute_all, READ_MISS)
+        write_capmiss = ChildCheckbox(self.compute_all, WRITE_MISS)
+        read_compmiss = ChildCheckbox(self.compute_all, COMP_R_MISS)
+        write_compmiss = ChildCheckbox(self.compute_all, COMP_W_MISS)
         chks = [read_hit, write_hit, read_capmiss,
                 write_capmiss, read_compmiss, write_compmiss]
         self.checkboxes = chks
@@ -72,6 +74,7 @@ class Checks():
     def compute_all(self, *_):
         for parent in self.parentcheckboxes:
             parent.update()
+        self.update_selection()
         #self.handle_checkbox_change() # TODO
 
     def handle_checkbox_change(self): # TODO - move constants out
@@ -92,11 +95,11 @@ class ParentCheckbox:
         if label is None and prepend_icon is None:
             raise SystemError
         if label is None: # _widget for v_model, widget for display
-            self._widget = v.Checkbox(v_on='tooltip.on', prepend_icon=prepend_icon, v_model=False)
+            self._widget = v.Checkbox(v_on='tooltip.on', prepend_icon=prepend_icon, v_model=True)
             self.widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self._widget}],
                 children=[tooltip])
         else:
-            self._widget = v.Checkbox(label=label, v_model=False)
+            self._widget = v.Checkbox(label=label, v_model=True)
             self.widget = self._widget
         self._widget.on_event('change', self.handler)
         self.children = children
@@ -120,6 +123,7 @@ class ParentCheckbox:
         self._widget.indeterminate = on > 0 and off > 0
 
 class ChildCheckbox:
-    def __init__(self, handler):
-        self.widget = v.Checkbox(ripple=False, v_model=False, color='primary')
+    def __init__(self, handler, acc_type):
+        self.widget = v.Checkbox(ripple=False, v_model=True, color='primary')
         self.widget.on_event('change', handler)
+        self.acc_type=acc_type

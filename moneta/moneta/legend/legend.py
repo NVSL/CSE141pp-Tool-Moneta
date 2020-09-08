@@ -2,7 +2,7 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
-from moneta.legend.checks import Checks
+from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from enum import Enum
 import numpy as np
@@ -43,8 +43,10 @@ class Legend():
         self.widgets = VBox([self.panels, vstyle], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         #self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
         #self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, Checks(model).widgets)
-        self.add_accordion(LEGEND_TAGS_TITLE, Tags(model).widgets)
+        self.accesses = Accesses(model, self.update_selection)
+        self.tags = Tags(model, self.update_selection)
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
+        self.add_accordion(LEGEND_TAGS_TITLE, self.tags.widgets)
 
 
         self.ignore_changes = False
@@ -86,8 +88,18 @@ class Legend():
         for accordion in self.widgets.children:
             accordion.selected_index = 0
 
-    def acc_handle(self):
-        pass
+    def get_select_string(self): # TODO - move constants out
+        selections = set()
+        for checkbox in self.accesses.checkboxes:
+            if checkbox.widget.v_model == False:
+                selections.add('(Access != %d)' % (checkbox.acc_type))
+        for checkbox in self.tags.checkboxes:
+            if checkbox.widget.v_model == False:
+                selections.add('(Tag != %s)' % (checkbox.tag_id))
+        return '&'.join(selections)
+
+    def update_selection(self):
+        self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf?
 
 
     def add_accordion(self, name, contents):
