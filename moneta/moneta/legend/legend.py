@@ -41,10 +41,10 @@ class Legend():
                 self.panels.v_model = list(range(len(self.panels.children)))
         vstyle = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
         self.widgets = VBox([self.panels, vstyle], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
-        self.add_accordion("test", Checks(model).widgets)
-        self.add_accordion("test", Tags(model).widgets)
+        #self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
+        #self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, Checks(model).widgets)
+        self.add_accordion(LEGEND_TAGS_TITLE, Tags(model).widgets)
 
 
         self.ignore_changes = False
@@ -85,6 +85,9 @@ class Legend():
     def expand_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = 0
+
+    def acc_handle(self):
+        pass
 
 
     def add_accordion(self, name, contents):
