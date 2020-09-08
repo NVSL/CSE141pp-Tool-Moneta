@@ -55,7 +55,7 @@ class Checks():
             capmisses, vdiv, primbox(read_capmiss), lvdiv, primbox(write_capmiss),
             hdiv, hdiv, lhdiv, lhdiv, lhdiv,
             compmisses, vdiv, primbox(read_compmiss), lvdiv, primbox(write_compmiss)],
-            layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="70px 5px 70px 5px 70px"))])
+            layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="70px 5px 70px 5px 70px"))], layout=Layout(padding="0 0 0 14px"))
 
         cache_icon = v.Icon(children=['fa-database'], v_on='tooltip.on')
         cache_icon_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': cache_icon}], children=["Cache"])
@@ -65,7 +65,7 @@ class Checks():
         reset_clrs = v.Btn(v_on='tooltip.on', icon=True, children=[v.Icon(children=['refresh'])])
         reset_clrs_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': reset_clrs}], children=["Reset all colors"])
         cache_row = HBox([cache_icon_tp, cache_clrpkr, reset_clrs_tp],
-                        layout=Layout(padding="0 20px 0 20px", align_items="center", justify_content="space-between"))
+                        layout=Layout(padding="0 20px 20px 20px", align_items="center", justify_content="space-between"))
         cache_row
         return VBox([gridbox, cache_row])
 

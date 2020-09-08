@@ -2,7 +2,8 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
-from moneta.checks import Checks
+from moneta.legend.checks import Checks
+from moneta.legend.tags import Tags
 from enum import Enum
 import numpy as np
 
@@ -38,10 +39,12 @@ class Legend():
             else:
                 ic.children = [up]
                 self.panels.v_model = list(range(len(self.panels.children)))
-        self.widgets = VBox([self.panels], layout=Layout(padding='0px', border='1px solid black', width='300px'))
+        vstyle = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
+        self.widgets = VBox([self.panels, vstyle], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
         self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
         self.add_accordion("test", Checks(model).widgets)
+        self.add_accordion("test", Tags(model).widgets)
 
 
         self.ignore_changes = False
@@ -87,7 +90,7 @@ class Legend():
     def add_accordion(self, name, contents):
         acc = v.ExpansionPanel(children=[
             v.ExpansionPanelHeader(children=[name]),
-            v.ExpansionPanelContent(children=[contents])
+            v.ExpansionPanelContent(children=[contents], class_='ma-0 pa-0')
             ])
         #accordion = Accordion([contents])
         #accordion.set_title(0, name)
