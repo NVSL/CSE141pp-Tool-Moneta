@@ -1,5 +1,6 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 import ipyvuetify as v
+from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
 from moneta.legend.accesses import Accesses
@@ -50,6 +51,7 @@ class Legend():
                 selections.add('(Tag != %s)' % (checkbox.tag_id))
         return '&'.join(selections)
 
+    @debounced(0.5)
     def update_selection(self):
         self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf?
 

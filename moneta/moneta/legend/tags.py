@@ -59,6 +59,7 @@ class Tags():
 
 
     def check_all(self, _checkbox, _, new):
+        self.all_check.indeterminate = False
         for checkbox in self.checkboxes:
             checkbox.widget.v_model = new
         self.update_selection()
