@@ -256,6 +256,7 @@ class Legend():
 
     def set_plot(self, plot):
         self.plot = plot
+        self.accesses.set_plot(self.plot)
 
     def tag_tooltip(self, tag):
         return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
