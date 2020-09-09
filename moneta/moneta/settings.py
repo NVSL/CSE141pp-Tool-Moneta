@@ -79,7 +79,9 @@ WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 
 # Errors
-NO_TAGS = "No tags were traced"
+NO_TAGS = "Error: No tags were traced\n" + "
+          "If there are tags, there were no memory accesses in the specified start/end ranges.\n" + 
+          "If there are no tags, you will need to tag the file or use a full trace."
 
 ## Vaex
 
