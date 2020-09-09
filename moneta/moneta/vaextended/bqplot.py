@@ -327,9 +327,10 @@ class BqplotBackend(BackendBase):
                 self.figure.interaction = None
             if self.click_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.click_brush.selected
+                print(x1, x2, y1, y2)
                 df = self.dataset
                 x = max(x1, x2)
-                y = max(y1, y2)
+                y = min(y1, y2)
                 half_dist = 1000/2
                 x_left = x-half_dist
                 x_right = x+half_dist
