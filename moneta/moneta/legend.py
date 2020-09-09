@@ -179,17 +179,40 @@ class Legend():
 	    
         @debounced(0.5, method=True)
         def update_click_zoom_coords(self, data, updating):
+
+            #first check if there is no data to zoom into
             if updating is not True:
               print("click zoom: no data to zoom into")
               return
 
+            czoom_df_filter1 = self.df[self.df.Access_Number < self.observable.czoom_xmax]
+            czoom_df_filter2 = czoom_df_filter1[self.df.Access_Number > self.observable.czoom_xmin]
+            czoom_df_filter3 = czoom_df_filter2[self.df.Bytes > self.observable.czoom_ymin]
+            czoom_df_filter4 = czoom_df_filter3[self.df.Bytes < self.observable.czoom_ymax]
+            #colors = newc[df_filter4.Access.values]
+
+            #second check if there is no data to zoom into
+            try: 
+              zoom_x = czoom_df_filter4['Access_Number'].values[-1]
+            except:
+              print("click zoom: no data to zoom into")
+              return
+
+            zoom_y = czoom_df_filter4['Bytes'].values[-1]
+            #max_x = self.df[czoom_df_filter4['Access_Number'].values[-1]]
+            #zoom_y = max_x['Bytes'].min()[()]
             global click_zoom_x
             global click_zoom_y
             #set limits for data
-            self.x_coormin = self.observable.coor_x - click_zoom_x/2
-            self.x_coormax = self.observable.coor_x + click_zoom_x/2
-            self.y_coormin = self.observable.coor_y - click_zoom_y/2
-            self.y_coormax = self.observable.coor_y + click_zoom_y/2
+            #self.x_coormin = self.observable.coor_x - click_zoom_x/2
+            #self.x_coormax = self.observable.coor_x + click_zoom_x/2
+            #self.y_coormin = self.observable.coor_y - click_zoom_y/2
+            #self.y_coormax = self.observable.coor_y + click_zoom_y/2
+
+            self.x_coormin = zoom_x - click_zoom_x/2
+            self.x_coormax = zoom_x + click_zoom_x/2
+            self.y_coormin = zoom_y - click_zoom_y/2
+            self.y_coormax = zoom_y + click_zoom_y/2
 
             #filter data to only those limits
             df_filter1 = self.df[self.df.Access_Number < self.x_coormax]
@@ -197,6 +220,8 @@ class Legend():
             df_filter3 = df_filter2[self.df.Bytes > self.y_coormin]
             df_filter4 = df_filter3[self.df.Bytes < self.y_coormax]
             colors = newc[df_filter4.Access.values]
+
+            
 	    #df_filter4.evaluate(selection=True)
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
 
