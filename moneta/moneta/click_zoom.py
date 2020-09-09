@@ -17,15 +17,15 @@ class ClickZoom():
         #with self.widget:
         #    self.df.plot(self.df[INDEX_LABEL], self.df[ADDRESS_LABEL], colormap = CUSTOM_CMAP, what='max(Access)', limits=[self.model.curr_trace.x_lim, self.model.curr_trace.y_lim], shape=512, colorbar=False, figsize=(10,10))
 
-    def update_click_zoom(self, x, y, found_point):
+    def update_click_zoom(self, x, y, found_point, aspect_ratio):
         with self.widget:
             self.widget.clear_output()
-            print("updating click zoom ", x, y)
+            print("updating click zoom ", x, y, aspect_ratio)
 
             x_lim = [x-500, x+500]
             y_lim = [y-500, y+500]
             x_diff = 500
-            y_diff = 500
+            y_diff = 500*aspect_ratio
 
             if found_point:
                 print("found point")
@@ -39,10 +39,13 @@ class ClickZoom():
                 #print(self.df)
                 #print(self.df.columns)
                 print(self.df.columns["Access_Number"][res])
-                print(self.df.columns[ADDRESS_LABEL][res])
+                print(self.df.columns[ADDRESS_LABEL][res:res+10])
+                print(self.df.columns[ADDRESS_LABEL][int(x):int(x)+10])
+                print(self.df.columns["Access_Number"][int(x):int(x)+10])
                 buff = 2
                 x_diff = abs(int(x) - self.df.columns["Access_Number"][res])*buff
-                y_diff = abs(int(y) - self.df.columns[ADDRESS_LABEL][res])*buff
+                #y_diff = abs(int(y) - self.df.columns[ADDRESS_LABEL][res])*buff
+                y_diff = x_diff*aspect_ratio
                 x_lim = [x-x_diff, x+x_diff]
                 y_lim = [y-y_diff, y+y_diff]
             resdf = self.df[(self.df['Access_Number'] >= x-x_diff) & (self.df['Access_Number'] <= x + x_diff) & (self.df[ADDRESS_LABEL] >= y - y_diff) & (self.df[ADDRESS_LABEL] <= y+y_diff)]

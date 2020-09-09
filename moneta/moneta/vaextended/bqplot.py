@@ -341,10 +341,12 @@ class BqplotBackend(BackendBase):
                 addr = self.plot.y_label
                 res = df[(df[ind] >= x_left) & (df[ind] <= x_right) & (df[addr] >= y_min) & (df[addr] <= y_max)]
 
+                aspect_ratio = (self.scale_y.max - self.scale_y.min)/(self.scale_x.max - self.scale_x.min)
+
                 if res.count() != 0:
-                    self.plot.update_click_zoom(x, y, True)
+                    self.plot.update_click_zoom(x, y, True, aspect_ratio)
                 else:
-                    self.plot.update_click_zoom(x, y, False)
+                    self.plot.update_click_zoom(x, y, False, aspect_ratio)
             if not self.click_brush.brushing: # Update on mouse up
                 self.figure.interaction = self.click_brush
             with self.click_brush.hold_trait_notifications(): # Delete selection
