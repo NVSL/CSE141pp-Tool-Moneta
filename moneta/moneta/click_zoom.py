@@ -14,8 +14,8 @@ class ClickZoom():
         self.df = self.model.curr_trace.df
         print(self.df)
         print(self.df.columns)
-        with self.widget:
-            self.df.plot(self.df[INDEX_LABEL], self.df[ADDRESS_LABEL], colormap = CUSTOM_CMAP, what='max(Access)', limits=[self.model.curr_trace.x_lim, self.model.curr_trace.y_lim], shape=512, colorbar=False, figsize=(10,10))
+        #with self.widget:
+        #    self.df.plot(self.df[INDEX_LABEL], self.df[ADDRESS_LABEL], colormap = CUSTOM_CMAP, what='max(Access)', limits=[self.model.curr_trace.x_lim, self.model.curr_trace.y_lim], shape=512, colorbar=False, figsize=(10,10))
 
     def update_click_zoom(self, x, y, found_point):
         with self.widget:
@@ -47,7 +47,7 @@ class ClickZoom():
                 y_lim = [y-y_diff, y+y_diff]
             resdf = self.df[(self.df['Access_Number'] >= x-x_diff) & (self.df['Access_Number'] <= x + x_diff) & (self.df[ADDRESS_LABEL] >= y - y_diff) & (self.df[ADDRESS_LABEL] <= y+y_diff)]
             print(resdf.Tag.max())
-            mpl_plt.scatter(resdf.Access_Number.values, resdf.Bytes.values, s=0.01, c=resdf.Tag.values.astype('float32'), cmap=CUSTOM_CMAP, vmin=0, vmax=10)
+            mpl_plt.scatter(resdf.Access_Number.values, resdf.Bytes.values, s=0.5, c=resdf.Access.values, cmap=CUSTOM_CMAP, vmin=0, vmax=10)
             print(resdf.Access_Number.values[:10])
             print(resdf.Bytes.values[:10])
             print(resdf.Tag.values[:10])
@@ -55,12 +55,12 @@ class ClickZoom():
             mpl_plt.ylim(y-y_diff, y+y_diff)
             mpl_plt.show()
 
-            z = self.df.plot(self.df[INDEX_LABEL], self.df[ADDRESS_LABEL], colormap = CUSTOM_CMAP, what='max(Access)', limits=[x_lim, y_lim], shape=512, colorbar=False, figsize=(10,10))
+            #z = self.df.plot(self.df[INDEX_LABEL], self.df[ADDRESS_LABEL], colormap = CUSTOM_CMAP, what='max(Access)', limits=[x_lim, y_lim], shape=512, colorbar=False, figsize=(10,10))
             #print(dir(z))
             #print(type(z.figure))
             #print(dir(z.figure))
             #print(z.set_visible())
             #z.show()
             #display(z)
-            display(z.figure)
+            #display(z.figure)
 
