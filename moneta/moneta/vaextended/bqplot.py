@@ -222,7 +222,7 @@ class BqplotBackend(BackendBase):
                                 }], children=[REDO])
             @debounced(0.5)
             def undo_redo(*args):
-                print(self.undo_actions)
+                #print(self.undo_actions)
                 self.curr_action = args[0]
                 (x1, x2), (y1, y2) = args[1][-1]
                 with self.scale_x.hold_trait_notifications():

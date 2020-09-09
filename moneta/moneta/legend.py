@@ -1,7 +1,7 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_STATS_TITLE
 from moneta.utils import stats_percent
 from enum import Enum
 import numpy as np
@@ -26,9 +26,12 @@ class Legend():
         self.colorpickers = {}
         self.colormap = np.copy(newc)
 
+        self.plot_stats = PlotStats()
+
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
         self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
+        self.add_accordion(LEGEND_STATS_TITLE, self.plot_stats.widget)
 
 
         self.ignore_changes = False
@@ -55,13 +58,14 @@ class Legend():
                                 'children': self.control
                             }], children=['Legend'])
 
+
+
     def collapse_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = None
     def expand_all(self):
         for accordion in self.widgets.children:
             accordion.selected_index = 0
-
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
@@ -159,6 +163,8 @@ class Legend():
             layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
         return accordion
 
+
+
     def create_colorpicker(self, clr):
         clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
         clr_picker.observing = True
@@ -192,7 +198,7 @@ class Legend():
         return btn
 
     def create_button(self, tag, stats):
-        stats_str = self.stats_to_str(tag.id_, stats)
+        stats_str = self.hover_stats_to_str(tag.id_, stats)
         btn = Button(
                 icon='search-plus',
                 tooltip=self.tag_tooltip(tag) + '\n' + stats_str,
@@ -220,7 +226,7 @@ class Legend():
         return access_range + address_range
 
 
-    def stats_to_str(self, ind, stats):
+    def hover_stats_to_str(self, ind, stats):
         total = sum(stats[ind])
         total_string = f'Total: {total}\n\n'
         read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
@@ -228,7 +234,7 @@ class Legend():
         cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
         cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
         comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
-        comp_write_misses = f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+        comp_write_misses = f'Compulsory Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
        
 
 
@@ -279,3 +285,27 @@ class CheckBox():
         self.widget.manual_change = False
         self.group = group
         self.selections = selections
+
+
+class PlotStats():
+    def __init__(self):
+        self.total_stat_title = Label(value='Total Stats:')
+        self.total_hits = Label(value='Hits: Loading...')
+        self.total_cap_misses = Label(value='Cap. Misses: Loading...')
+        self.total_comp_misses = Label(value='Comp. Misses: Loading...')
+        self.total_stats = VBox(
+                           [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
+                           layout=Layout(width='250px', padding="5px")
+                           )
+
+        self.curr_stat_title = Label(value='Current View Stats:')
+
+        self.curr_hits = Label(value='Hits: Loading...')
+        self.curr_cap_misses = Label(value='Cap. Misses: Loading...')
+        self.curr_comp_misses = Label(value='Comp. Misses: Loading...')
+        self.curr_stats = VBox(
+                          [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
+                          layout=Layout(width='250px', padding="5px")
+                          )
+
+        self.widget = VBox([self.total_stats, self.curr_stats])

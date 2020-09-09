@@ -142,7 +142,7 @@ class PlotBase(widgets.Widget):
         display(self.widget)
 
     def add_to_toolbar(self, widget):
-        print("in toolbar adding")
+        #print("in toolbar adding")
         self.toolbar.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
         self.toolbar.send_state('children')

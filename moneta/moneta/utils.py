@@ -107,16 +107,33 @@ def get_curr_stats(plot):
 
     return total_count, hit_count, cap_miss_count, comp_miss_count
 
+def update_legend_view_stats(plot_stats, plot, is_init):
+    total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot)
+
+    if(is_init):
+        plot_stats.total_hits.value = stats_hit_string(hit_count, total_count)
+        plot_stats.total_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
+        plot_stats.total_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
+
+    plot_stats.curr_hits.value = stats_hit_string(hit_count, total_count)
+    plot_stats.curr_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
+    plot_stats.curr_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
 
 def stats_percent(count, total):
     return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
 def stats_hit_string(count, total):
     return 'Hits: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_cap_miss_string(count, total):
-    return 'Capacity Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
+    return 'Cap. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_comp_miss_string(count, total):
-    return 'Compulsory Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
+    return 'Comp. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
     
+
+
+
+
+
+
 def parse_cwd(path):
     """ Returns a final path and an absolute path
         Final path is either an absolute path, relative from home,
@@ -214,8 +231,12 @@ def run_pintool(w_vals):
   
     os.chdir(MONETA_TOOL_DIR)
   
-    if sub_stderr.startswith("Error"):
-        print(sub_stderr)
+    if sub_stderr:
+        print("\n\nAn error occurred while running your program. Double check your program and Pin tags to make sure they are correct.\n\n" + 
+               f"Raw Error Message: \n{sub_stderr}\n\n")
+
+
+
 
 def generate_trace(w_vals):
     if verify_input(w_vals):

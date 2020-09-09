@@ -105,3 +105,4 @@ TAG_ID = "Tag_Value"
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Legend'
 LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_STATS_TITLE = 'Stats'

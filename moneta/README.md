@@ -186,12 +186,8 @@ The legend matches memory access type with the plot colors and allows toggling t
 
 **Checkboxes:** When checked, plots memory accesses that fall within the address range specified by the tag name
 
-**Zoom To Tag:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays metadata about the tag
+**Zoom To Tag/Hover Tooltip Stats:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays memory access stats about the tag
 
-**TODO ONCE REFACTORED**
- - Stats
- - Independent Subplot
- - Dependent Subplot
 
 ### Deleting a Trace
 

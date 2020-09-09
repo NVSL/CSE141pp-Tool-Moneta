@@ -42,33 +42,6 @@ class MonetaWidgets():
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
 
-
-        self.total_stat_title = Label(
-                           value='Total Stats:',
-                           layout=settings.WIDGET_LAYOUT
-                           )
-        self.total_hits = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_stats = VBox(
-                           [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
-                           layout=Layout(width='500px')
-                           )
-
-        self.curr_stat_title = Label(
-                           value='Current View Stats:',
-                           layout=settings.WIDGET_LAYOUT
-                           )
-        self.curr_hits = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_stats = VBox(
-                          [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
-                          layout=Layout(width='500px')
-                          )
-
-        self.stats = HBox([self.total_stats, self.curr_stats])
-
     def switch_handler(self, switch, *_):
         switch.value = not switch.value
         switch.label = settings.FULL_TRACE_DESC if switch.value else settings.NORMAL_TRACE_DESC
