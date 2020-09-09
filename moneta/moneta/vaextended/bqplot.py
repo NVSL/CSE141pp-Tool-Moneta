@@ -72,7 +72,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
-	    self.plot.update_stats()
+            self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
         self.plot = plot

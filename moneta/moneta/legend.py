@@ -1,7 +1,8 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
+import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM
-from trace import Tag
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM
+from moneta.utils import stats_percent
 from enum import Enum
 from vaex.jupyter.bqplot import *
 import matplotlib.pyplot as mpl_plt
@@ -20,7 +21,7 @@ class SelectionGroup(Enum):
     hit_miss_write = 4
 
 class Legend():
-    def __init__(self, tags, df):
+    def __init__(self, model):
         mpl_plt.ioff()
         self.model = model
         self.wid_150 = Layout(width='110px')
@@ -31,11 +32,10 @@ class Legend():
         self.mar_5 = Layout(width='5px')
         self.checkboxes = []
         self.colorpickers = {}
-        self.df = df
         self.colormap = np.copy(newc)
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='400px'))
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
         self.click_zoom_widget = widgets.Output()
         self.add_accordion(LEGEND_CLICK_ZOOM, self.create_click_zoom())
 
@@ -135,7 +135,7 @@ class Legend():
             Label(value='W', layout=self.wid_30)
         ])
 
-    def get_memoryaccesses(self, tags):
+    def get_memoryaccesses(self):
         hits_row = self.hit_miss_row("Hits", 1, 2, SelectionGroup.hit_miss, READ_HIT, WRITE_HIT)
         cap_misses_row = self.hit_miss_row("Cap Misses", 4, 5, SelectionGroup.hit_miss, READ_MISS, WRITE_MISS)
         comp_misses_row = self.hit_miss_row("Comp Misses", 6, 8, SelectionGroup.hit_miss, COMP_R_MISS, COMP_W_MISS)
@@ -325,6 +325,7 @@ class Legend():
                 mpl_plt.show()
     
     def get_selected_array(self):
+        self.df = self.model.curr_trace.df
         selected_bytes = self.df.evaluate(self.df.Bytes, selection=True)
         selected_access_number = self.df.evaluate(self.df.Access_Number, selection=True)
         selected_access = self.df.evaluate(self.df.Access, selection=True)
@@ -332,7 +333,7 @@ class Legend():
         #self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
         return selected_array
 
-   def create_reset_btn(self):
+    def create_reset_btn(self):
         btn = Button(
                 icon='refresh',
                 tooltip="Reset all colors to default",
@@ -374,7 +375,7 @@ class Legend():
 
     def set_plot(self, plot):
         self.plot = plot
-        self.click_zoom_obj = self.click_zoom_observer(self.plot.backend, self.click_zoom_widget, self.czoom_button, self.df)
+        self.click_zoom_obj = self.click_zoom_observer(self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model.curr_trace.df)
 
     def tag_tooltip(self, tag):
         access_range = f'Access Range: {tag.access[0]}, {tag.access[1]} \n'
@@ -434,7 +435,7 @@ class Legend():
                 for selection in checkbox.selections:
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
-        self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
         self.click_zoom_obj.update_df_selections(self.get_selected_array())
 
 
