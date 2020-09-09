@@ -35,7 +35,6 @@ class PlotBase(widgets.Widget):
                  show_drawer=False,
                  controls_selection=True, **kwargs):
         super(PlotBase, self).__init__(x=x, y=y, z=z, w=w, what=what, vcount_limits=vcount_limits, grid_limits=grid_limits, f=f, **kwargs)
-        print("vaex extended plot base init")
         self.backend = backend
         self.vgrids = [None, None, None]
         self.vcount = None
@@ -82,13 +81,17 @@ class PlotBase(widgets.Widget):
                 self.cache_size = kwargs.get('cache_size')
             if 'default_title' in kwargs:
                 self.default_title = kwargs.get('default_title')
+            if 'update_stats' in kwargs:
+                self.update_stats = kwargs.get('update_stats')
             else:
                 self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
-                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget, self.legend], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
+                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
-                        'default_title': self.default_title
+                        'default_title': self.default_title,
+                        'main-legend': self.legend.widgets,
+                        'legend-control': self.legend.control_tooltip
                     },
                     model=show_drawer
             )

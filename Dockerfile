@@ -27,6 +27,8 @@ RUN pip install -r requirements.txt
 # Create aliases for Pin and Moneta
 COPY .setup/bashrc_aliases ${DIR_SETUP}/
 
+COPY moneta/setup.py ${DIR_MONETA}/
+
 # Fix Windows to Linux file endings
 RUN sed -i 's/\r$//' bashrc_aliases 
 RUN cat bashrc_aliases >> ~/.bashrc
@@ -34,4 +36,6 @@ RUN cat bashrc_aliases >> ~/.bashrc
 RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
 WORKDIR ${DIR_MONETA}
+# Make Moneta a package to add path for pytest to locate
+RUN pip install -e .
 

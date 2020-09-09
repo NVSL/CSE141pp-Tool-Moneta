@@ -72,6 +72,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
+	    self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
         self.plot = plot
@@ -241,6 +242,7 @@ class BqplotBackend(BackendBase):
                                     'variable': 'tooltip',
                                     'children': self.redo_btn
                                 }], children=[REDO])
+
             @debounced(0.5)
             def undo_redo(*args):
                 print("undoing/redoing:", args, args[0] )
@@ -333,7 +335,13 @@ class BqplotBackend(BackendBase):
                 self.zoom_brush.selected_x = None
                 self.zoom_brush.selected_y = None
 
-        print("zoom brushing")
+    def zoom_sel(self, x1, x2, y1, y2):
+        with self.scale_x.hold_trait_notifications():
+            self.scale_x.min = x1
+            self.scale_x.max = x2
+        with self.scale_y.hold_trait_notifications():
+            self.scale_y.min = y1
+            self.scale_y.max = y2
     def zoom_sel(self, x1, x2, y1, y2):
         with self.scale_x.hold_trait_notifications():
             self.scale_x.min = x1
@@ -359,22 +367,8 @@ class BqplotBackend(BackendBase):
 
                     #if there are values selected within the region
                     if res.count() != 0:
-                         #zoom towards data on the left
-                         #zoom_x = res.index.values[0]
-                         #zoom towards data on the top
-                         #zoom_y = max_x.Address.max()[()]
-
-                         #default to data in the right
-                         #zoom_x = res[ind].values[-1]
-                         #zoom_y = df['Address'].values[zoom_x]
-                         #filter for y-coordinates of a data point
-                         #max_x = df[res[ind] == res[ind].values[-1]]
-                         #zoom_y = max_x[addr].min()[()]
-                         #self.click_zoom_update_coords_x(zoom_x, True)
-                         #self.click_zoom_update_coords_y(zoom_y, True)
                          self.click_zoom_update_coords_x(coor_xmin, True)
                          self.click_zoom_update_coords_y(coor_ymin, True)
-                         #self.click_zoom_update_res(res)
                     else:
                          #no data within highlighted region, do not update coords
                          self.click_zoom_update_coords_x(x2, False)
@@ -407,5 +401,4 @@ class BqplotBackend(BackendBase):
 	 
     def bind_to(self, callback):
         self._observers.append(callback)
-
 

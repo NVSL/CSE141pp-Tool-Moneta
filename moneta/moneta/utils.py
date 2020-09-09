@@ -1,10 +1,10 @@
-from ipywidgets import Text, Button, IntText
+from ipywidgets import Text, Button, IntText, Label
 import os
 import re
 import sys
 import subprocess
 
-from settings import (
+from moneta.settings import (
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
     MONETA_TOOL_DIR,
@@ -13,7 +13,15 @@ from settings import (
     TOOL_PATH,
     WIDGET_DESC_PROP,
     WIDGET_LAYOUT,
-    CWD_HISTORY_PATH
+    CWD_HISTORY_PATH,
+    INDEX_LABEL,
+    ADDRESS_LABEL,
+    COMP_W_MISS,
+    COMP_R_MISS,
+    WRITE_MISS,
+    READ_MISS,
+    WRITE_HIT,
+    READ_HIT
 )
 sys.path.append(MONETA_BASE_DIR + "moneta/moneta/")
 
@@ -45,18 +53,6 @@ def text_factory(placeholder, description):
             layout=WIDGET_LAYOUT
             )
 
-    
-def parse_cwd(cwd_path):
-    if cwd_path in ("/", "~", ".", ".."):
-        return cwd_path
-   
-    # Assume '.' if there are no special path characters
-    if not (cwd_path.startswith(("/", "~/", "./", "../"))):
-        cwd_path = "./" + cwd_path;
-    if cwd_path.endswith("/"):
-        cwd_path = cwd_path[0:-1]
-    return cwd_path
-
 def parse_exec_input(e_input):
     exec_inputs = e_input.split(" ")
     exec_file_path = os.path.expanduser(exec_inputs[0])
@@ -68,6 +64,8 @@ def parse_exec_input(e_input):
 
     return (exec_file_path, exec_args)
         
+
+
 def load_cwd_file():
     try:
         with open(CWD_HISTORY_PATH, "a+") as history:
@@ -85,24 +83,64 @@ def update_cwd_file(cwd_history):
         for path in cwd_history:
             history_file.write(path + "\n")
 
-            
-def get_widget_values(m_widget):
-    e_file, e_args = parse_exec_input(m_widget.ex.value)
+def get_curr_view(plot, access_type):
+    df = plot.dataset
+    df = df[df['Access'] == access_type]
+    curr_view = df[df[INDEX_LABEL] >= int(plot.limits[0][0])]
+    curr_view = curr_view[curr_view[INDEX_LABEL] <= int(plot.limits[0][1])]
+    curr_view = curr_view[curr_view[ADDRESS_LABEL] >= int(plot.limits[1][0])]
+    curr_view = curr_view[curr_view[ADDRESS_LABEL] <= int(plot.limits[1][1])]
+    return curr_view
+
+def get_curr_stats(plot):
+    curr_read_hits = get_curr_view(plot, READ_HIT)
+    curr_write_hits = get_curr_view(plot, WRITE_HIT)
+    curr_read_cap_misses = get_curr_view(plot, READ_MISS)
+    curr_write_cap_misses = get_curr_view(plot, WRITE_MISS)
+    curr_read_comp_misses = get_curr_view(plot, COMP_R_MISS)
+    curr_write_comp_misses = get_curr_view(plot, COMP_W_MISS)
+
+    hit_count = curr_read_hits.count() + curr_write_hits.count()
+    cap_miss_count = curr_read_cap_misses.count() + curr_write_cap_misses.count()
+    comp_miss_count = curr_read_comp_misses.count() + curr_write_comp_misses.count()
+    total_count = hit_count + cap_miss_count + comp_miss_count
+
+    return total_count, hit_count, cap_miss_count, comp_miss_count
+
+
+def stats_percent(count, total):
+    return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
+def stats_hit_string(count, total):
+    return 'Hits: '+ str(count) + ' (' + stats_percent(count, total) +')'
+def stats_cap_miss_string(count, total):
+    return 'Capacity Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
+def stats_comp_miss_string(count, total):
+    return 'Compulsory Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
     
-    w_vals = {
-        'c_lines': m_widget.cl.value,
-        'c_block': m_widget.cb.value,
-        'm_lines': m_widget.ml.value,
-        'cwd_path': os.path.expanduser(parse_cwd(m_widget.cwd.value)),
-        'e_file': e_file,
-        'e_args': e_args,
-        'o_name': m_widget.to.value,
-        'is_full_trace': m_widget.ft.value
-    }
-    return w_vals
+def parse_cwd(path):
+    """ Returns a final path and an absolute path
+        Final path is either an absolute path, relative from home,
+        or relative from current directory depending on closest parent of the three
+        NOTE: Assumes '..' is not part of a file name
+    """
+    expanded = os.path.expanduser(path.strip())
+    realpath = os.path.realpath(expanded)
+    home_rel = os.path.relpath(expanded, start='/home/jovyan')
+    curr_rel = os.path.relpath(expanded)
+    
+    if ".." in home_rel:
+        return realpath, realpath
+    
+    if ".." in curr_rel:
+        if home_rel == '.':
+            return "~", realpath
+        return "~/" + home_rel, realpath
+    
+    return curr_rel, realpath
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
+    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print("Cache lines, cache block, and maximum lines to output must be greater than 0")

@@ -22,6 +22,7 @@ class SelectionGroup(Enum):
 class Legend():
     def __init__(self, tags, df):
         mpl_plt.ioff()
+        self.model = model
         self.wid_150 = Layout(width='110px')
         self.wid_180 = Layout(width='125px')
         self.wid_15 = Layout(width='15px')
@@ -38,10 +39,68 @@ class Legend():
         self.click_zoom_widget = widgets.Output()
         self.add_accordion(LEGEND_CLICK_ZOOM, self.create_click_zoom())
 
+
+        self.ignore_changes = False
+        def click():
+            self.ignore_changes = True
+            if self.control.status == True:
+                self.collapse_all()
+                self.control.children[0].children=['keyboard_arrow_down']
+            else:
+                self.expand_all()
+                self.control.children[0].children=['keyboard_arrow_up']
+            self.ignore_changes = False
+        
+            self.control.status = not self.control.status
+
+        self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['keyboard_arrow_up'])
+                                ])
+        self.control.status = True
+        self.control.on_event('click', lambda *ignore: click())
+        self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                'name': 'activator',
+                                'variable': 'tooltip',
+                                'children': self.control
+                            }], children=['Legend'])
+
+
+   
+    def collapse_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = None
+    def expand_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = 0
+
+
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
         accordion.set_title(0, name)
         self.widgets.children = tuple(list(self.widgets.children) + [accordion])
+        accordion.observe(lambda *ignore: check_accordion_status())
+
+        def check_accordion_status():
+            if self.ignore_changes:
+                return
+
+            all_open = True
+            all_closed = True
+
+            for acc in self.widgets.children:
+                if acc.selected_index == None:
+                    all_open = False
+                else:
+                    all_closed = False
+
+            if all_open:
+                self.control.status = True
+                self.control.children[0].children=['keyboard_arrow_up']
+            elif all_closed:
+                self.control.status = False
+                self.control.children[0].children=['keyboard_arrow_down']
+
+
 
     def hit_miss_row(self, desc, primary_clr, sec_clr, group, read_selection, write_selection):
         read = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_read, [read_selection])
@@ -90,15 +149,16 @@ class Legend():
             self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
         return memoryaccesses
 
-    def get_tags(self, tags):
-        max_id = max(tags, key=lambda x: x.id_).id_
-        stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
+    def get_tags(self):
+        max_id = max(self.model.curr_trace.tags, key=lambda x: x.id_).id_
+        df = self.model.curr_trace.df
+        stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
             layout=Layout(height='28px', overflow_y = 'hidden'))
-        for tag in tags]
+        for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
@@ -110,6 +170,18 @@ class Legend():
             [all_ds_row] + tag_rows,
             layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
         return accordion
+
+    def create_colorpicker(self, clr):
+        clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
+        clr_picker.observing = True
+        def handle_color_picker(change):
+            if clr_picker.observing:
+                self.colormap[clr] = to_rgba(change.new, 1)
+                self.plot.colormap = ListedColormap(self.colormap)
+                self.plot.backend.plot._update_image()
+        clr_picker.observe(handle_color_picker,names='value')
+        self.colorpickers[clr] = clr_picker
+        return clr_picker
 
     def create_click_zoom(self):
         czoom_xaxis = widgets.IntSlider(value=50, min=20, max=500, step=10, description='Index Range', disabled=False, 
@@ -260,22 +332,7 @@ class Legend():
         #self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
         return selected_array
 
-	
-
-    def create_colorpicker(self, clr):
-        clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), disabled=False, layout=self.wid_30)
-        clr_picker.observing = True
-        def handle_color_picker(change):
-            if clr_picker.observing:
-                print("changing colorpicker: ", change)
-                self.colormap[clr] = to_rgba(change.new, 1)
-                self.plot.colormap = ListedColormap(self.colormap)
-                self.plot.backend.plot._update_image()
-        clr_picker.observe(handle_color_picker,names='value')
-        self.colorpickers[clr] = clr_picker
-        return clr_picker
-
-    def create_reset_btn(self):
+   def create_reset_btn(self):
         btn = Button(
                 icon='refresh',
                 tooltip="Reset all colors to default",
@@ -285,7 +342,6 @@ class Legend():
                     )
                 )
         def refresh_colormap(change):
-            print("reseting: ", change)
             self.colormap = np.copy(newc)
             for clr, clr_picker in self.colorpickers.items():
                 clr_picker.observing = False
@@ -312,6 +368,7 @@ class Legend():
         btn.on_click(zoom_to_selection)
         return btn
 
+
     def set_zoom_sel_handler(self, f):
         self.zoom_sel_handler = f
 
@@ -320,15 +377,27 @@ class Legend():
         self.click_zoom_obj = self.click_zoom_observer(self.plot.backend, self.click_zoom_widget, self.czoom_button, self.df)
 
     def tag_tooltip(self, tag):
-        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
-        "(" + tag.address[0] + ", " + tag.address[1] + ")")
+        access_range = f'Access Range: {tag.access[0]}, {tag.access[1]} \n'
+        address_range = f'Address Range: {tag.address[0]}, {tag.address[1]} \n'
+
+        return access_range + address_range
+
 
     def stats_to_str(self, ind, stats):
         total = sum(stats[ind])
-        if total == 0:
-            return ','.join([repr(stat) for stat in stats[ind]])
-        hits = stats[ind][0] + stats[ind][1]
-        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
+        total_string = f'Total: {total}\n\n'
+        read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
+        write_hits = f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
+        cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
+        cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
+        comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
+        comp_write_misses = f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+       
+
+
+        return total_string + read_hits + write_hits + cap_read_misses + cap_write_misses + comp_read_misses + comp_write_misses
+
+
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
