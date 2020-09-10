@@ -574,6 +574,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
 	}
       }
       else if (t->addr_range.second == LIMIT) {
+        half_limit = true;
         if (t->addr_range.first <= addr) {
           t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
           limit_types[0] = t;
