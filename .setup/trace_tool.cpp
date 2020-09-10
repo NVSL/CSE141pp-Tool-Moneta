@@ -44,6 +44,7 @@ constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"/home/jovyan/work/moneta/.output"};
+constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
 const std::string TracePrefix    {"trace_"};
@@ -79,9 +80,6 @@ enum {
   HIT, CAP_MISS, COMP_MISS
 };
 
-// How to record duplicate addr in multiple ranges
-constexpr bool RECORD_ONCE {true};
-
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id for every new tag
@@ -89,6 +87,7 @@ static int curr_id {2}; // Reserved for stack and heap
 
 struct TagData {
   const std::pair<ADDRINT, ADDRINT> addr_range; // Read only
+  std::pair<ADDRINT, ADDRINT> limit_addr_range {ULLONG_MAX, 0}; // For LIMIT, mainly
   const std::string tag_name;
   const int id;
   bool active;                 // R/W
@@ -537,6 +536,14 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
+void record(ADDRINT addr, int acc_type, TagData* tag, ADDRINT rsp) {
+  is_prev_acc = true;
+  prev_acc.addr = addr;
+  prev_acc.type = acc_type;
+  prev_acc.tag  = tag;
+  prev_acc.rsp  = rsp;
+}
+
 VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   if (DEBUG) {
     read_insts++;
@@ -547,25 +554,47 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     is_prev_acc = false;
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
-  bool recorded {false};
+  TagData* limit_types[2] = {0}; // Storing half limit or no limit ranges
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
-    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
-      recorded = true;
-      is_prev_acc = true;
-      prev_acc.tag = t;
-      prev_acc.type = access_type;
-      prev_acc.addr = addr;
-      prev_acc.rsp = rsp;
-      if (RECORD_ONCE) break;
+    if (!t->active) continue;
+    if (t->addr_range.first == LIMIT && t->addr_range.second == LIMIT) { // both limits take precedence
+      record(addr, access_type, t, rsp);
+      t->limit_addr_range.first = std::min(t->limit_addr_range.first, addr);
+      t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
+      return;
+    }
+    bool half_limit = false;
+    if (!limit_types[0]) { // first one seen
+      if (t->addr_range.first == LIMIT) { // Half limits
+        half_limit = true;
+        if (addr <= t->addr_range.second) {
+          t->limit_addr_range.first = std::min(t->limit_addr_range.first, addr);
+          limit_types[0] = t;
+	}
+      }
+      else if (t->addr_range.second == LIMIT) {
+        half_limit = true;
+        if (t->addr_range.first <= addr) {
+          t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
+          limit_types[0] = t;
+	}
+      }
+    }
+    if (!half_limit && !limit_types[1] && t->addr_range.first <= addr && addr <= t->addr_range.second) {
+      limit_types[1] = t; // no limits - lowest precedence
     }
   }
-  if (!recorded && KnobTrackAll) {
-    is_prev_acc = true;
-    prev_acc.tag = 0;
-    prev_acc.type = access_type;
-    prev_acc.addr = addr;
-    prev_acc.rsp = rsp;
+  if (!limit_types[0]) {
+    limit_types[0] = limit_types[1]; // move to beginning, save a variable
+  }
+  if (limit_types[0]) {
+    record(addr, access_type, limit_types[0], rsp);
+    return;
+  }
+
+  if (KnobTrackAll) {
+    record(addr, access_type, 0, rsp);
   }
 }
 
@@ -645,8 +674,8 @@ VOID Fini(INT32 code, VOID *v) {
     TagData* t = x.second;
     if (t->x_range.first != -1 && t->x_range.second != -1) {
       map_file << t->tag_name << "," << t->id // Could overload in TagData struct
-        << "," << t->addr_range.first
-        << "," << t->addr_range.second
+        << "," << (t->addr_range.first == LIMIT ? t->limit_addr_range.first : t->addr_range.first)
+        << "," << (t->addr_range.second == LIMIT ? t->limit_addr_range.second : t->addr_range.second)
         << "," << t->x_range.first 
         << "," << t->x_range.second << "\n";
     }
