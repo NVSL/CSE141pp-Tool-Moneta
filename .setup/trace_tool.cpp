@@ -135,7 +135,6 @@ bool is_last_acc {0};
  */
 
 // Output Columns
-const std::string TagColumn     {"Tag"};
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
 //const std::string CacheAccessColumn {"CacheAccess"};
@@ -147,7 +146,6 @@ class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
   uint8_t accs[chunk_size];
-  int tags[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
@@ -185,7 +183,6 @@ class HandleHdf5 {
     hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
-    tag_d = mem_file.createDataSet(TagColumn.c_str(), H5::PredType::NATIVE_INT, m_dataspace, plist);
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
@@ -198,20 +195,15 @@ class HandleHdf5 {
     if (HDF_DEBUG) {
       std::cerr << "Extending and writing dataset for memory accesses\n";
     }
-    tag_d.extend( total_ds_dims ); // Extend size of dataset
-    acc_d.extend( total_ds_dims );
+    acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
 
-    H5::DataSpace old_dataspace = tag_d.getSpace(); // Get old dataspace
+    H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset); // Select slab in extended dataset
-    tag_d.write( tags, H5::PredType::NATIVE_INT, new_dataspace, old_dataspace); // Write to the extended part
+    acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace); // Write to extended part
 
-    old_dataspace = acc_d.getSpace(); // Rinse and repeat
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
-    acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
-
-    old_dataspace = addr_d.getSpace();
+    old_dataspace = addr_d.getSpace(); // Rinse and repeat
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
   }
@@ -269,12 +261,11 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(int tag, int access, ADDRINT address) {
+  int write_data_mem(int access, ADDRINT address) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
-    tags[mem_ind] = tag; // Write to memory first
-    accs[mem_ind] = access;
+    accs[mem_ind] = access; // Write to memory first
     addrs[mem_ind++] = address;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
@@ -285,7 +276,7 @@ public:
       
     total_ds_dims[0] += chunk_size; // Update size and offset
     offset[0] += chunk_size;
-    /*try { // Should add this error checking somwhere
+    /*try { // Should add this error checking somewhere
     } catch( H5::FileIException error ) {
       error.printError(); // Add custom messages here?
       return -1; // Exit program?
@@ -419,8 +410,8 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
   }
 }
 
-VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
-  char* s = (char *)tag;
+VOID dump_beg_called(VOID * tag_name, ADDRINT begin, ADDRINT end) {
+  char* s = (char *)tag_name;
   std::string str_tag (s);
 
   if (DEBUG) {
@@ -536,11 +527,10 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type, TagData* tag, ADDRINT rsp) {
+void record(ADDRINT addr, int acc_type, ADDRINT rsp) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
-  prev_acc.tag  = tag;
   prev_acc.rsp  = rsp;
 }
 
@@ -554,46 +544,22 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     is_prev_acc = false;
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
-  TagData* limit_types[2] = {0}; // Storing half limit or no limit ranges
+  bool recorded {0};
   for (auto& tag_iter : all_tags) {
     TagData* t = tag_iter.second;
     if (!t->active) continue;
-    if (t->addr_range.first == LIMIT && t->addr_range.second == LIMIT) { // both limits take precedence
-      record(addr, access_type, t, rsp);
+    if ((t->addr_range.first == LIMIT || t->addr_range.first <= addr) && 
+		    (t->addr_range.second == LIMIT || addr <= t->addr_range.second)) {
       t->limit_addr_range.first = std::min(t->limit_addr_range.first, addr);
       t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
-      return;
-    }
-    bool half_limit = false;
-    if (!limit_types[0]) { // first one seen
-      if (t->addr_range.first == LIMIT) { // Half limits
-        half_limit = true;
-        if (addr <= t->addr_range.second) {
-          t->limit_addr_range.first = std::min(t->limit_addr_range.first, addr);
-          limit_types[0] = t;
-	}
-      }
-      else if (t->addr_range.second == LIMIT) {
-        half_limit = true;
-        if (t->addr_range.first <= addr) {
-          t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
-          limit_types[0] = t;
-	}
+      if (!recorded) {
+        record(addr, access_type, rsp);
+	recorded = true;
       }
     }
-    if (!half_limit && !limit_types[1] && t->addr_range.first <= addr && addr <= t->addr_range.second) {
-      limit_types[1] = t; // no limits - lowest precedence
-    }
-  }
-  if (!limit_types[0]) {
-    limit_types[0] = limit_types[1]; // move to beginning, save a variable
-  }
-  if (limit_types[0]) {
-    record(addr, access_type, limit_types[0], rsp);
-    return;
   }
 
-  if (KnobTrackAll) {
+  if (!recorded && KnobTrackAll) {
     record(addr, access_type, 0, rsp);
   }
 }
@@ -739,6 +705,7 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
 				IARG_END);
 		RTN_Close(rtn);
 	}
