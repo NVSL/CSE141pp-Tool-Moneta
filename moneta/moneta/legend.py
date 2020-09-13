@@ -1,7 +1,7 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, INDEX_LABEL
 from moneta.utils import stats_percent
 from enum import Enum
 import numpy as np
@@ -138,19 +138,15 @@ class Legend():
         return memoryaccesses
 
     def get_tags(self):
-        max_id = max(self.model.curr_trace.tags, key=lambda x: x.id_).id_
-        df = self.model.curr_trace.df
-        stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
-        
         tag_rows = [HBox([
-            self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
-            self.create_button(tag, stats)],
+            self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, -1, ext=[tag.access[0], tag.access[1]]),
+            self.create_button(tag)],
             layout=Layout(height='28px', overflow_y = 'hidden'))
         for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
-                SelectionGroup.data_structures, max_id+1,
+                SelectionGroup.data_structures, 7+1,
                 [checkbox.widget for checkbox in self.checkboxes if checkbox.group == SelectionGroup.data_structures]),
             ], layout=Layout(height='28px'))
 
@@ -191,11 +187,12 @@ class Legend():
         btn.on_click(refresh_colormap)
         return btn
 
-    def create_button(self, tag, stats):
-        stats_str = self.stats_to_str(tag.id_, stats)
+    def create_button(self, tag):
+        df = self.model.curr_trace.df
+        stats = df[int(tag.access[0]):int(tag.access[1])+1].count(binby=[df.Access], limits=[1,7], shape=[6])
         btn = Button(
                 icon='search-plus',
-                tooltip=self.tag_tooltip(tag) + '\n' + stats_str,
+                tooltip=self.tag_tooltip(tag) + '\n' + self.stats_to_str(stats),
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
                                 borders='none', align_items='center'
@@ -220,22 +217,22 @@ class Legend():
         return access_range + address_range
 
 
-    def stats_to_str(self, ind, stats):
-        total = sum(stats[ind])
+    def stats_to_str(self, stats):
+        total = sum(stats)
         total_string = f'Total: {total}\n\n'
-        read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
-        write_hits = f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
-        cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
-        cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
-        comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
-        comp_write_misses = f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+        read_hits = f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
+        write_hits = f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
+        cap_read_misses = f'Capacity Read Misses: {stats[2]} ({stats_percent(stats[2],total)}) \n'
+        cap_write_misses = f'Capacity Write Misses: {stats[3]} ({stats_percent(stats[3],total)}) \n'
+        comp_read_misses = f'Compulsory Read Hits: {stats[4]} ({stats_percent(stats[4],total)}) \n'
+        comp_write_misses = f'Compulsort Write Hits: {stats[5]} ({stats_percent(stats[5],total)}) \n'
        
 
 
         return total_string + read_hits + write_hits + cap_read_misses + cap_write_misses + comp_read_misses + comp_write_misses
 
-    def create_checkbox(self, desc, layout, group, selections):
-        self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
+    def create_checkbox(self, desc, layout, group, selections, ext=[]):
+        self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change, ext=ext))
         return self.checkboxes[-1].widget
 
     def create_parent_checkbox(self, desc, layout, group, selections, child_checkboxes):
@@ -261,21 +258,29 @@ class Legend():
 
     def handle_checkbox_change(self, _): # TODO - move constants out
         selections = set()
+        tag_selections = set()
         for checkbox in self.checkboxes:
             if checkbox.group == SelectionGroup.data_structures:
-                if checkbox.widget.value == False:
-                    selections.add('(Tag != %s)' % (checkbox.selections))
+                if checkbox.widget.value == True:
+                    #selections.add('(Tag != %s)' % (checkbox.selections))
+                    tag_selections.add('((%s >= %s) & (%s <= %s))' % ('Access_Number', checkbox.ext[0], 'Access_Number', checkbox.ext[1]))
             else:
                 for selection in checkbox.selections:
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
-        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        tag_str = '(Access_Number < 0)' if len(tag_selections) == 0 else '|'.join(tag_selections)
+        c_str = '&'.join(selections)
+        final_str = tag_str
+        if len(c_str) > 0:
+            final_str = '(' + tag_str + ')&' + c_str
+        self.model.curr_trace.df.select(final_str, mode='replace') # replace not necessary for correctness, but maybe perf?
 
 class CheckBox():
-    def __init__(self, desc, layout, group, selections, handle_fun):
+    def __init__(self, desc, layout, group, selections, handle_fun, ext=[]):
         self.widget = Checkbox(description=desc, layout=layout,
                                 value=True, disabled=False, indent=False)
         self.widget.observe(handle_fun, names='value')
         self.widget.manual_change = False
         self.group = group
         self.selections = selections
+        self.ext = ext
