@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <assert.h>
+#include <regex>
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
@@ -115,6 +116,7 @@ pintool::unordered_map<std::string, TagData*> all_tags;
 
 bool start_time_checked {0};
 unsigned long long start_time {0};
+uint32_t cpu_freq;
 
 
 ADDRINT lower_stack {ULLONG_MAX};
@@ -157,7 +159,7 @@ const std::string TimeColumn    {"Time"};
 class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
-  unsigned long long times[chunk_size];
+  float times[chunk_size];
   uint8_t accs[chunk_size];
   int tags[chunk_size];
 
@@ -201,7 +203,7 @@ class HandleHdf5 {
     tag_d = mem_file.createDataSet(TagColumn.c_str(), H5::PredType::NATIVE_INT, m_dataspace, plist);
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
-    time_d = mem_file.createDataSet(TimeColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+    time_d = mem_file.createDataSet(TimeColumn.c_str(), H5::PredType::NATIVE_FLOAT, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
     //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
@@ -232,7 +234,7 @@ class HandleHdf5 {
 
     old_dataspace = time_d.getSpace();
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
-    time_d.write( times, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+    time_d.write( times, H5::PredType::NATIVE_FLOAT, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -288,7 +290,7 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(int tag, int access, ADDRINT address, unsigned long long time) {
+  int write_data_mem(int tag, int access, ADDRINT address, float time) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
@@ -405,6 +407,37 @@ VOID flush_cache() {
   accesses.clear();
 }
 
+// Taken and modified from: https://gist.github.com/stevedoyle/1319053
+uint32_t cpufreq()
+{
+    uint32_t cpuFreq = 0;
+
+    // CPU frequency is stored in /proc/cpuinfo in lines beginning with "cpu MHz"
+    std::regex regexp("^cpu MHz\\s*:\\s*(\\d+)");
+
+    std::ifstream ifs("/proc/cpuinfo");
+    if(ifs.is_open())
+    {	
+	std::string line;
+
+	while(ifs.good())
+	{
+	    std::getline(ifs, line);
+	    std::smatch m;
+	    std::regex_search(line, m, regexp);
+	    if(m.empty())
+		continue;
+
+	    // Match found - extract frequency
+	    cpuFreq = std::atol(m.str(1).c_str())*1000000; // MHz to Hz
+	    break;
+	}
+    }
+    
+    ifs.close();
+
+    return cpuFreq;
+}
 
 VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack, unsigned long long time){
   int id = 0;
@@ -437,7 +470,7 @@ VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack, unsigned 
     // t->x_range.second = curr_lines;
     t->x_range.second = time;
   }
-  hdf_handler->write_data_mem(id, op, addr, time);
+  hdf_handler->write_data_mem(id, op, addr, 1.0*time/cpu_freq);
   curr_lines++; // Afterward, for 0-based indexing
   
   if(!is_last_acc && curr_lines+1 >= max_lines) { // If reached file size limit, exit
@@ -666,14 +699,14 @@ VOID Fini(INT32 code, VOID *v) {
   if (first_acc_stack != -1 && last_acc_stack != -1) {
     map_file << "Stack,0," << lower_stack 
       << "," << upper_stack 
-      << "," << first_acc_stack 
-      << "," << last_acc_stack << "\n";
+      << "," << 1.0*first_acc_stack/cpu_freq 
+      << "," << 1.0*last_acc_stack/cpu_freq << "\n";
   }
   if (first_acc_heap != -1 && last_acc_heap != -1) {
     map_file << "Heap,1," << lower_heap 
       << "," << upper_heap 
-      << "," << first_acc_heap 
-      << "," << last_acc_heap << "\n";
+      << "," << 1.0*first_acc_heap/cpu_freq 
+      << "," << 1.0*last_acc_heap/cpu_freq << "\n";
   }
   std::vector<std::pair<std::string, TagData*>> vec_tags (all_tags.begin(), all_tags.end());
   std::sort(vec_tags.begin(), vec_tags.end(), 
@@ -686,8 +719,8 @@ VOID Fini(INT32 code, VOID *v) {
       map_file << t->tag_name << "," << t->id // Could overload in TagData struct
         << "," << t->addr_range.first
         << "," << t->addr_range.second
-        << "," << t->x_range.first 
-        << "," << t->x_range.second << "\n";
+        << "," << 1.0*t->x_range.first/cpu_freq 
+        << "," << 1.0*t->x_range.second/cpu_freq << "\n";
     }
   }
 
@@ -829,6 +862,7 @@ int main(int argc, char *argv[]) {
   if (DEBUG) {
     std::cerr << "Starting now\n";
   }
+  cpu_freq = cpufreq();
   PIN_StartProgram();
   
   return 0;
