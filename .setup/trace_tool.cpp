@@ -120,7 +120,6 @@ int first_acc_heap  {-1};
 struct Access {
   TagData* tag;
   int type;
-  ADDRINT rsp;
   ADDRINT addr;
 } prev_acc;
 
@@ -536,12 +535,11 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type, TagData* tag, ADDRINT rsp) {
+void record(ADDRINT addr, int acc_type, TagData* tag) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
   prev_acc.tag  = tag;
-  prev_acc.rsp  = rsp;
 }
 
 VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
@@ -550,7 +548,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   }
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
-    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= std::min(prev_acc.rsp,rsp));
+    write_to_memfile(prev_acc.tag, prev_acc.type, prev_acc.addr, prev_acc.addr >= min_rsp);
     is_prev_acc = false;
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
@@ -559,7 +557,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     TagData* t = tag_iter.second;
     if (!t->active) continue;
     if (t->addr_range.first == LIMIT && t->addr_range.second == LIMIT) { // both limits take precedence
-      record(addr, access_type, t, rsp);
+      record(addr, access_type, t);
       t->limit_addr_range.first = std::min(t->limit_addr_range.first, addr);
       t->limit_addr_range.second = std::max(t->limit_addr_range.second, addr);
       return;
@@ -589,12 +587,12 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     limit_types[0] = limit_types[1]; // move to beginning, save a variable
   }
   if (limit_types[0]) {
-    record(addr, access_type, limit_types[0], rsp);
+    record(addr, access_type, limit_types[0]);
     return;
   }
 
   if (KnobTrackAll) {
-    record(addr, access_type, 0, rsp);
+    record(addr, access_type, 0);
   }
 }
 
