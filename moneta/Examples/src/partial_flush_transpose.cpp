@@ -1,4 +1,4 @@
-#include "pin_macros.h"
+#include "../../pin_tags.h"
 #include <random>
 #include <vector>
 #include <iostream>

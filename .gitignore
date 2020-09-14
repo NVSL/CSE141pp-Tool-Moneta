@@ -9,3 +9,11 @@ moneta/.output/*
 
 # Exclusions
 !.gitkeep
+
+# Swap
+*.swp
+
+# Package egg
+*.egg-info
+
+.DS_Store
