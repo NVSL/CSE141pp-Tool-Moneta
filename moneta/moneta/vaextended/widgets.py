@@ -22,6 +22,7 @@ class PlotTemplate(v.VuetifyTemplate):
     button_text = Unicode('menu').tag(sync=True)
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     edit_title = Bool(False).tag(sync=True)
+    show_legend = Bool(True).tag(sync=True)
     template = Unicode('''
 
 <v-app>
@@ -44,11 +45,29 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-spacer></v-spacer>
       <toolbar />
       <v-spacer></v-spacer>
+      <!--<v-btn icon @click="show_legend = !show_legend;">
+        <v-icon>settings</v-icon>-->
+      <legend-control/>
+     </v-btn>
     </v-app-bar>
     <v-main>
-    <v-container>
-          <main-widget/>
-          </v-container>
+      <v-container>
+        <main-widget/>
+        <v-navigation-drawer
+          v-model="show_legend"
+          :temporary="false"
+          :clipped="clipped"
+          permanent
+          style='top: 50px'
+          right
+          absolute
+          overflow
+          height='auto'
+          color="rgba(255,255,255,50)"
+        >
+          <main-legend/>
+        </v-navigation-drawer>
+      </v-container>
     </v-main>
 </v-app>
 ''').tag(sync=True)

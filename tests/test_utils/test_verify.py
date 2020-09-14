@@ -45,9 +45,35 @@ class TestVerifyWidgetValues:
         mock_widget_inputs['m_lines'] = output_lines
         assert u.verify_input(mock_widget_inputs) == (e0 and e1 and e2)
 
-    def test_cwd_path(self, mock_widget_inputs):
+    def test_incorrect_cwd_path(self, mock_widget_inputs):
         mock_widget_inputs['cwd_path'] = INCORRECT_VAL
         assert u.verify_input(mock_widget_inputs) == False
+
+    @pytest.mark.parametrize("cwd_path, expected",
+            [
+                (".", "."),
+                ("..","~/work"),
+                ("/", "/"),
+                ("~","~"),
+                ("~/work/moneta","."),
+                ("/home/jovyan/work", "~/work"),
+                ("/home/jovyan/work/.setup", "~/work/.setup"),
+                ("/home/jovyan", "~"),
+                ("~/work/../", "~"),
+                ("~/work/../../", "/home"),
+                ("~/work/../work/../work", "~/work"),
+                ("Examples/src", "Examples/src"),
+                ("Examples/", "Examples"),
+                ("~/work/moneta/Examples", "Examples"),
+                ("Examples/../../moneta/Examples/src", "Examples/src"),
+                ("/home/jovyan/work/moneta/Examples/../../moneta/Examples/src", "Examples/src"),
+                ("../../", "~"),
+                ("    ../../      ", "~"),
+            ])
+    def test_cwd_path_parsing(self, mock_widget_inputs, cwd_path, expected):
+        mock_widget_inputs['cwd_path'] = cwd_path
+        u.verify_input(mock_widget_inputs)
+        assert mock_widget_inputs['display_path'] == expected
 
     def test_executable_file(self, mock_widget_inputs):
         mock_widget_inputs['e_file'] = INCORRECT_VAL # File not found

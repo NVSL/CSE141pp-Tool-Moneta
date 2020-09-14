@@ -1,6 +1,8 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
+import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from moneta.utils import stats_percent
 from enum import Enum
 import numpy as np
 
@@ -12,7 +14,8 @@ class SelectionGroup(Enum):
     hit_miss_write = 4
 
 class Legend():
-    def __init__(self, tags, df):
+    def __init__(self, model):
+        self.model = model
         self.wid_150 = Layout(width='110px')
         self.wid_180 = Layout(width='125px')
         self.wid_15 = Layout(width='15px')
@@ -21,16 +24,71 @@ class Legend():
         self.mar_5 = Layout(width='5px')
         self.checkboxes = []
         self.colorpickers = {}
-        self.df = df
         self.colormap = np.copy(newc)
+
         self.widgets = VBox([], layout=Layout(padding='0px', border='1px solid black', width='300px'))
-        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses(tags))
-        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags(tags))
+        self.add_accordion(LEGEND_MEM_ACCESS_TITLE, self.get_memoryaccesses())
+        self.add_accordion(LEGEND_TAGS_TITLE, self.get_tags())
+
+
+        self.ignore_changes = False
+        def click():
+            self.ignore_changes = True
+            if self.control.status == True:
+                self.collapse_all()
+                self.control.children[0].children=['keyboard_arrow_down']
+            else:
+                self.expand_all()
+                self.control.children[0].children=['keyboard_arrow_up']
+            self.ignore_changes = False
+        
+            self.control.status = not self.control.status
+
+        self.control = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['keyboard_arrow_up'])
+                                ])
+        self.control.status = True
+        self.control.on_event('click', lambda *ignore: click())
+        self.control_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                'name': 'activator',
+                                'variable': 'tooltip',
+                                'children': self.control
+                            }], children=['Legend'])
+
+    def collapse_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = None
+    def expand_all(self):
+        for accordion in self.widgets.children:
+            accordion.selected_index = 0
+
 
     def add_accordion(self, name, contents):
         accordion = Accordion([contents])
         accordion.set_title(0, name)
         self.widgets.children = tuple(list(self.widgets.children) + [accordion])
+        accordion.observe(lambda *ignore: check_accordion_status())
+
+        def check_accordion_status():
+            if self.ignore_changes:
+                return
+
+            all_open = True
+            all_closed = True
+
+            for acc in self.widgets.children:
+                if acc.selected_index == None:
+                    all_open = False
+                else:
+                    all_closed = False
+
+            if all_open:
+                self.control.status = True
+                self.control.children[0].children=['keyboard_arrow_up']
+            elif all_closed:
+                self.control.status = False
+                self.control.children[0].children=['keyboard_arrow_down']
+
 
     def hit_miss_row(self, desc, primary_clr, sec_clr, group, read_selection, write_selection):
         read = self.create_checkbox('', self.wid_15, SelectionGroup.hit_miss_read, [read_selection])
@@ -65,7 +123,7 @@ class Legend():
             Label(value='W', layout=self.wid_30)
         ])
 
-    def get_memoryaccesses(self, tags):
+    def get_memoryaccesses(self):
         hits_row = self.hit_miss_row("Hits", 1, 2, SelectionGroup.hit_miss, READ_HIT, WRITE_HIT)
         cap_misses_row = self.hit_miss_row("Cap Misses", 4, 5, SelectionGroup.hit_miss, READ_MISS, WRITE_MISS)
         comp_misses_row = self.hit_miss_row("Comp Misses", 6, 8, SelectionGroup.hit_miss, COMP_R_MISS, COMP_W_MISS)
@@ -79,15 +137,16 @@ class Legend():
             self.create_reset_btn()],layout=Layout(padding='10px', overflow_x = 'auto'))
         return memoryaccesses
 
-    def get_tags(self, tags):
-        max_id = max(tags, key=lambda x: x.id_).id_
-        stats = self.df.count(binby=[self.df.Tag, self.df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
+    def get_tags(self):
+        max_id = max(self.model.curr_trace.tags, key=lambda x: x.id_).id_
+        df = self.model.curr_trace.df
+        stats = df.count(binby=[df.Tag, df.Access], limits=[[0,max_id+1], [1,7]], shape=[max_id+1,6])
         
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
-            layout=Layout(min_height='28px', overflow_y="hidden"))
-        for tag in tags]
+            layout=Layout(min_height='28px', overflow_y='hidden'))
+        for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
@@ -136,7 +195,7 @@ class Legend():
         stats_str = self.stats_to_str(tag.id_, stats)
         btn = Button(
                 icon='search-plus',
-                tooltip=self.tag_tooltip(tag) + stats_str,
+                tooltip=self.tag_tooltip(tag) + '\n' + stats_str,
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
                                 borders='none', align_items='center'
@@ -155,15 +214,25 @@ class Legend():
         self.plot = plot
 
     def tag_tooltip(self, tag):
-        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
-        "(" + tag.address[0] + ", " + tag.address[1] + ")")
+        access_range = f'Access Range: {tag.access[0]}, {tag.access[1]} \n'
+        address_range = f'Address Range: {tag.address[0]}, {tag.address[1]} \n'
+
+        return access_range + address_range
+
 
     def stats_to_str(self, ind, stats):
         total = sum(stats[ind])
-        if total == 0:
-            return ','.join([repr(stat) for stat in stats[ind]])
-        hits = stats[ind][0] + stats[ind][1]
-        return ','.join([repr(stat) for stat in stats[ind]]) + ",\n" + repr(hits/total) + "," + repr((total-hits)/total)
+        total_string = f'Total: {total}\n\n'
+        read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
+        write_hits = f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
+        cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
+        cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
+        comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
+        comp_write_misses = f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+       
+
+
+        return total_string + read_hits + write_hits + cap_read_misses + cap_write_misses + comp_read_misses + comp_write_misses
 
     def create_checkbox(self, desc, layout, group, selections):
         self.checkboxes.append(CheckBox(desc, layout, group, selections, self.handle_checkbox_change))
@@ -200,7 +269,7 @@ class Legend():
                 for selection in checkbox.selections:
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
-        self.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
 
 class CheckBox():
     def __init__(self, desc, layout, group, selections, handle_fun):

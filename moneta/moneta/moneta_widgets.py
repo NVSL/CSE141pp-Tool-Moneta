@@ -1,16 +1,14 @@
-from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox
+from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, Label
 from moneta.utils import (
     int_text_factory as int_field, 
     text_factory as text_field,
     button_factory as button,
     load_cwd_file,
-    parse_cwd,
     parse_exec_input
 )
 import moneta.settings as settings
 import logging
 import subprocess
-import os
 log = logging.getLogger(__name__)
 
 import ipyvuetify as v
@@ -45,7 +43,33 @@ class MonetaWidgets():
 
     def switch_handler(self, switch, _, new):
         switch.label = settings.FULL_TRACE_DESC if new else settings.NORMAL_TRACE_DESC
-        
+
+        self.total_stat_title = Label(
+                           value='Total Stats:',
+                           layout=settings.WIDGET_LAYOUT
+                           )
+        self.total_hits = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_stats = VBox(
+                           [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
+                           layout=Layout(width='500px')
+                           )
+
+        self.curr_stat_title = Label(
+                           value='Current View Stats:',
+                           layout=settings.WIDGET_LAYOUT
+                           )
+        self.curr_hits = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_stats = VBox(
+                          [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
+                          layout=Layout(width='500px')
+                          )
+
+        self.stats = HBox([self.total_stats, self.curr_stats])
+
     def get_widget_values(self):
         e_file, e_args = parse_exec_input(self.ex.value)
 
@@ -53,7 +77,7 @@ class MonetaWidgets():
             'c_lines': self.cl.value,
             'c_block': self.cb.value,
             'm_lines': self.ml.value,
-            'cwd_path': os.path.expanduser(parse_cwd(self.cwd.value)),
+            'cwd_path': self.cwd.value,
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,
