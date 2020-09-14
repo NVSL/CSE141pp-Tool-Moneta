@@ -152,7 +152,7 @@ class Legend():
             self.create_parent_checkbox('All', self.wid_150, 
                 SelectionGroup.data_structures, max_id+1,
                 [checkbox.widget for checkbox in self.checkboxes if checkbox.group == SelectionGroup.data_structures]),
-            ], layout=Layout(min_height='28px', overflow_y="hidden"))
+            ], layout=Layout(min_height='28px', overflow_y='hidden'))
 
         accordion = VBox(
             [all_ds_row] + tag_rows,
