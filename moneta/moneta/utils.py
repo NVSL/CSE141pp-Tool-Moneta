@@ -96,7 +96,7 @@ def get_curr_stats(plot):
     # Inner df returns an expression, doesn't actually create the new dataframe
     df = df[df[f'{x_min} & {x_max} & {y_min} & {y_max}']]
     
-    # Limit min/max is min/max value of type of access, shape is number of types of access
+    # Limit min/max is min/max value of Access enum, shape is number of types of access
     stats = df.count(binby=['Access'], limits=[1,7], shape=6)
     
     hit_count = stats[READ_HIT - 1] + stats[WRITE_HIT - 1]
