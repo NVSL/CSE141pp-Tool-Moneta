@@ -83,26 +83,25 @@ def update_cwd_file(cwd_history):
         for path in cwd_history:
             history_file.write(path + "\n")
 
-def get_curr_view(plot, access_type):
-    df = plot.dataset
-    df = df[df['Access'] == access_type]
-    curr_view = df[df[INDEX_LABEL] >= int(plot.limits[0][0])]
-    curr_view = curr_view[curr_view[INDEX_LABEL] <= int(plot.limits[0][1])]
-    curr_view = curr_view[curr_view[ADDRESS_LABEL] >= int(plot.limits[1][0])]
-    curr_view = curr_view[curr_view[ADDRESS_LABEL] <= int(plot.limits[1][1])]
-    return curr_view
 
 def get_curr_stats(plot):
-    curr_read_hits = get_curr_view(plot, READ_HIT)
-    curr_write_hits = get_curr_view(plot, WRITE_HIT)
-    curr_read_cap_misses = get_curr_view(plot, READ_MISS)
-    curr_write_cap_misses = get_curr_view(plot, WRITE_MISS)
-    curr_read_comp_misses = get_curr_view(plot, COMP_R_MISS)
-    curr_write_comp_misses = get_curr_view(plot, COMP_W_MISS)
-
-    hit_count = curr_read_hits.count() + curr_write_hits.count()
-    cap_miss_count = curr_read_cap_misses.count() + curr_write_cap_misses.count()
-    comp_miss_count = curr_read_comp_misses.count() + curr_write_comp_misses.count()
+    
+    df = plot.dataset
+    
+    x_min = f'({INDEX_LABEL} >= {int(plot.limits[0][0])})'
+    x_max = f'({INDEX_LABEL} <= {int(plot.limits[0][1])})'
+    y_min = f'({ADDRESS_LABEL} >= {int(plot.limits[1][0])})'
+    y_max = f'({ADDRESS_LABEL} <= {int(plot.limits[1][1])})'
+    
+    # Inner df returns an expression, doesn't actually create the new dataframe
+    df = df[df[f'{x_min} & {x_max} & {y_min} & {y_max}']]
+    
+    # Limit min/max is min/max value of type of access, shape is number of types of access
+    stats = df.count(binby=['Access'], limits=[1,7], shape=6)
+    
+    hit_count = stats[READ_HIT - 1] + stats[WRITE_HIT - 1]
+    cap_miss_count = stats[READ_MISS - 1] + stats[WRITE_MISS - 1]
+    comp_miss_count = stats[COMP_R_MISS - 1] + stats[COMP_W_MISS - 1]
     total_count = hit_count + cap_miss_count + comp_miss_count
 
     return total_count, hit_count, cap_miss_count, comp_miss_count

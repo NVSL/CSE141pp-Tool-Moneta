@@ -81,7 +81,7 @@ class View():
                  colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
                  backend='moneta_backend', type='vaextended', legend=legend,
                  default_title=curr_trace.name, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size,
-                 update_stats = lambda *ignore: False #update_legend_view_stats(legend.plot_stats, plot, False)
+                 update_stats = lambda *ignore: update_legend_view_stats(legend.plot_stats, plot, False)
                  )
 
         update_legend_view_stats(legend.plot_stats, plot, True)

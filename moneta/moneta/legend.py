@@ -229,12 +229,12 @@ class Legend():
     def hover_stats_to_str(self, ind, stats):
         total = sum(stats[ind])
         total_string = f'Total: {total}\n\n'
-        read_hits = f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
-        write_hits = f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
-        cap_read_misses = f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
-        cap_write_misses = f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
-        comp_read_misses = f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
-        comp_write_misses = f'Compulsory Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+        read_hits = f'Read Hits: {stats[ind][READ_HIT - 1]} ({stats_percent(stats[ind][READ_HIT - 1],total)}) \n'
+        write_hits = f'Write Hits: {stats[ind][WRITE_HIT - 1]} ({stats_percent(stats[ind][WRITE_HIT - 1],total)}) \n'
+        cap_read_misses = f'Capacity Read Misses: {stats[ind][READ_MISS - 1]} ({stats_percent(stats[ind][READ_MISS - 1],total)}) \n'
+        cap_write_misses = f'Capacity Write Misses: {stats[ind][WRITE_MISS - 1]} ({stats_percent(stats[ind][WRITE_MISS - 1],total)}) \n'
+        comp_read_misses = f'Compulsory Read Hits: {stats[ind][COMP_R_MISS - 1]} ({stats_percent(stats[ind][COMP_R_MISS - 1],total)}) \n'
+        comp_write_misses = f'Compulsory Write Hits: {stats[ind][COMP_W_MISS - 1]} ({stats_percent(stats[ind][COMP_W_MISS - 1],total)}) \n'
        
 
 
