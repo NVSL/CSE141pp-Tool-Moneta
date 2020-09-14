@@ -157,7 +157,7 @@ class Legend():
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
-            layout=Layout(height='28px', overflow_y = 'hidden'))
+            layout=Layout(height='28px', overflow_y ='hidden'))
         for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
@@ -225,7 +225,7 @@ class Legend():
 
         self.czoom_button.on_click(czoom_zoom)
 
-
+        czoom_layout = widgets.Layout(display='flex',width='400px',overflow_y='auto',padding='10px')
         accordion = VBox([self.click_zoom_widget] + [czoom_xaxis] + [czoom_yaxis] + [self.czoom_button],
                          layout=Layout(overflow_y='auto', padding='10px'))
         return accordion
@@ -315,7 +315,7 @@ class Legend():
                 #plt.scatter(index,  address, c=colors, s=0.5)
                 #access_number = dataset.evaluate(dataset.Access_Number, selection = True)
                 #print(access_number)
-                mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, s=0.5)
+                mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, c=colors, s=0.5)
                 mpl_plt.title('Mini Zoom')
                 mpl_plt.xlabel('Bytes')
                 mpl_plt.ylabel('Access Number')
