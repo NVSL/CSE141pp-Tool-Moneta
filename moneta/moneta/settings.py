@@ -51,7 +51,7 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 from matplotlib.colors import ListedColormap
-from ipywidgets import Layout
+from ipywidgets import Layout, HBox, VBox, Layout
 import numpy as np
 import os
 
@@ -103,6 +103,36 @@ TAG_NAME = "Tag_Name"
 TAG_ID = "Tag_Value"
 
 # Legend variables
-LEGEND_MEM_ACCESS_TITLE = 'Legend'
+LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
 LEGEND_CLICK_ZOOM = 'Click Zoom'
+
+# Legend grid box
+vdiv = HBox([
+    VBox(layout=Layout(
+        padding='0',
+        border='1px solid black',
+        width='0',
+        height='50px', margin='0'))
+    ], layout=Layout(justify_content='center'))
+lvdiv = HBox([
+    VBox(layout=Layout(
+        padding='0',
+        border='1px solid #cccbc8',
+        width='0',
+        height='50px', margin='0'))
+            ], layout=Layout(justify_content='center'))
+hdiv = VBox([
+    HBox(layout=Layout(
+        padding='0',
+        border='1px solid black',
+        width='70px',
+        height='0'))
+    ], layout=Layout(justify_content='center'))
+lhdiv = VBox([
+    HBox(layout=Layout(
+        padding='0',
+        border='1px solid #cccbc8',
+        width='70px',
+        height='0'))
+            ], layout=Layout(justify_content='center'))

@@ -10,7 +10,7 @@ from moneta.utils import (
     stats_comp_miss_string
 )
 from moneta.moneta_widgets import MonetaWidgets
-from moneta.legend import Legend
+from moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")

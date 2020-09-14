@@ -89,13 +89,9 @@ class BqplotBackend(BackendBase):
         self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
 
-        margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 0}
-        self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
-        self.figure.layout.width = '100%'
-        self.figure.layout.max_height = '800px'
+        self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales)
+        self.figure.layout.width = '70%'
         self.figure.layout.min_height = '800px'
-        self.figure.layout.max_width = '500px'
-        self.figure.layout.min_width = '800px'
         plt.figure(fig=self.figure)
         #self.figure.padding_y = 0
         x = np.arange(0, 10)
@@ -121,7 +117,7 @@ class BqplotBackend(BackendBase):
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
-        self.widget = widgets.VBox(children=[self.figure])
+        self.widget = widgets.VBox([self.figure])
         self.create_tools()
 
     @debounced(0.2, method=True)

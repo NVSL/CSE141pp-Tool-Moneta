@@ -42,11 +42,10 @@ class PlotTemplate(v.VuetifyTemplate):
         @keydown="function (e) {if (e.keyCode == 13 || e.keyCode == 27) \
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
-      <v-spacer></v-spacer>
+      <v-spacer />
       <toolbar />
-      <v-spacer></v-spacer>
-      <!--<v-btn icon @click="show_legend = !show_legend;">
-        <v-icon>settings</v-icon>-->
+      <v-spacer />
+      Legend
       <legend-control/>
      </v-btn>
     </v-app-bar>
@@ -61,9 +60,8 @@ class PlotTemplate(v.VuetifyTemplate):
         absolute
         height='auto'
       >
-         <main-legend/>
-        </v-navigation-drawer>
-      </v-container>
+       <main-legend/>
+      </v-navigation-drawer>
     </v-main>
 </v-app>
 ''').tag(sync=True)
