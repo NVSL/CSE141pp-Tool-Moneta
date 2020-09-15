@@ -149,18 +149,18 @@ class Legend():
         tag_rows = [HBox([
             self.create_checkbox(tag.name, self.wid_150, SelectionGroup.data_structures, tag.id_),
             self.create_button(tag, stats)],
-            layout=Layout(height='28px', overflow_y = 'hidden'))
+            layout=Layout(min_height='28px', overflow_y='hidden'))
         for tag in self.model.curr_trace.tags]
         
         all_ds_row = HBox([
             self.create_parent_checkbox('All', self.wid_150, 
                 SelectionGroup.data_structures, max_id+1,
                 [checkbox.widget for checkbox in self.checkboxes if checkbox.group == SelectionGroup.data_structures]),
-            ], layout=Layout(height='28px'))
+            ], layout=Layout(min_height='28px', overflow_y='hidden'))
 
         accordion = VBox(
             [all_ds_row] + tag_rows,
-            layout=Layout(max_height='210px', overflow_y='auto', padding='10px'))
+            layout=Layout(max_height='210px', padding='10px'))
         return accordion
 
 
