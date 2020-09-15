@@ -42,7 +42,7 @@ class Accesses():
                 self.hit_check, self.capmiss_check, self.compmiss_check]
 
         def colbox(check):
-            return HBox([check.widget], layout=Layout(align_items="center", overflow="hidden"))
+            return HBox([check.widget], layout=Layout(align_items="center", overflow="hidden", justify_content="center"))
 
         def clr_picker(clr, cache=False):
             if cache:
@@ -67,8 +67,8 @@ class Accesses():
         # Wrap parent boxes in ipywidget
         alls = colbox(self.all_check)
 
-        read = HBox([self.read_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden"))
-        write = HBox([self.write_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden"))
+        read = HBox([self.read_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden", justify_content="center"))
+        write = HBox([self.write_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden", justify_content="center"))
 
         hits = colbox(self.hit_check)
         capmisses = colbox(self.capmiss_check)
@@ -82,7 +82,7 @@ class Accesses():
             capmisses, vdiv, primbox(read_capmiss), lvdiv, primbox(write_capmiss),
             hdiv, hdiv, lhdiv, lhdiv, lhdiv,
             compmisses, vdiv, primbox(read_compmiss), lvdiv, primbox(write_compmiss)],
-            layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="70px 5px 70px 5px 70px"))], layout=Layout(padding="0 0 0 14px"))
+            layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="100px 5px 100px 5px 100px"))], layout=Layout(padding="0 0 0 14px"))
 
         cache_icon = v.Icon(children=['fa-database'], v_on='tooltip.on')
         cache_icon_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': cache_icon}], children=["Cache"])
