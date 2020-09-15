@@ -62,7 +62,7 @@ class PlotBase(widgets.Widget):
         # with self.output:
         if 1:
             self._cleanups = []
-
+    
             self.progress = widgets.FloatProgress(value=0.0, min=0.0, max=1.0, step=0.01)
             self.progress.layout.width = "95%"
             self.progress.layout.max_width = '500px'
@@ -71,6 +71,7 @@ class PlotBase(widgets.Widget):
             self.toolbar = v.Row(pa_1=True, children=[])
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
+            print(test)
             if 'legend' in kwargs:
                 self.legend = kwargs.get('legend')
             if 'x_label' in kwargs:
@@ -143,7 +144,6 @@ class PlotBase(widgets.Widget):
         display(self.widget)
 
     def add_to_toolbar(self, widget):
-        #print("in toolbar adding")
         self.toolbar.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
         self.toolbar.send_state('children')
