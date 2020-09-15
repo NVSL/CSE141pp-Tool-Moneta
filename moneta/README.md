@@ -15,6 +15,9 @@ Instructions on how to run and use Moneta
  8888/tcp -> 0.0.0.0:####
  ```
 
+ - When running Moneta, you will have the option to specify how many memory accesses to collect (via Lines of Output). **Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time.
+
+
 ## Tagging Programs
 
 `pin_tags.h` is the header file containing the functions to tag memory traces for your program. By default, it is located in the `~/work/moneta` directory, but you are free to copy this file to any directory that you find convenient. The functions in this file will indicate to Pin when it should start and stop writing memory accesses to file, and which memory address ranges it should trace.
@@ -105,7 +108,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
 
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. Note that larger numbers will take longer to run. (Default: 10,000,000)
+**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. (Default: 10,000,000)
 
 **Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
 
