@@ -28,7 +28,7 @@ class MonetaWidgets():
         self.to = text_field(settings.TRACE_NAME_DEF, settings.TRACE_NAME_DESC)
 
         self.vh = v.Html(tag='style', children=[".v-input__slot .v-label{color: black!important}"])
-        self.ft = v.Switch(label=settings.NORMAL_TRACE_DESC, value=False, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
+        self.ft = v.Switch(v_model=False, label=settings.NORMAL_TRACE_DESC, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
         self.ft.on_event("change", self.switch_handler)
         self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.vh], layout=Layout(width='100%'))
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
@@ -42,10 +42,36 @@ class MonetaWidgets():
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
 
-    def switch_handler(self, switch, *_):
-        switch.value = not switch.value
-        switch.label = settings.FULL_TRACE_DESC if switch.value else settings.NORMAL_TRACE_DESC
-        
+    def switch_handler(self, switch, _, new):
+        switch.label = settings.FULL_TRACE_DESC if new else settings.NORMAL_TRACE_DESC
+
+        self.total_stat_title = Label(
+                           value='Total Stats:',
+                           layout=settings.WIDGET_LAYOUT
+                           )
+        self.total_hits = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.total_stats = VBox(
+                           [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
+                           layout=Layout(width='500px')
+                           )
+
+        self.curr_stat_title = Label(
+                           value='Current View Stats:',
+                           layout=settings.WIDGET_LAYOUT
+                           )
+        self.curr_hits = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
+        self.curr_stats = VBox(
+                          [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
+                          layout=Layout(width='500px')
+                          )
+
+        self.stats = HBox([self.total_stats, self.curr_stats])
+
+
     def get_widget_values(self):
         e_file, e_args = parse_exec_input(self.ex.value)
 
@@ -57,6 +83,6 @@ class MonetaWidgets():
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,
-            'is_full_trace': self.ft.value
+            'is_full_trace': self.ft.v_model
         }
         return w_vals
