@@ -100,12 +100,14 @@ class Click_Zoom():
             selection = self.get_select_string()
             if len(selection) is not 0:
                 tmp_df = self.model.curr_trace.df
-                tmp_df.select(self.get_select_string()) # replace not necessary for correctness, but maybe perf? 
+                tmp_df.select(self.get_select_string(), mode="replace") # replace not necessary for correctness, but maybe perf? 
                 selected_bytes = tmp_df.evaluate(self.df.Bytes, selection=True)
                 selected_access_number = tmp_df.evaluate(self.df.Access_Number, selection=True)
                 selected_access = tmp_df.evaluate(self.df.Access, selection=True)
                 selected_array = vaex.from_arrays(Bytes=selected_bytes, Access_Number=selected_access_number, Access=selected_access)
                 self.update_df_selections(selected_array)
+            else:
+                self.update_df_selections(self.model.curr_trace.df)
 
         def get_select_string(self): # TODO - move constants out
             selections = set()
