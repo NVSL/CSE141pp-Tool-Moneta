@@ -132,12 +132,15 @@ struct TagData {
     tags.push_back(new Tag(this, tags.size()));
   }
 
-  void update(ADDRINT addr, int access) {
+  bool update(ADDRINT addr, int access) {
+    bool updated {0};
     for (Tag* t : tags) {
       if (t->active) {
         t->update(addr, access);
+	updated = true;
       }
     }
+    return updated;
   }
   // Default destructor
   ~TagData() {
@@ -604,8 +607,8 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
     if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
-      td->update(addr, curr_lines);
-      if (!recorded) {
+      bool updated = td->update(addr, curr_lines);
+      if (!recorded && updated) {
         record(addr, access_type, rsp);
         recorded = true;
       }

@@ -258,22 +258,15 @@ class Legend():
 
     def handle_checkbox_change(self, _): # TODO - move constants out
         selections = set()
-        tag_selections = set()
         for checkbox in self.checkboxes:
             if checkbox.group == SelectionGroup.data_structures:
-                if checkbox.widget.value == True:
-                    #selections.add('(Tag != %s)' % (checkbox.selections))
-                    tag_selections.add('((%s >= %s) & (%s <= %s))' % ('Access_Number', checkbox.ext[0], 'Access_Number', checkbox.ext[1]))
+                if checkbox.widget.value == False:
+                    selections.add('((%s < %s) | (%s > %s))' % ('Access_Number', checkbox.ext[0], 'Access_Number', checkbox.ext[1]))
             else:
                 for selection in checkbox.selections:
                     if checkbox.widget.value == False:
                         selections.add('(Access != %d)' % (selection))
-        tag_str = '(Access_Number < 0)' if len(tag_selections) == 0 else '|'.join(tag_selections)
-        c_str = '&'.join(selections)
-        final_str = tag_str
-        if len(c_str) > 0:
-            final_str = '(' + tag_str + ')&' + c_str
-        self.model.curr_trace.df.select(final_str, mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select('&'.join(selections), mode='replace') # replace not necessary for correctness, but maybe perf?
 
 class CheckBox():
     def __init__(self, desc, layout, group, selections, handle_fun, ext=[]):
