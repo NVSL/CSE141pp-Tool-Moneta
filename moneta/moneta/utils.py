@@ -201,13 +201,11 @@ def collect_traces():
                 print("Warning: Tag Map and/or Metadata file missing for {}. Omitting full trace.".format(file_name))
                 continue
             
-            #trace_list_full.append("(Full) " + trace_name)
             trace_list_full.append(trace_name)
             trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
     
-    #have to return 2 lists!
     return trace_list, trace_list_full, trace_map 
 
 

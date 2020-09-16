@@ -87,7 +87,7 @@ NO_TAGS = "No tags were traced"
 
 ## Vaex
 
-INDEX_LABEL = "Access Number"
+INDEX_LABEL = "Access_Number"
 ADDRESS_LABEL = "Bytes"
 
 # Pintool Enumerations
