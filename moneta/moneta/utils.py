@@ -14,8 +14,8 @@ from moneta.settings import (
     WIDGET_DESC_PROP,
     WIDGET_LAYOUT,
     CWD_HISTORY_PATH,
-    INDEX_LABEL,
-    ADDRESS_LABEL,
+    INDEX,
+    ADDRESS,
     COMP_W_MISS,
     COMP_R_MISS,
     WRITE_MISS,
@@ -88,10 +88,10 @@ def get_curr_stats(plot):
     
     df = plot.dataset
     
-    x_min = f'({INDEX_LABEL} >= {int(plot.limits[0][0])})'
-    x_max = f'({INDEX_LABEL} <= {int(plot.limits[0][1])})'
-    y_min = f'({ADDRESS_LABEL} >= {int(plot.limits[1][0])})'
-    y_max = f'({ADDRESS_LABEL} <= {int(plot.limits[1][1])})'
+    x_min = f'({INDEX} >= {int(plot.limits[0][0])})'
+    x_max = f'({INDEX} <= {int(plot.limits[0][1])})'
+    y_min = f'({ADDRESS} >= {int(plot.limits[1][0])})'
+    y_max = f'({ADDRESS} <= {int(plot.limits[1][1])})'
     
     # Inner df returns an expression, doesn't actually create the new dataframe
     df = df[df[f'{x_min} & {x_max} & {y_min} & {y_max}']]

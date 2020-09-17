@@ -54,6 +54,8 @@ class PlotBase(widgets.Widget):
                 show_drawer=False,
                 controls_selection=True, 
                 legend=None,
+                x_col=None,
+                y_col=None,
                 x_label=None,
                 y_label=None,
                 cache_size=None,
@@ -97,14 +99,15 @@ class PlotBase(widgets.Widget):
             self.progress.description = "progress"
 
             self.toolbar = v.Row(pa_1=True, children=[])
-            self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
 
             # Vaextended arguments
-            if not legend or not x_label or not y_label or not cache_size or not update_stats:
-                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_label, y_label, cache_size, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
+            if not legend or not x_col or not y_col or not x_label or not y_label or not cache_size or not update_stats:
+                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, x_label, y_label, cache_size, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
 
             self.legend = legend
+            self.x_col = x_col
+            self.y_col = y_col
             self.x_label = x_label
             self.y_label = y_label
             self.cache_size = cache_size
@@ -113,6 +116,7 @@ class PlotBase(widgets.Widget):
 
 
 
+            self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
             self.widget = PlotTemplate(components={
                         'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
