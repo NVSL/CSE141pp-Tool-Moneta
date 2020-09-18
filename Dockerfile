@@ -35,6 +35,8 @@ RUN cat bashrc_aliases >> ~/.bashrc
 
 RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
+COPY .setup/compile_pin.py ${DIR_SETUP}/
+COPY .setup/trace_tool.cpp ${DIR_SETUP}/
 RUN python compile_pin.py
 
 WORKDIR ${DIR_MONETA}
