@@ -13,19 +13,14 @@ class Model():
         self.trace_map = None
 
     def update_trace_list(self, lastChanged):
+        self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
         if(lastChanged==1):
-            self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
             return sorted(self.output_traces, key=str.casefold)
         elif(lastChanged==0):
-            self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
             return sorted(self.output_traces_full, key=str.casefold)
         else:
             log.info("Cannot update trace list")
             return
-    
-    def update_trace_list_full(self):
-        self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
-        return sorted(self.output_traces_full, key=str.casefold)
 
     def ready_next_trace(self):
         if self.curr_trace is not None:

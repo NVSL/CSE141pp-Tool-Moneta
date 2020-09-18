@@ -28,7 +28,6 @@ class View():
         self.m_widget.lb.on_click(self.handle_load_trace)
         self.m_widget.db.on_click(self.handle_delete_trace)
         self.update_select_widget()
-        self.update_select_widget_full()
         
         self.w_1 = []
         self.w_2 = []
@@ -40,9 +39,6 @@ class View():
     def update_select_widget(self):
         self.m_widget.sw.options = self.model.update_trace_list(1)
         self.m_widget.sw.value = []
-
-    #added for second select_widget (full)
-    def update_select_widget_full(self):
         self.m_widget.sw2.options = self.model.update_trace_list(0)
         self.m_widget.sw2.value = []
 
@@ -88,7 +84,6 @@ class View():
         if generate_trace(*w_vals):
             self.update_cwd_widget(self.m_widget.cwd.value)
             self.update_select_widget()
-            self.update_select_widget_full()
 
     def handle_load_trace(self, _):
         self.m_widget.sw.observe(self.on_value_change, names='value')
@@ -145,7 +140,7 @@ class View():
                 clear_output(wait=True)
                 log.info("Refreshing")
                 display(self.m_widget.widgets)
-            self.update_select_widget_full()
+            self.update_select_widget()
             pass
         else:
             log.debug("No trace chosen to delete")
