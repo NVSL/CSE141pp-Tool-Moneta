@@ -5,6 +5,7 @@ import sys
 import subprocess
 
 from moneta.settings import (
+    TextStyle,
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
     MONETA_TOOL_DIR,
@@ -71,11 +72,11 @@ def load_cwd_file():
         with open(CWD_HISTORY_PATH, "a+") as history:
             history.seek(0)
             cwd_history = history.read().split()
-            logging.debug("Reading history from file: {}".format(cwd_history))
+            logging.debug(f"Reading history from file: {cwd_history}")
             return cwd_history
     except Exception as e: 
         # Allows tool to still work, just no history, if there is a problem with the file
-        log.debug("History file error: \n{}".format(e))
+        log.debug(f"History file error: \n{e}")
         return []
     
 def update_cwd_file(cwd_history):
@@ -159,34 +160,34 @@ def verify_input(w_vals):
     w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
-        print("Cache lines, cache block, and maximum lines to output must be greater than 0")
+        print(f"{TextStyle.RED}Error: Cache lines, cache block, and maximum lines to output must be greater than 0{TextStyle.END}")
         return False
   
     if (len(w_vals['e_file']) == 0):
-        print("Error: No executable provided")
+        print(f"{TextStyle.RED}Error: No executable provided{TextStyle.END}")
         return False
   
     if (len(w_vals['o_name']) == 0):
-        print("Error: No trace name provided")
+        print(f"{TextStyle.RED}Error: No trace name provided{TextStyle.END}")
         return False
   
     if not (re.search("^[a-zA-Z0-9_]*$", w_vals['o_name'])):
-        print("Error: Output name can only contain alphanumeric characters and underscore")
+        print(f"{TextStyle.RED}Error: Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
         return False
   
     if (not os.path.isdir(w_vals['cwd_path'])):
-        print("Directory '{}' not found".format(w_vals['cwd_path']))
+        print(f"{TextStyle.RED}Error: Directory '{w_vals['cwd_path']}' not found{TextStyle.END}")
         return False
 
     os.chdir(w_vals['cwd_path'])
 
     if (not os.path.isfile(w_vals['e_file'])):
-        print("Executable '{}' not found".format(w_vals['e_file']))
+        print(f"{TextStyle.RED}Error: Executable '{w_vals['e_file']}' not found{TextStyle.END}")
         os.chdir(MONETA_TOOL_DIR)
         return False
   
     if (not os.access(w_vals['e_file'], os.X_OK)):
-        print("\"{}\" is not an executable".format(w_vals['e_file']))
+        print(f"{TextStyle.RED}Error: \"{w_vals['e_file']}\" is not an executable{TextStyle.END}")
         os.chdir(MONETA_TOOL_DIR)
         return False
     
@@ -205,9 +206,7 @@ def run_pintool(w_vals):
     is_full_trace_int = 1 if w_vals['is_full_trace'] else 0
   
     args_string = "" if len(w_vals['e_args']) == 0 else " " + " ".join(w_vals['e_args']) 
-    print("Running \"{}{}\" in Directory \"{}\" with Cache Lines={} and Block Size={}B for Number of Lines={} into Trace: {}".format(
-            w_vals['e_file'], args_string, w_vals['cwd_path'], w_vals['c_lines'], w_vals['c_block'], w_vals['m_lines'], w_vals['o_name']))
-      
+
     args = [
         PIN_PATH, "-ifeellucky", "-injection", "child", "-t", TOOL_PATH,
         "-o", w_vals['o_name'],
@@ -217,30 +216,45 @@ def run_pintool(w_vals):
         "-f", str(is_full_trace_int),
         "--", w_vals['e_file'], *w_vals['e_args']
     ]
+
+    print(f"Running \"{w_vals['e_file']}{args_string}\" in Directory \"{w_vals['cwd_path']}\" "
+          f"with Cache Lines={w_vals['c_lines']} and Block Size={w_vals['c_block']}B for Number of Lines={w_vals['m_lines']} "
+          f"into Trace: {w_vals['o_name']}\n\n"
+          f"{TextStyle.BOLD}Pintool Command:{TextStyle.END} {' '.join(args)}\n")
     
     os.chdir(w_vals['cwd_path'])
     
-    log.debug("Executable: {}".format(w_vals['e_file']))
-    log.debug("Running in dir: {}".format(os.getcwd()))
+    log.debug(f"Executable: {w_vals['e_file']}")
+    log.debug(f"Running in dir: {os.getcwd()}")
     sub_output = subprocess.run(args, capture_output=True)
     sub_stdout = sub_output.stdout.decode('utf-8')
     sub_stderr = sub_output.stderr.decode('utf-8')
-    log.debug("Raw pintool stdout: \n{}".format(sub_stdout))
-    log.debug("Raw pintool stderr: \n{}".format(sub_stderr))
+    log.debug(f"Raw pintool stdout: \n{sub_stdout}")
+    log.debug(f"Raw pintool stderr: \n{sub_stderr}")
   
     os.chdir(MONETA_TOOL_DIR)
   
     if sub_stderr:
-        print("\n\nAn error occurred while running your program. Double check your program and Pin tags to make sure they are correct.\n\n" + 
-               f"Raw Error Message: \n{sub_stderr}\n\n")
+        print(f"{TextStyle.RED}An error occurred while running your program. Double check your program and Pin tags to make sure they are correct.\n\n"
+              f"{TextStyle.RED}{TextStyle.BOLD}Raw Error Message:\n{TextStyle.END}"
+              f"{TextStyle.RED}{sub_stderr}{TextStyle.END}")
+        return False
+    return True
 
 
 
 
 def generate_trace(w_vals):
-    if verify_input(w_vals):
-        run_pintool(w_vals)
-        print("Done generating trace: {}".format(w_vals['o_name']))
+    if verify_input(w_vals) and run_pintool(w_vals):
+
+        border_char = '#'
+        side = border_char * 5
+        done = f"{side} Done generating trace: {w_vals['o_name']} {side}"
+        border = border_char * len(done)
+
+        print(f"{TextStyle.GREEN}{TextStyle.BOLD}{border}\n"
+              f"{done}\n"
+              f"{border}{TextStyle.END}\n")
         return True
     return False
 
@@ -253,7 +267,7 @@ def collect_traces():
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
-        log.info("Checking {}".format(file_name))
+        log.info(f"Checking {file_name}")
         
         if (file_name.startswith("trace_") and file_name.endswith(".hdf5")):
             
@@ -261,25 +275,25 @@ def collect_traces():
             tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
             meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print("Warning: Tag Map and/or Metadata file missing for {}. Omitting trace.".format(file_name))
+                print(f"{TextStyle.BOLD}Warning:{TextStyle.END} Tag Map and/or Metadata file missing for {file_name}. Omitting trace.")
                 continue
           
             trace_list.append(trace_name)
             trace_map[trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
-            log.debug("Trace: {}, Tag: {}".format(trace_name, tag_path))
+            log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
         elif (file_name.startswith("full_trace_") and file_name.endswith(".hdf5")):
             trace_name = file_name[11:file_name.index(".hdf5")]
             tag_path = os.path.join(dir_path, "full_tag_map_" + trace_name + ".csv")
             meta_path = os.path.join(dir_path, "full_meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print("Warning: Tag Map and/or Metadata file missing for {}. Omitting full trace.".format(file_name))
+                print(f"{TextStyle.BOLD}Warning:{TextStyle.END} Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.")
                 continue
             
             trace_list.append("(Full) " + trace_name)
             trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
-            log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
+            log.debug(f"Trace: (Full) {trace_name}, Tag: {tag_path}")
     return trace_list, trace_map
 
 def delete_traces(trace_paths):

@@ -38,7 +38,7 @@ class View():
         if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             update_cwd_file(self.m_widget.cwd.options)
-            log.debug("New History: {}".format(self.m_widget.cwd.options))
+            log.debug(f"New History: {self.m_widget.cwd.options}")
             
 
     def handle_generate_trace(self, _):
