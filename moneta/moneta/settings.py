@@ -85,7 +85,14 @@ If there are no tags, you will need to tag the file or use a full trace."""
 
 ## Vaex
 
-INDEX_LABEL = "Access_Number"
+### Columns
+INDEX = "index"
+ADDRESS = "Address"
+ACCESS = "Access"
+TAG = "Tag"
+
+### Labels
+INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Bytes"
 
 # Pintool Enumerations

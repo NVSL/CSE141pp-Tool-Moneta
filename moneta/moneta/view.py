@@ -1,5 +1,5 @@
 from IPython.display import clear_output, display
-from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, HISTORY_MAX, CWD_HISTORY_PATH
 from moneta.utils import (
     generate_trace, 
     delete_traces, 
@@ -78,8 +78,8 @@ class View():
         tags = curr_trace.tags
         legend = Legend(self.model)
         plot = df.plot_widget(
-                    df[INDEX_LABEL], 
-                    df[ADDRESS_LABEL], 
+                    df[INDEX], 
+                    df[ADDRESS], 
                     what='max(Access)',
                     colormap=CUSTOM_CMAP, 
                     selection=[True], 
@@ -88,6 +88,8 @@ class View():
                     type='vaextended', 
                     legend=legend,
                     default_title=curr_trace.name, 
+                    x_col=INDEX,
+                    y_col=ADDRESS,
                     x_label=INDEX_LABEL, 
                     y_label=ADDRESS_LABEL, 
                     cache_size=cache_size,
