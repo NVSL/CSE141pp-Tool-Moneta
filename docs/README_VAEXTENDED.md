@@ -54,13 +54,14 @@ To use the modified backends and plots of Vaextended, specify the backend and pl
 
 Using `plot_widget()` with the Vaextended backend also requires the following keyword arguments in addition to `backend` and `type`:
  - **legend:** A Legend object from `moneta/legend.py`
- - **x_label:** The x-column name of the dataframe
- - **y_label:** The y-column name of the dataframe
+ - **x_col:** The x-column name of the dataframe
+ - **y_col:** The y-column name of the dataframe
+ - **x_label:** The plot's x-axis label
+ - **y_label:** The plot's y-axis label
  - **cache_size:** The cache size in bytes
  - **update_stats:** A callback function that updates "Current View Stats" in the Legend object
+  - **limit:** The x and y limits in 2D array format (e.g. `[[x_min, x_max], [y_min, y_max]]`). Required because Vaex incorrectly calculates the y-limits, likely due to the memory addresses being so large in value. This causes the plot to crash from divide-by-zero, so we have to manually pass in the correct limits.
 
-The following keyword argument is required because Vaex incorrectly calculates the y-limits, likely due to the memory addresses being so large in value. The plot crashes from a divide by zero error because of this, so we have to manually pass in the correct limits:
- - **limit:** The x and y limits in 2D array format (e.g. `[[x_min, x_max], [y_min, y_max]]`)
 
  The following keyword arguments are technically not required, but should be included as they improve navigation and visuals:
   - **colormap:** Colormap to use. The primary colormap Vaextended uses can be found in `moneta/settings.py` as `CUSTOM_CMAP`
@@ -92,8 +93,10 @@ plot = df.plot_widget(
             type='vaextended', 
             legend=Legend(),
             default_title='Some Trace', 
-            x_label='index', 
-            y_label='Address', 
+            x_col='index', 
+            y_col='Address', 
+            x_label='Access Number', 
+            y_label='Memory Address', 
             cache_size=16384,
             update_stats=lambda *ignore: update_legend_view_stats(legend.plot_stats, plot, False)
             )

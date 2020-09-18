@@ -59,7 +59,7 @@ class PlotBase(widgets.Widget):
                 x_label=None,
                 y_label=None,
                 cache_size=None,
-                default_title=None,
+                default_title='Moneta',
                 update_stats=None,
                 **kwargs
                 ):
@@ -102,7 +102,7 @@ class PlotBase(widgets.Widget):
 
 
             # Vaextended arguments
-            if not legend or not x_col or not y_col or not x_label or not y_label or not cache_size or not update_stats:
+            if [x for x in (legend, x_col, y_col, x_label, y_label, cache_size, update_stats) if x == None]:
                 raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, x_label, y_label, cache_size, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
 
             self.legend = legend
@@ -111,7 +111,7 @@ class PlotBase(widgets.Widget):
             self.x_label = x_label
             self.y_label = y_label
             self.cache_size = cache_size
-            self.default_title = default_title if default_title else 'Moneta'
+            self.default_title = default_title
             self.update_stats = update_stats
 
 

@@ -85,13 +85,13 @@ If there are no tags, you will need to tag the file or use a full trace."""
 
 ## Vaex
 
-### Columns
+### Dataframe Columns
 INDEX = "index"
 ADDRESS = "Address"
 ACCESS = "Access"
 TAG = "Tag"
 
-### Labels
+### Axis Labels
 INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Bytes"
 
