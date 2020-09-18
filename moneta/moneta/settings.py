@@ -93,8 +93,10 @@ WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 
 # Errors
-NO_TAGS = (f"{TextStyle.RED}{TextStyle.BOLD}Error: No tags were traced\n\n{TextStyle.END}"
-           f"{TextStyle.RED}If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
+ERROR_LABEL = f"{TextStyle.RED}{TextStyle.BOLD}Error:{TextStyle.END}"
+
+NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
+           f"If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
            f"If there are no tags, you will need to tag the file or use a full trace.{TextStyle.END}")
 
 ## Vaex

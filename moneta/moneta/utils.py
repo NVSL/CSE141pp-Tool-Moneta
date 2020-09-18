@@ -6,6 +6,7 @@ import subprocess
 
 from moneta.settings import (
     TextStyle,
+    ERROR_LABEL,
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
     MONETA_TOOL_DIR,
@@ -59,7 +60,7 @@ def parse_exec_input(e_input):
     exec_file_path = os.path.expanduser(exec_inputs[0])
     exec_args = exec_inputs[1:]
 
-    # Pin sometimes doensn't run correctly if './' isn't specified
+    # Pin sometimes doesn't run correctly if './' isn't specified
     if not (exec_file_path.startswith(("/", "~/", "./", "../"))):
         exec_file_path = "./" + exec_file_path; 
 
@@ -140,6 +141,7 @@ def parse_cwd(path):
         or relative from current directory depending on closest parent of the three
         NOTE: Assumes '..' is not part of a file name
     """
+
     expanded = os.path.expanduser(path.strip())
     realpath = os.path.realpath(expanded)
     home_rel = os.path.relpath(expanded, start='/home/jovyan')
@@ -157,37 +159,38 @@ def parse_cwd(path):
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
-    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'])
+    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'] or '.')
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
-        print(f"{TextStyle.RED}Error: Cache lines, cache block, and maximum lines to output must be greater than 0{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}Cache lines, cache block, and output lines to output must be greater than 0{TextStyle.END}")
         return False
   
     if (len(w_vals['e_file']) == 0):
-        print(f"{TextStyle.RED}Error: No executable provided{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}No executable provided{TextStyle.END}")
         return False
   
     if (len(w_vals['o_name']) == 0):
-        print(f"{TextStyle.RED}Error: No trace name provided{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}No trace name provided{TextStyle.END}")
         return False
   
     if not (re.search("^[a-zA-Z0-9_]*$", w_vals['o_name'])):
-        print(f"{TextStyle.RED}Error: Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
         return False
   
     if (not os.path.isdir(w_vals['cwd_path'])):
-        print(f"{TextStyle.RED}Error: Directory '{w_vals['cwd_path']}' not found{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}Directory '{w_vals['cwd_path']}' not found{TextStyle.END}")
         return False
 
     os.chdir(w_vals['cwd_path'])
 
     if (not os.path.isfile(w_vals['e_file'])):
-        print(f"{TextStyle.RED}Error: Executable '{w_vals['e_file']}' not found{TextStyle.END}")
+        print(f"{ERROR_LABEL} {TextStyle.RED}Executable '{w_vals['e_file']}' not found{TextStyle.END}")
         os.chdir(MONETA_TOOL_DIR)
         return False
   
     if (not os.access(w_vals['e_file'], os.X_OK)):
-        print(f"{TextStyle.RED}Error: \"{w_vals['e_file']}\" is not an executable{TextStyle.END}")
+        print(
+              f"{ERROR_LABEL} {TextStyle.RED}\"{w_vals['e_file']}\" is not an executable{TextStyle.END}")
         os.chdir(MONETA_TOOL_DIR)
         return False
     
