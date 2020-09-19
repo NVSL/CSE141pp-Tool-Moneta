@@ -74,7 +74,7 @@ MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta/"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
-TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
+TOOL_PATH = "/pin/source/tools/ManualExamples/obj-intel64/trace_tool.so"
 WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 

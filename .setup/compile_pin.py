@@ -58,10 +58,4 @@ with cd(PIN_DIR):
     print(stderr_output)
     if len(stderr_output) > 0:
         raise SystemExit
-
-    print("---------------Copying to output dir----------------")
-    try:
-        subprocess.run(["cp", PIN_DIR+"obj-intel64/"+pintool_so, full_output_path], check=True)
-    except:
-        raise SystemExit
     print("Success!!")
