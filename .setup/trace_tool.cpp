@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <assert.h>
+#include <sys/stat.h> // mkdir
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
@@ -802,6 +803,8 @@ int main(int argc, char *argv[]) {
 	    "\nCache line size in bytes: " << cache_line << 
 	    "\nOutput trace file at: " << output_trace_path << "\n";
   }
+
+  mkdir(DefaultOutputPath.c_str(), 0755);
 
   std::ofstream meta_file (output_metadata_path);
   meta_file << cache_size << " " << cache_line;
