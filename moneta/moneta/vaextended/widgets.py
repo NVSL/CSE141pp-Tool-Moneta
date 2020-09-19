@@ -55,7 +55,7 @@ class PlotTemplate(v.VuetifyTemplate):
         v-model="show_legend"
         permanent
         class="mt-12"
-        width="300"
+        width="400"
         right
         absolute
         height='auto'
