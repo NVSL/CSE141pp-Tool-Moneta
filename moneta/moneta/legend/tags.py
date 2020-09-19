@@ -1,5 +1,7 @@
-from ipywidgets import VBox, HBox, Layout
+from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
+from moneta.utils import stats_percent
+
 class Tags():
     def __init__(self, model, update_selection):
         self.model = model
@@ -32,23 +34,35 @@ class Tags():
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="240px", max_width="200px")])
 
     def create_zoom_button(self, tag, stats):
-        btn = v.Btn(v_on='tooltip.on', icon=True, children=[v.Icon(
-            children=['fa-search-plus'])])
+        btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
+                layout=Layout(height='35px', width='35px',
+                    borders='none', align_items='center'
+                ))
         def zoom_to_selection(*_):
             self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
                                     float(tag.address[0]), float(tag.address[1]))
-        btn.on_event('click', zoom_to_selection)
-        btn_tp = v.Tooltip(bottom=True, v_slots=[{
-            'name': 'activator', 'variable': 'tooltip', 'children': btn}],
-            children=[self.tag_tooltip(tag, stats)])
-        return btn_tp
+        btn.on_click(zoom_to_selection)
+        return btn
 
     def set_zoom_sel_handler(self, f):
         self.zoom_sel_handler = f
 
     def tag_tooltip(self, tag, stats):
-        return ("(" + tag.access[0] + ", " + tag.access[1] + "), " +
-        "(" + tag.address[0] + ", " + tag.address[1] + ")" + self.stats_to_str(tag.id_, stats))
+        ind = tag.id_
+        total = sum(stats[ind])
+        final_tooltip = (
+                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
+                f'Address Range: {tag.address[0]}, {tag.address[1]}\n\n'
+                f'Total: {total}\n\n'
+                f'Read Hits: {stats[ind][0]} ({stats_percent(stats[ind][0],total)}) \n'
+                f'Write Hits: {stats[ind][1]} ({stats_percent(stats[ind][1],total)}) \n'
+                f'Capacity Read Misses: {stats[ind][2]} ({stats_percent(stats[ind][2],total)}) \n'
+                f'Capacity Write Misses: {stats[ind][3]} ({stats_percent(stats[ind][3],total)}) \n'
+                f'Compulsory Read Hits: {stats[ind][4]} ({stats_percent(stats[ind][4],total)}) \n'
+                f'Compulsort Write Hits: {stats[ind][5]} ({stats_percent(stats[ind][5],total)}) \n'
+        )
+        return final_tooltip
+
 
     def stats_to_str(self, ind, stats):
         total = sum(stats[ind])
