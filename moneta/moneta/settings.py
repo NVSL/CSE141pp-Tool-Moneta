@@ -105,6 +105,7 @@ TAG_ID = "Tag_Value"
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_CLICK_ZOOM = 'Click Zoom'
 
 # Legend grid box
 vdiv = HBox([
@@ -125,13 +126,13 @@ hdiv = VBox([
     HBox(layout=Layout(
         padding='0',
         border='1px solid black',
-        width='70px',
+        width='100px',
         height='0'))
     ], layout=Layout(justify_content='center'))
 lhdiv = VBox([
     HBox(layout=Layout(
         padding='0',
         border='1px solid #cccbc8',
-        width='70px',
+        width='100px',
         height='0'))
             ], layout=Layout(justify_content='center'))
