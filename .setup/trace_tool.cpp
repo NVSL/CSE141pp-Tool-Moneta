@@ -159,7 +159,6 @@ pintool::unordered_map<std::string, TagData*> all_tags;
 struct Access {
   TagData* tag;
   int type;
-  ADDRINT rsp;
   ADDRINT addr;
 } prev_acc;
 
@@ -584,11 +583,10 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type, ADDRINT rsp) {
+void record(ADDRINT addr, int acc_type) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
-  prev_acc.rsp  = rsp;
 }
 
 VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
@@ -598,7 +596,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= std::min(prev_acc.rsp,rsp));
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {0};
@@ -609,14 +607,14 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
       bool updated = td->update(addr, curr_lines);
       if (!recorded && updated) {
-        record(addr, access_type, rsp);
+        record(addr, access_type);
         recorded = true;
       }
     }
   }
 
   if (!recorded && KnobTrackAll) {
-    record(addr, access_type, rsp);
+    record(addr, access_type);
   }
 }
 
