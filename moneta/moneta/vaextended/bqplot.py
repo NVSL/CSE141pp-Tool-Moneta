@@ -290,7 +290,7 @@ class BqplotBackend(BackendBase):
                     y2 = res[addr].max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if (x2 - x1 < 128):
+                if (x2 - x1 < 128): # TODO for time
                     x1 -= (128 + x1 - x2) / 2
                     x2 = x1 + 128
 
