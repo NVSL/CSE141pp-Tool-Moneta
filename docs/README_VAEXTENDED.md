@@ -56,18 +56,18 @@ Using `plot_widget()` with the Vaextended backend also requires the following ke
  - **legend:** A Legend object from `moneta/legend.py`
  - **x_col:** The x-column name of the dataframe
  - **y_col:** The y-column name of the dataframe
- - **x_label:** The plot's x-axis label
- - **y_label:** The plot's y-axis label
  - **cache_size:** The cache size in bytes
  - **update_stats:** A callback function that updates "Current View Stats" in the Legend object
-  - **limit:** The x and y limits in 2D array format (e.g. `[[x_min, x_max], [y_min, y_max]]`). Required because Vaex incorrectly calculates the y-limits, likely due to the memory addresses being so large in value. This causes the plot to crash from divide-by-zero, so we have to manually pass in the correct limits.
+ - **limit:** The x and y limits in 2D array format (e.g. `[[x_min, x_max], [y_min, y_max]]`). Required because Vaex incorrectly calculates the y-limits, likely due to the memory addresses being so large in value. This causes the plot to crash from divide-by-zero, so we have to manually pass in the correct limits.
 
 
  The following keyword arguments are technically not required, but should be included as they improve navigation and visuals:
-  - **colormap:** Colormap to use. The primary colormap Vaextended uses can be found in `moneta/settings.py` as `CUSTOM_CMAP`
-  - **selection:** Passing in `[True]` allows turning on/off access types or tags via the Legend checkboxes
-  - **what:** Determines which value out of Vaex's binned data points should be mapped to the colormap and displayed. Vaextended uses `max(Access)`
-  - **default_title:** Title of the plot, typically set to be the trace name
+ - **colormap:** Colormap to use. The primary colormap Vaextended uses can be found in `moneta/settings.py` as `CUSTOM_CMAP`
+ - **selection:** Passing in `[True]` allows turning on/off access types or tags via the Legend checkboxes
+ - **what:** Determines which value out of Vaex's binned data points should be mapped to the colormap and displayed. Vaextended uses `max(Access)`
+ - **default_title:** Title of the plot, typically set to be the trace name (Default: "Moneta")
+ - **x_label:** The plot's x-axis label (Default: "Access Number")
+ - **y_label:** The plot's y-axis label (Default: "Address")
 
 An example of using `plot_widget()` with Vaextended can be found below:
 
