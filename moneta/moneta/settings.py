@@ -66,6 +66,20 @@ newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
 newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 CUSTOM_CMAP = ListedColormap(newc)
 
+# print() Text Colors
+class TextStyle():
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
+
 
 BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='90%', border='1px solid black')
@@ -79,10 +93,22 @@ WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 
 # Errors
-NO_TAGS = "No tags were traced"
+ERROR_LABEL = f"{TextStyle.RED}{TextStyle.BOLD}Error:{TextStyle.END}"
+WARNING_LABEL = f"{TextStyle.YELLOW}{TextStyle.BOLD}Warning:{TextStyle.END}"
+
+NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
+           f"If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
+           f"If there are no tags, you will need to tag the file or use a full trace.{TextStyle.END}")
 
 ## Vaex
 
+### Dataframe Columns
+INDEX = "index"
+ADDRESS = "Address"
+ACCESS = "Access"
+TAG = "Tag"
+
+### Axis Labels
 INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Bytes"
 
@@ -104,6 +130,7 @@ TAG_NAME = "Tag_Name"
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_STATS_TITLE = 'Stats'
 
 # Legend grid box
 vdiv = HBox([

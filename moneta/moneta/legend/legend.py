@@ -2,15 +2,17 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_STATS_TITLE
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
+from moneta.legend.stats import PlotStats
 from enum import Enum
 import numpy as np
 
 class Legend():
     def __init__(self, model):
         self.model = model
+
 
         self.panels = v.ExpansionPanels(accordion=True, multiple=True, v_model=[])
         up = 'keyboard_arrow_up'
@@ -21,9 +23,11 @@ class Legend():
         panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='300px'))
         self.accesses = Accesses(model, self.update_selection)
+        self.stats = PlotStats()
         self.tags = Tags(model, self.update_selection)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
+        self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
             if len(selected) == len(self.panels.children):

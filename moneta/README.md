@@ -15,6 +15,7 @@ Instructions on how to run and use Moneta
  8888/tcp -> 0.0.0.0:####
  ```
 
+
 ## Tagging Programs
 
 `pin_tags.h` is the header file containing the functions to tag memory traces for your program. By default, it is located in the `~/work/moneta` directory, but you are free to copy this file to any directory that you find convenient. The functions in this file will indicate to Pin when it should start and stop writing memory accesses to file, and which memory address ranges it should trace.
@@ -105,7 +106,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
 
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. Note that larger numbers will take longer to run. (Default: 10,000,000)
+**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
 
 **Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
 
@@ -186,12 +187,8 @@ The legend matches memory access type with the plot colors and allows toggling t
 
 **Checkboxes:** When checked, plots memory accesses that fall within the address range specified by the tag name
 
-**Zoom To Tag:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays metadata about the tag
+**Zoom To Tag/Hover Tooltip Stats:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays memory access stats about the tag
 
-**TODO ONCE REFACTORED**
- - Stats
- - Independent Subplot
- - Dependent Subplot
 
 ### Deleting a Trace
 
