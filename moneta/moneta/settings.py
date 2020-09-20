@@ -29,6 +29,10 @@ TRACE_NAME_DESC = "Name for Trace:"
 FULL_TRACE_DESC = "Full trace"
 NORMAL_TRACE_DESC = "Tagged trace"
 
+# Track Main
+TRACK_MAIN = "Track main"
+TRACK_NORMAL = "Track from beginning"
+
 # Select Multiple
 SELECT_MULTIPLE_DESC = "Trace:"
 

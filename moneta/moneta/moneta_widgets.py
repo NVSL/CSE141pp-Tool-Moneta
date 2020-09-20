@@ -28,9 +28,12 @@ class MonetaWidgets():
         self.to = text_field(settings.TRACE_NAME_DEF, settings.TRACE_NAME_DESC)
 
         self.vh = v.Html(tag='style', children=[".v-input__slot .v-label{color: black!important}"])
+        self.vh2 = v.Html(tag='style', children=[".vuetify-styles .v-messages {min-height: 0px!important}"])
         self.ft = v.Switch(v_model=False, label=settings.NORMAL_TRACE_DESC, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
-        self.ft.on_event("change", self.switch_handler)
-        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.vh], layout=Layout(width='100%'))
+        self.ft.on_event("change", self.handle_full_trace)
+        self.tm = v.Switch(v_model=False, label=settings.TRACK_NORMAL, inset=True, style_="color: black; background: white; margin-top: 0; padding-left: 50px")
+        self.tm.on_event("change", self.handle_track_main)
+        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.tm, self.vh, self.vh2], layout=Layout(width='100%'))
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
         self.lb = button(settings.LOAD_DESC, color=settings.LOAD_COLOR)
         self.db = button(settings.DELETE_DESC, color=settings.DELETE_COLOR)
@@ -42,8 +45,11 @@ class MonetaWidgets():
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
 
-    def switch_handler(self, switch, _, new):
+    def handle_full_trace(self, switch, _, new):
         switch.label = settings.FULL_TRACE_DESC if new else settings.NORMAL_TRACE_DESC
+
+    def handle_track_main(self, switch, _, new):
+        switch.label = settings.TRACK_MAIN if new else settings.TRACK_NORMAL
 
     def get_widget_values(self):
         e_file, e_args = parse_exec_input(self.ex.value)
@@ -56,6 +62,7 @@ class MonetaWidgets():
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,
-            'is_full_trace': self.ft.v_model
+            'is_full_trace': self.ft.v_model,
+            'track_main': self.tm.v_model
         }
         return w_vals

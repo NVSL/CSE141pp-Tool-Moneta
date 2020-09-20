@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <assert.h>
+#include <ctype.h>
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
@@ -58,6 +59,8 @@ const std::string FullPrefix     {"full_"};
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
+static bool full_trace {0};
+static bool track_main {0};
 static std::string output_trace_path;
 static std::string output_tagfile_path;
 static std::string output_metadata_path;
@@ -165,6 +168,8 @@ struct Access {
 bool is_prev_acc {0};
 ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
+
+bool reached_main {0};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -390,20 +395,41 @@ static char * buffer2 = new char[BUF_SIZE];
 static char * buffer3 = new char[BUF_SIZE];
 
 // Command line options for pintool
+KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
+    "name", "", "specify name of output trace");
+
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "default", "specify name of output trace and tag map file");
+    "n", "default", "specify name of output trace");
+
+KNOB<UINT64> KnobMaxOutputLong(KNOB_MODE_WRITEONCE, "pintool",
+    "output_lines", "", "specify max lines of output");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
-    "m", "0", "specify max lines of output");
+    "ol", "10000000", "specify max lines of output");
+
+KNOB<UINT64> KnobCacheSizeLong(KNOB_MODE_WRITEONCE, "pintool",
+    "cache_lines", "", "specify # of lines in L1 cache");
 
 KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
-    "c", "0", "specify entries in L1 cache");
+    "c", "4096", "specify # of lines in L1 cache");
+
+KNOB<UINT64> KnobCacheLineSizeLong(KNOB_MODE_WRITEONCE, "pintool",
+    "block", "", "specify block size in bytes");
 
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
-    "l", "0", "specify size of cache line for L1 cache");
+    "b", "64", "specify block size in bytes");
+
+KNOB<BOOL> KnobTrackAllLong(KNOB_MODE_WRITEONCE, "pintool",
+    "full", "", "Track all memory accesses");
 
 KNOB<BOOL> KnobTrackAll(KNOB_MODE_WRITEONCE, "pintool",
-    "f", "0", "Ignores tags, tracks all memory accesses");
+    "f", "0", "Track all memory accesses");
+
+KNOB<BOOL> KnobStartMainLong(KNOB_MODE_WRITEONCE, "pintool",
+    "main", "", "Start trace at main");
+
+KNOB<BOOL> KnobStartMain(KNOB_MODE_WRITEONCE, "pintool",
+    "m", "0", "Start trace at main");
 
 VOID flush_cache() {
   if (CACHE_DEBUG) {
@@ -522,6 +548,10 @@ VOID dump_stop_called(VOID * tag_name) {
     }*/
 }
 
+VOID signal_main() {
+  reached_main = true;
+}
+
 /*
  * Returns: a value based on hit, miss, or compulsory miss
  * 0 - hit
@@ -598,6 +628,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     is_prev_acc = false;
     write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
   }
+  if (track_main && !reached_main) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {0};
   for (auto& tag_iter : all_tags) {
@@ -613,7 +644,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     }
   }
 
-  if (!recorded && KnobTrackAll) {
+  if (!recorded && full_trace) {
     record(addr, access_type);
   }
 }
@@ -779,6 +810,13 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
+	rtn = RTN_FindByName(img, "__libc_start_main");
+	if (RTN_Valid(rtn)) {
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_main,
+				IARG_END);
+		RTN_Close(rtn);
+	}
 }
 
 INT32 Usage() {
@@ -786,6 +824,15 @@ INT32 Usage() {
   std::cerr << "\n" << KNOB_BASE::StringKnobSummary() << "\n";
   return -1;
 }
+
+bool check_alnum(const std::string& str) {
+  for (char c : str) {
+    if (!std::isalnum(c) && c != '_') {
+      return false;
+    }
+  }
+  return true;
+};
 
 int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
@@ -797,33 +844,58 @@ int main(int argc, char *argv[]) {
   }
 
   // User input
-  output_trace_path = KnobOutputFile.Value();
-  std::string pref = KnobTrackAll ? FullPrefix : "";
-  output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
-  output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
-  output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
+  output_trace_path = KnobOutputFileLong.Value();
+  if (output_trace_path == "") {
+    output_trace_path = KnobOutputFile.Value();
+    if (output_trace_path == "") {
+      output_trace_path = "default";
+    }
+  }
+  if (!check_alnum(output_trace_path)) {
+    std::cerr << "Output name (" << output_trace_path << ") can only contain alphanumeric characters or _\n";
+    return -1;
+  }
 
-  UINT64 in_output_limit = KnobMaxOutput.Value();
-  UINT64 in_cache_size = KnobCacheSize.Value();
-  UINT64 in_cache_line = KnobCacheLineSize.Value();
-  if (INPUT_DEBUG) {
-    std::cerr << "User input: " << in_output_limit << ", " << in_cache_size << ", " << in_cache_line << "\n";
+  max_lines = KnobMaxOutputLong.Value();
+  if (max_lines == 0) {
+    max_lines = KnobMaxOutput.Value();
+    if (max_lines == 0) {
+      max_lines = DefaultMaximumLines;
+    }
   }
-  if (in_output_limit > 0) {
-    max_lines = in_output_limit;
+
+  cache_size = KnobCacheSizeLong.Value();
+  if (cache_size == 0) {
+    cache_size = KnobCacheSize.Value();
+    if (cache_size == 0) {
+      cache_size = NumberCacheEntries;
+    }
   }
-  if (in_cache_size > 0) {
-    cache_size = in_cache_size;
+
+  cache_line = KnobCacheLineSizeLong.Value();
+  if (cache_line == 0) {
+    cache_line = KnobCacheLineSize.Value();
+    if (cache_line == 0) {
+      cache_line = DefaultCacheLineSize;
+    }
   }
-  if (in_cache_line > 0) {
-    cache_line = in_cache_line;
-  }
+
+  full_trace = KnobTrackAllLong || KnobTrackAll;
+  track_main = KnobStartMainLong || KnobStartMain;
+
   if (INPUT_DEBUG) {
     std::cerr << "Max lines of trace: "   << max_lines <<
 	    "\n# of cache entries: " << cache_size <<
 	    "\nCache line size in bytes: " << cache_line << 
-	    "\nOutput trace file at: " << output_trace_path << "\n";
+	    "\nOutput trace file at: " << output_trace_path << 
+	    "\nFull trace: " << full_trace <<
+	    "\nTracking main: " << track_main << "\n";
   }
+
+  std::string pref = full_trace ? FullPrefix : "";
+  output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
+  output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
+  output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
 
   std::ofstream meta_file (output_metadata_path);
   meta_file << cache_size << " " << cache_line;

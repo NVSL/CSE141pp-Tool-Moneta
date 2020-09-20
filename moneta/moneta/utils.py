@@ -209,16 +209,18 @@ def run_pintool(w_vals):
         subprocess.run(["rm", OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5"]);
       
     is_full_trace_int = 1 if w_vals['is_full_trace'] else 0
+    track_main_int = 1 if w_vals['track_main'] else 0
   
     args_string = "" if len(w_vals['e_args']) == 0 else " " + " ".join(w_vals['e_args']) 
 
     args = [
         PIN_PATH, "-ifeellucky", "-injection", "child", "-t", TOOL_PATH,
-        "-o", w_vals['o_name'],
-        "-c", str(w_vals['c_lines']),
-        "-m", str(w_vals['m_lines']),
-        "-l", str(w_vals['c_block']),
-        "-f", str(is_full_trace_int),
+        "-name", w_vals['o_name'],
+        "-cache_lines", str(w_vals['c_lines']),
+        "-output_lines", str(w_vals['m_lines']),
+        "-block", str(w_vals['c_block']),
+        "-full", str(is_full_trace_int),
+        "-main", str(track_main_int),
         "--", w_vals['e_file'], *w_vals['e_args']
     ]
 

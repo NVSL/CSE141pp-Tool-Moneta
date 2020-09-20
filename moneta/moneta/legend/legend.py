@@ -52,12 +52,12 @@ class Legend():
                 selections.add('(Access != %d)' % (checkbox.acc_type))
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('((%s < %s) | (%s > %s))' % ('Access_Number', checkbox.start, 'Access_Number', checkbox.stop))
+                selections.add('((%s < %s) | (%s > %s))' % ('Access', checkbox.start, 'Access', checkbox.stop))
         return '&'.join(selections)
 
     @debounced(0.5)
     def update_selection(self):
-        self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select(self.get_select_string())
 
     def add_panel(self, name, contents):
         acc = v.ExpansionPanel(children=[
