@@ -93,10 +93,10 @@ class View():
                     x_label=INDEX_LABEL, 
                     y_label=ADDRESS_LABEL, 
                     cache_size=cache_size,
-                    update_stats=lambda *ignore: update_legend_view_stats(legend.plot_stats, plot, False)
+                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False)
                  )
 
-        update_legend_view_stats(legend.plot_stats, plot, True)
+        update_legend_view_stats(legend.stats, plot, True)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)

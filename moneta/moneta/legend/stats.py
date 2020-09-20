@@ -21,4 +21,4 @@ class PlotStats():
                           layout=Layout(width='250px', padding="5px")
                           )
 
-        self.widget = VBox([self.total_stats, self.curr_stats])
+        self.widgets = VBox([self.total_stats, self.curr_stats])
