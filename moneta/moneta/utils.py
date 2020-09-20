@@ -238,7 +238,9 @@ def run_pintool(w_vals):
     os.chdir(MONETA_TOOL_DIR)
   
     if sub_stderr:
-        print(f"{TextStyle.RED}An error occurred while running your program. Double check your program and Pin tags to make sure they are correct.\n\n"
+        print(f"{TextStyle.RED}An error occurred while running your program. "
+              f"This is normally caused by Tag typos and/or stopping invalid Tags. "
+              f"Double check your program and Pin tags to make sure they are correct.\n\n"
               f"{TextStyle.RED}{TextStyle.BOLD}Raw Error Message:\n{TextStyle.END}"
               f"{TextStyle.RED}{sub_stderr}{TextStyle.END}")
         return False

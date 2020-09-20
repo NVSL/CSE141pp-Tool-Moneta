@@ -7,7 +7,7 @@ from moneta.utils import (
     update_legend_view_stats
 )
 from moneta.moneta_widgets import MonetaWidgets
-from moneta.legend import Legend
+from moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")

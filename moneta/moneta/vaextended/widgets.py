@@ -42,32 +42,26 @@ class PlotTemplate(v.VuetifyTemplate):
         @keydown="function (e) {if (e.keyCode == 13 || e.keyCode == 27) \
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
-      <v-spacer></v-spacer>
+      <v-spacer />
       <toolbar />
-      <v-spacer></v-spacer>
-      <!--<v-btn icon @click="show_legend = !show_legend;">
-        <v-icon>settings</v-icon>-->
+      <v-spacer />
+      Legend
       <legend-control/>
      </v-btn>
     </v-app-bar>
-    <v-main>
-      <v-container>
-        <main-widget/>
-        <v-navigation-drawer
-          v-model="show_legend"
-          :temporary="false"
-          :clipped="clipped"
-          permanent
-          style='top: 50px'
-          right
-          absolute
-          overflow
-          height='auto'
-          color="rgba(255,255,255,50)"
-        >
-          <main-legend/>
-        </v-navigation-drawer>
-      </v-container>
+    <v-main class="overflow-hidden">
+      <main-widget/>
+      <v-navigation-drawer
+        v-model="show_legend"
+        permanent
+        class="mt-12"
+        width="300"
+        right
+        absolute
+        height='auto'
+      >
+        <main-legend/>
+      </v-navigation-drawer>
     </v-main>
 </v-app>
 ''').tag(sync=True)
