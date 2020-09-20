@@ -7,6 +7,7 @@ import subprocess
 from moneta.settings import (
     TextStyle,
     ERROR_LABEL,
+    WARNING_LABEL,
     BUTTON_LAYOUT,
     MONETA_BASE_DIR,
     MONETA_TOOL_DIR,
@@ -142,6 +143,7 @@ def parse_cwd(path):
         NOTE: Assumes '..' is not part of a file name
     """
 
+    path = path or '.'
     expanded = os.path.expanduser(path.strip())
     realpath = os.path.realpath(expanded)
     home_rel = os.path.relpath(expanded, start='/home/jovyan')
@@ -159,7 +161,7 @@ def parse_cwd(path):
             
 def verify_input(w_vals):
     log.info("Verifying pintool arguments")
-    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'] or '.')
+    w_vals['display_path'], w_vals['cwd_path'] = parse_cwd(w_vals['cwd_path'])
   
     if (w_vals['c_lines'] <= 0 or w_vals['c_block'] <= 0 or w_vals['m_lines'] <= 0):
         print(f"{ERROR_LABEL} {TextStyle.RED}Cache lines, cache block, and output lines to output must be greater than 0{TextStyle.END}")
@@ -220,9 +222,7 @@ def run_pintool(w_vals):
         "--", w_vals['e_file'], *w_vals['e_args']
     ]
 
-    print(f"Running \"{w_vals['e_file']}{args_string}\" in Directory \"{w_vals['cwd_path']}\" "
-          f"with Cache Lines={w_vals['c_lines']} and Block Size={w_vals['c_block']}B for Number of Lines={w_vals['m_lines']} "
-          f"into Trace: {w_vals['o_name']}\n\n"
+    print(f"{TextStyle.BOLD}Running in Directory:{TextStyle.END} \"{w_vals['cwd_path']}\" \n"
           f"{TextStyle.BOLD}Pintool Command:{TextStyle.END} {' '.join(args)}\n")
     
     os.chdir(w_vals['cwd_path'])
@@ -278,7 +278,7 @@ def collect_traces():
             tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
             meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print(f"{TextStyle.BOLD}Warning:{TextStyle.END} Tag Map and/or Metadata file missing for {file_name}. Omitting trace.")
+                print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting trace.{TextStyle.END}")
                 continue
           
             trace_list.append(trace_name)
@@ -290,13 +290,12 @@ def collect_traces():
             tag_path = os.path.join(dir_path, "full_tag_map_" + trace_name + ".csv")
             meta_path = os.path.join(dir_path, "full_meta_data_" + trace_name + ".txt")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print(f"{TextStyle.BOLD}Warning:{TextStyle.END} Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.")
+                print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.{TextStyle.END}")
                 continue
             
             trace_list.append("(Full) " + trace_name)
             trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
-            log.debug(f"Trace: (Full) {trace_name}, Tag: {tag_path}")
     return trace_list, trace_map
 
 def delete_traces(trace_paths):
