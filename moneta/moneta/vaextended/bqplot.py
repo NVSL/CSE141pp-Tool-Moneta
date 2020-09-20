@@ -28,6 +28,7 @@ RESET_ZOOM = 'Reset Zoom'
 
 UNDO = 'Undo'
 REDO = 'Redo'
+SWITCH = 'Switch x'
 
 from enum import Enum
 class Action(Enum):
@@ -216,6 +217,16 @@ class BqplotBackend(BackendBase):
                                     'variable': 'tooltip',
                                     'children': self.redo_btn
                                 }], children=[REDO])
+            self.switch_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['fa-random'])
+                                ])
+            self.switch_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': self.switch_btn
+                                }], children=[SWITCH])
+
+            self.switch_btn.on_event('click', self.plot.switch_handle)
             @debounced(0.5)
             def undo_redo(*args):
                 self.curr_action = args[0]
@@ -256,7 +267,8 @@ class BqplotBackend(BackendBase):
                     self.interaction_tooltips, 
                     self.reset_tooltip,
                     self.undo_tooltip,
-                    self.redo_tooltip
+                    self.redo_tooltip,
+                    self.switch_tooltip
                 ], align='center', justify='center')
             self.plot.add_to_toolbar(self.tooltips)
 
