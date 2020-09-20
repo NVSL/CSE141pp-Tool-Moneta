@@ -52,7 +52,7 @@ class Legend():
                 selections.add('(Access != %d)' % (checkbox.acc_type))
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('((%s < %s) | (%s > %s))' % ('Access', checkbox.start, 'Access', checkbox.stop))
+                selections.add('((%s < %s) | (%s > %s))' % ('index', checkbox.start, 'index', checkbox.stop))
         return '&'.join(selections)
 
     @debounced(0.5)
