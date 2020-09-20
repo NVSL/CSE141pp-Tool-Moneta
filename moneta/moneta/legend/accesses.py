@@ -32,8 +32,8 @@ class Accesses():
 
         # Parent checkboxes
         self.all_check = ParentCheckbox(chks, self.compute_all, prepend_icon='fa-globe', tooltip="All")
-        self.read_check = ParentCheckbox([read_hit, read_capmiss, read_compmiss], self.compute_all, label="R")
-        self.write_check = ParentCheckbox([write_hit, write_capmiss, write_compmiss], self.compute_all, label="W")
+        self.read_check = ParentCheckbox([read_hit, read_capmiss, read_compmiss], self.compute_all, append_icon="fa-book", tooltip="Reads")
+        self.write_check = ParentCheckbox([write_hit, write_capmiss, write_compmiss], self.compute_all, append_icon="fa-pencil", tooltip="Writes")
 
         self.hit_check = ParentCheckbox([read_hit, write_hit], self.compute_all, prepend_icon="fa-dot-circle-o", tooltip="Hits")
         self.capmiss_check = ParentCheckbox([read_capmiss, write_capmiss], self.compute_all, prepend_icon="fa-battery", tooltip="Capacity Misses")
@@ -41,7 +41,7 @@ class Accesses():
         self.parentcheckboxes = [self.all_check, self.read_check, self.write_check, 
                 self.hit_check, self.capmiss_check, self.compmiss_check]
 
-        def colbox(check):
+        def parentbox(check):
             return HBox([check.widget], layout=Layout(align_items="center", overflow="hidden", justify_content="center"))
 
         def clr_picker(clr, cache=False):
@@ -50,7 +50,7 @@ class Accesses():
                         disabled=False, layout=Layout(width="30px"))
             else:
                 clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), 
-                        disabled=False, layout=Layout(width="30px", margin="0 0 0 -3px", padding="-5"))
+                        disabled=False, layout=Layout(width="25px", margin="0 0 0 8px"))
             clr_picker.observing = True
             def handle_color_picker(change):
                 self.colormap[clr] = to_rgba(change.new, 1)
@@ -65,14 +65,14 @@ class Accesses():
                 layout=Layout(justify_content="center",align_items="center",overflow="hidden"))
 
         # Wrap parent boxes in ipywidget
-        alls = colbox(self.all_check)
+        alls = parentbox(self.all_check)
 
-        read = HBox([self.read_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden", justify_content="center"))
-        write = HBox([self.write_check.widget], layout=Layout(margin="0 0 0 6px", align_items="center", overflow="hidden", justify_content="center"))
+        read = parentbox(self.read_check)
+        write = parentbox(self.write_check)
 
-        hits = colbox(self.hit_check)
-        capmisses = colbox(self.capmiss_check)
-        compmisses = colbox(self.compmiss_check)
+        hits = parentbox(self.hit_check)
+        capmisses = parentbox(self.capmiss_check)
+        compmisses = parentbox(self.compmiss_check)
 
         # Add pseudo grid and wrap primary boxes in ipywidget
         gridbox = HBox([GridBox([alls, vdiv, read, vdiv, write,
@@ -115,22 +115,22 @@ class Accesses():
         self.plot.backend.plot._update_image()
 
 class ParentCheckbox:
-    def __init__(self, children, compute_all, label=None, prepend_icon=None, tooltip=""):
-        if label is None and prepend_icon is None:
+    def __init__(self, children, compute_all, append_icon=None, prepend_icon=None, tooltip=""):
+        if append_icon is None and prepend_icon is None:
+            print("Must provide at least one icon")
             raise SystemError
-        if label is None: # _widget for v_model, widget for display
-            self._widget = v.Checkbox(v_on='tooltip.on', prepend_icon=prepend_icon, v_model=True)
-            self.widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self._widget}],
-                children=[tooltip])
+        if append_icon: # _widget for v_model, widget for display
+            self._widget = v.Checkbox(v_on='tooltip.on', append_icon=append_icon, v_model=True)
         else:
-            self._widget = v.Checkbox(label=label, v_model=True)
-            self.widget = self._widget
+            self._widget = v.Checkbox(v_on='tooltip.on', prepend_icon=prepend_icon, v_model=True)
+        self.widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self._widget}],
+                children=[tooltip])
         self._widget.on_event('change', self.handler)
         self.children = children
         self.compute_all = compute_all
 
     def handler(self, checkbox, _, new):
-        self.widget.indeterminate = False
+        self._widget.indeterminate = False
         for child in self.children:
             child.widget.v_model = new
         self.compute_all()
