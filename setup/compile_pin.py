@@ -4,8 +4,8 @@ import argparse
 import os
 
 PIN_DIR = "/pin/source/tools/ManualExamples/"
-TRACE_TOOL = "~/work/.setup/trace_tool.cpp"
-OUTPUT_PATH = "~/work/.setup/"
+TRACE_TOOL = "~/work/setup/trace_tool.cpp"
+OUTPUT_PATH = "~/work/setup/"
 
 @contextmanager
 def cd(newdir):

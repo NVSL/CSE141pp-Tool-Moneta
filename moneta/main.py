@@ -16,7 +16,7 @@ from IPython.display import display, clear_output
 
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
 MONETA_TOOL_DIR = os.path.expanduser("~") + "/work/moneta"
-sys.path.append(MONETA_BASE_DIR + ".setup/")
+sys.path.append(MONETA_BASE_DIR + "setup/")
 
 plt.ioff()
 
@@ -53,8 +53,8 @@ BUTTON_STYLE = {'button_color': 'lightgray'}
 DEFAULT_TRACE_DROP = 'Select a trace to load'
 
 PIN_PATH  = "/pin/pin.sh"
-TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
-OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
+TOOL_PATH = MONETA_BASE_DIR + "setup/trace_tool.so"
+OUTPUT_DIR = MONETA_BASE_DIR + "moneta/output/"
 
 #Enumerations
 COMP_W_MISS = 6

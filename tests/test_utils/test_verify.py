@@ -57,7 +57,7 @@ class TestVerifyWidgetValues:
                 ("~","~"),
                 ("~/work/moneta","."),
                 ("/home/jovyan/work", "~/work"),
-                ("/home/jovyan/work/.setup", "~/work/.setup"),
+                ("/home/jovyan/work/setup", "~/work/setup"),
                 ("/home/jovyan", "~"),
                 ("~/work/../", "~"),
                 ("~/work/../../", "/home"),
