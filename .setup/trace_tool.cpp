@@ -10,9 +10,15 @@
 #include <unordered_map>
 #include <algorithm>
 #include <assert.h>
+#include <regex>
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
+#ifdef _WIN32      // RDTSC
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 
 // Pin comes with some old standard libraries.
@@ -86,6 +92,9 @@ enum {
 };
 
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
+bool start_time_checked {0};
+unsigned long long start_time {0};
+uint32_t cpu_freq;
 
 // Increment id for every new tag
 static int curr_id {0};
@@ -160,6 +169,7 @@ struct Access {
   TagData* tag;
   int type;
   ADDRINT addr;
+  unsigned long long time;
 } prev_acc;
 
 bool is_prev_acc {0};
@@ -175,6 +185,7 @@ bool is_last_acc {0};
 // Output Columns
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
+const std::string TimeColumn    {"Time"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -183,6 +194,7 @@ const std::string AddressColumn {"Address"};
 class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
+  float times[chunk_size];
   uint8_t accs[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
@@ -192,9 +204,9 @@ class HandleHdf5 {
 
   // Memory accesses
   H5::H5File mem_file;
-  H5::DataSet tag_d;
   H5::DataSet acc_d;
   H5::DataSet addr_d;
+  H5::DataSet time_d;
     // State vars
   hsize_t curr_chunk_dims [1] = {chunk_size};
   hsize_t total_ds_dims [1] = {chunk_size};
@@ -223,6 +235,7 @@ class HandleHdf5 {
     // Create and write datasets to file
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+    time_d = mem_file.createDataSet(TimeColumn.c_str(), H5::PredType::NATIVE_FLOAT, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
     //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
@@ -235,6 +248,7 @@ class HandleHdf5 {
     }
     acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
+    time_d.extend( total_ds_dims );
 
     H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
@@ -244,6 +258,10 @@ class HandleHdf5 {
     old_dataspace = addr_d.getSpace(); // Rinse and repeat
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+
+    old_dataspace = time_d.getSpace();
+    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
+    time_d.write( times, H5::PredType::NATIVE_FLOAT, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -299,12 +317,13 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(ADDRINT address, int access) {
+  int write_data_mem(ADDRINT address, int access, float time) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
     addrs[mem_ind] = address; // Write to memory first
-    accs[mem_ind++] = access;
+    accs[mem_ind] = access;
+    times[mem_ind++] = time;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
     }
@@ -405,6 +424,37 @@ KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<BOOL> KnobTrackAll(KNOB_MODE_WRITEONCE, "pintool",
     "f", "0", "Ignores tags, tracks all memory accesses");
 
+// Taken and modified from: https://gist.github.com/stevedoyle/1319053
+uint32_t cpufreq() {
+    uint32_t cpuFreq = 0;
+
+    // CPU frequency is stored in /proc/cpuinfo in lines beginning with "cpu MHz"
+    std::regex regexp("^cpu MHz\\s*:\\s*(\\d+)");
+
+    std::ifstream ifs("/proc/cpuinfo");
+    if(ifs.is_open())
+    {	
+	std::string line;
+
+	while(ifs.good())
+	{
+	    std::getline(ifs, line);
+	    std::smatch m;
+	    std::regex_search(line, m, regexp);
+	    if(m.empty())
+		continue;
+
+	    // Match found - extract frequency
+	    cpuFreq = std::atol(m.str(1).c_str())*1000000; // MHz to Hz
+	    break;
+	}
+    }
+
+    ifs.close();
+
+    return cpuFreq;
+}
+
 VOID flush_cache() {
   if (CACHE_DEBUG) {
     std::cerr << "Flushing cache\n";
@@ -415,13 +465,13 @@ VOID flush_cache() {
 }
 
 
-VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
+VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack, unsigned long long time) {
   if (is_stack) {
     all_tags[STACK]->update(addr, curr_lines);
   } else {
     all_tags[HEAP]->update(addr, curr_lines);
   }
-  hdf_handler->write_data_mem(addr, acc_type);
+  hdf_handler->write_data_mem(addr, acc_type, 1.0*time/cpu_freq);
   curr_lines++; // Afterward, for 0-based indexing
   
   if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
@@ -583,10 +633,11 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type) {
+void record(ADDRINT addr, int acc_type, unsigned long long time) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
+  prev_acc.time = time;
 }
 
 VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
@@ -596,7 +647,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp, prev_acc.time);
   }
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {0};
@@ -607,14 +658,26 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
       bool updated = td->update(addr, curr_lines);
       if (!recorded && updated) {
-        record(addr, access_type);
+        unsigned long long curr_time = _rdtsc() - start_time;
+	if (!start_time_checked) {
+          start_time_checked = true;
+	  start_time = curr_time;
+	  curr_time = 0;
+	}
+        record(addr, access_type, curr_time);
         recorded = true;
       }
     }
   }
 
   if (!recorded && KnobTrackAll) {
-    record(addr, access_type);
+    unsigned long long curr_time = _rdtsc() - start_time;
+    if (!start_time_checked) {
+      start_time_checked = true;
+      start_time = curr_time;
+      curr_time = 0;
+    }
+    record(addr, access_type, curr_time);
   }
 }
 
@@ -655,7 +718,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp, prev_acc.time);
     is_prev_acc = false;
   }
   std::vector<Tag*> tags;
@@ -843,6 +906,7 @@ int main(int argc, char *argv[]) {
   }
   all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, true);
   all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT, true);
+  cpu_freq = cpufreq();
   PIN_StartProgram();
   
   return 0;

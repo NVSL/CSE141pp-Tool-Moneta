@@ -50,6 +50,16 @@ class View():
             self.update_cwd_widget(w_vals['display_path'])
             self.update_select_widget()
 
+    def switch_handle(self, *_):
+        clear_output(wait=True)
+        log.info("Refreshing")
+        display(self.m_widget.widgets)
+        if self.model.normal_plot:
+            self.plot2.show()
+        else:
+            self.plot.show()
+        self.model.normal_plot = not self.model.normal_plot
+
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
 
@@ -93,13 +103,43 @@ class View():
                     x_label=INDEX_LABEL, 
                     y_label=ADDRESS_LABEL, 
                     cache_size=cache_size,
-                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False)
-                 )
+                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False),
+                    switch_handle=self.switch_handle,
+                    show=False)
+        plot.show()
 
         update_legend_view_stats(legend.stats, plot, True)
 
-        legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
+
+        x_time_lim = curr_trace.x_time_lim
+        plot2 = df.plot_widget(
+                    df["Time"], 
+                    df[ADDRESS], 
+                    what='max(Access)',
+                    colormap=CUSTOM_CMAP, 
+                    selection=[True], 
+                    limits=[x_time_lim, y_lim],
+                    backend='moneta_backend', 
+                    type='vaextended', 
+                    legend=legend,
+                    default_title=curr_trace.name, 
+                    x_col="Time",
+                    y_col=ADDRESS,
+                    x_label="Time (Seconds)", 
+                    y_label=ADDRESS_LABEL, 
+                    cache_size=cache_size,
+                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot2, False),
+                    switch_handle=self.switch_handle,
+                    show=False)
+
+        legend.set_zoom_sel_handler(plot.backend.zoom_sel, plot2.backend.zoom_sel)
+        #plot2.show()
+        update_legend_view_stats(legend.stats, plot2, True)
+        self.plot = plot
+        self.plot2 = plot2
+
+
         pass
     
     def handle_delete_trace(self, _):

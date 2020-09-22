@@ -31,7 +31,8 @@ class Tags():
 
     def create_zoom_button(self, tag): #TODO move constants out
         df = self.model.curr_trace.df
-        stats = df[int(tag.access[0]):int(tag.access[1])+1].count(binby=[df.Access], limits=[1,7], shape=[6])
+        sliced = df[int(tag.access[0]):int(tag.access[1])+1]
+        stats = sliced.count(binby=[df.Access], limits=[1,7], shape=[6])
 
         btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
                 style={'button_color': 'transparent'},
@@ -39,13 +40,20 @@ class Tags():
                     borders='none', align_items='center'
                 ))
         def zoom_to_selection(*_):
-            self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
+            if self.model.normal_plot:
+                self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1]),
                                     float(tag.address[0]), float(tag.address[1]))
+            else:
+                self.zoom_sel_handler2(float(sliced["Time"].values[0]), float(sliced["Time"].values[-1]),
+                                    float(tag.address[0]), float(tag.address[1]))
+
+
         btn.on_click(zoom_to_selection)
         return btn
 
-    def set_zoom_sel_handler(self, f):
+    def set_zoom_sel_handler(self, f, f2):
         self.zoom_sel_handler = f
+        self.zoom_sel_handler2 = f2
 
     def tag_tooltip(self, tag, stats):
         total = sum(stats)

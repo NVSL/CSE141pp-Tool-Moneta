@@ -52,5 +52,6 @@ class Trace():
         num_accs = self.df[ADDRESS].count()
         self.df[INDEX] = np.arange(0, num_accs)
         self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()]]
+        self.x_time_lim = [self.df["Time"].min()[()], self.df["Time"].max()[()]]
         self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]]
 

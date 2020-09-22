@@ -28,6 +28,7 @@ RESET_ZOOM = 'Reset Zoom'
 
 UNDO = 'Undo'
 REDO = 'Redo'
+SWITCH = 'Switch x'
 
 from enum import Enum
 class Action(Enum):
@@ -216,6 +217,20 @@ class BqplotBackend(BackendBase):
                                     'variable': 'tooltip',
                                     'children': self.redo_btn
                                 }], children=[REDO])
+            self.switch_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['fa-random'])
+                                ])
+            self.switch_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': self.switch_btn
+                                }], children=[SWITCH])
+
+            self.normal_plot=True
+            def switch_plot(*_):
+                self.normal_plot = not self.normal_plot
+                self.plot.switch_handle()
+            self.switch_btn.on_event('click', switch_plot)
             @debounced(0.5)
             def undo_redo(*args):
                 self.curr_action = args[0]
@@ -256,7 +271,8 @@ class BqplotBackend(BackendBase):
                     self.interaction_tooltips, 
                     self.reset_tooltip,
                     self.undo_tooltip,
-                    self.redo_tooltip
+                    self.redo_tooltip,
+                    self.switch_tooltip
                 ], align='center', justify='center')
             self.plot.add_to_toolbar(self.tooltips)
 
@@ -278,9 +294,21 @@ class BqplotBackend(BackendBase):
                     y2 = res[addr].max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if (x2 - x1 < 128):
-                    x1 -= (128 + x1 - x2) / 2
-                    x2 = x1 + 128
+                if self.normal_plot:
+                    if (x2 - x1 < 128): # TODO for time
+                        x1 -= (128 + x1 - x2) / 2
+                        x2 = x1 + 128
+                else:
+                    _x1 = res["index"].values[0]
+                    _x2 = res["index"].values[-1]
+                    if (_x2 - _x1 < 128):
+                        _x1 -= (128 + _x1 - _x2) / 2
+                        _x2 = _x1 + 128
+                    _x1 = max(0, _x1)
+                    _x2 = min(len(df)-1, _x2)
+                    x1 = df[ind].values[_x1]
+                    x2 = df[ind].values[_x2]
+
 
                 if (y2 - y1 < 128):
                     y1 -= (128 + y1 - y2) / 2
