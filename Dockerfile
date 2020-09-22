@@ -37,5 +37,3 @@ RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/not
 WORKDIR ${DIR_MONETA}
 # Make Moneta a package to add path for pytest to locate
 RUN pip install -e .
-
-RUN cp /pin/pin.sh .
