@@ -74,7 +74,7 @@ make obj-intel64/TOOL_NAME.so TARGET=intel64
 ```
 4. Copy the pintool `.so` file into the `.setup` folder (This is where the Python scripts in the `moneta` directory looks for the `.so` files)
 ```
-cp obj-intel64/TOOL_NAME.so ~/work/.setup
+cp obj-intel64/TOOL_NAME.so ~/work/setup
 ```
 
 ## Running the Pintool
@@ -93,7 +93,7 @@ Again, for our Docker image, `PIN_ROOT = /pin`.
 
 **Pin options:** `-ifeellucky -injection child` (See [**Issues with External Libraries**](#issues))
 
-**Pin tool:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)
+**Pin tool:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/setup/trace_tool.so`)
 
 ### trace\_tool.so: Pin Tool Options
 
@@ -109,17 +109,17 @@ Again, for our Docker image, `PIN_ROOT = /pin`.
 
 Using these values and flags, a Pin execution command for `trace_tool.so` may look similar to the one below:
 ```
-/pin/pin.sh -ifeellucky -injection child -t ~/work/.setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
+/pin/pin.sh -ifeellucky -injection child -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
 ```
 
 Alternatively, if you are running from the Docker command line, you can use the `pin` alias in the `~/.bashrc` file:
 ```
-pin -t ~/work/.setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
+pin -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
 ```
 
 ## Output Files
 
-If Pin traces the program successfully, it will create the following files in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output`):
+If Pin traces the program successfully, it will create the following files in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/output`):
 
 `[full_]trace_NAME.hdf5`: Contains the program's memory accesses, corresponding tag ID, and corresponding access type (read, write, hit, capacity miss, compulsory miss)
 

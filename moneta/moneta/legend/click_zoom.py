@@ -100,11 +100,11 @@ class Click_Zoom():
             selection = self.get_select_string()
             if len(selection) is not 0:
                 tmp_df = self.model.curr_trace.df
-                tmp_df.select(self.get_select_string(), mode="replace") # replace not necessary for correctness, but maybe perf? 
-                selected_bytes = tmp_df.evaluate(self.df.Bytes, selection=True)
-                selected_access_number = tmp_df.evaluate(self.df.Access_Number, selection=True)
+                tmp_df.select(self.get_select_string()) # replace not necessary for correctness, but maybe perf? 
+                selected_address = tmp_df.evaluate(self.df.Address, selection=True)
+                selected_index = tmp_df.evaluate(self.df.index, selection=True)
                 selected_access = tmp_df.evaluate(self.df.Access, selection=True)
-                selected_array = vaex.from_arrays(Bytes=selected_bytes, Access_Number=selected_access_number, Access=selected_access)
+                selected_array = vaex.from_arrays(Access=selected_access, Address=selected_address, index=selected_index)
                 self.update_df_selections(selected_array)
             else:
                 self.update_df_selections(self.model.curr_trace.df)
@@ -116,7 +116,7 @@ class Click_Zoom():
                     selections.add('(Access != %d)' % (checkbox.acc_type))
             for checkbox in self.tags.checkboxes:
                 if checkbox.widget.v_model == False:
-                    selections.add('(Tag != %s)' % (checkbox.tag_id))
+                    selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
             return '&'.join(selections)
 
         @debounced(0.5, method=True)
@@ -128,20 +128,20 @@ class Click_Zoom():
               print("click zoom: no data to zoom into")
               return
 
-            czoom_df_filter1 = self.df[self.df.Access_Number < self.observable.czoom_xmax]
-            czoom_df_filter2 = czoom_df_filter1[self.df.Access_Number > self.observable.czoom_xmin]
-            czoom_df_filter3 = czoom_df_filter2[self.df.Bytes > self.observable.czoom_ymin]
-            czoom_df_filter4 = czoom_df_filter3[self.df.Bytes < self.observable.czoom_ymax]
+            czoom_df_filter1 = self.df[self.df.index < self.observable.czoom_xmax]
+            czoom_df_filter2 = czoom_df_filter1[self.df.index > self.observable.czoom_xmin]
+            czoom_df_filter3 = czoom_df_filter2[self.df.Address > self.observable.czoom_ymin]
+            czoom_df_filter4 = czoom_df_filter3[self.df.Address < self.observable.czoom_ymax]
             #colors = newc[df_filter4.Access.values]
 
             #second check if there is no data to zoom into
             try: 
-              zoom_x = czoom_df_filter4['Access_Number'].values[-1]
+              zoom_x = czoom_df_filter4['index'].values[-1]
             except:
               print("click zoom: no data to zoom into")
               return
 
-            zoom_y = czoom_df_filter4['Bytes'].values[-1]
+            zoom_y = czoom_df_filter4['Address'].values[-1]
             #max_x = self.df[czoom_df_filter4['Access_Number'].values[-1]]
             #zoom_y = max_x['Bytes'].min()[()]
             global click_zoom_x
@@ -153,11 +153,12 @@ class Click_Zoom():
             self.y_coormax = zoom_y + click_zoom_y/2
 
             #filter data to only those limits
-            df_filter1 = self.df[self.df.Access_Number < self.x_coormax]
-            df_filter2 = df_filter1[self.df.Access_Number > self.x_coormin]
-            df_filter3 = df_filter2[self.df.Bytes > self.y_coormin]
-            df_filter4 = df_filter3[self.df.Bytes < self.y_coormax]
+            df_filter1 = self.df[self.df.index < self.x_coormax]
+            df_filter2 = df_filter1[self.df.index > self.x_coormin]
+            df_filter3 = df_filter2[self.df.Address > self.y_coormin]
+            df_filter4 = df_filter3[self.df.Address < self.y_coormax]
             colors = newc[df_filter4.Access.values]
+
 
             
 	    #df_filter4.evaluate(selection=True)
@@ -170,7 +171,7 @@ class Click_Zoom():
                 self.button.layout.display = "block"
             with self.widget:
                 #filter for indices and addresses and their access type that are currently displayed in main widget
-                mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, c=colors, s=0.5)
+                mpl_plt.scatter(dataset.index.values, dataset.Address.values, c=colors, s=0.5)
                 mpl_plt.title('Mini Zoom')
                 mpl_plt.xlabel('Bytes')
                 mpl_plt.ylabel('Access Number')
