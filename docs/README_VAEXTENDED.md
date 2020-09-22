@@ -2,7 +2,7 @@
 
 Adapted version of Vaex to allow local control over the backend (Default Path: `~/work/moneta/moneta/vaextended`);
 
-## Modifying Vaex's Existing Backend
+## <a name="modify"></a> Modifying Vaex's Existing Backend
 
 ### bqplot.py
 
@@ -45,17 +45,65 @@ If the Moneta Jupyter Notebook is not in the directory that contains `vaextended
 sys.path.append('PATH_TO_VAEXTENDED')
 ```
 
-Note that `PATH_TO_VAEXTENDED` does **NOT** include the `vaextended` directory itself. For the most part, this should not be an issue since the GitHub repository  tree places `vaextended` in the same directory as `Moneta.ipynb`.
+Note that `PATH_TO_VAEXTENDED` does **NOT** include the `vaextended` directory itself. For the most part, this should not be an issue since the GitHub repository tree places `vaextended` in the same directory as `Moneta.ipynb`.
 
 ## Using Vaextended
 
-To use the modified backends and plots of Vaextended, simply specify the backend and plot type you want to use with the `backend=BACKEND` and `type=PLOT_TYPE` keyword arguments in `plot_widget`. An example using the names set in [**Modifying Vaex's Existing Backend**](#modify) can be found below:
+To use the modified backends and plots of Vaextended, specify the backend and plot type you want to use with the `backend=BACKEND` and `type=PLOT_TYPE` keyword arguments in `plot_widget()`. If the values set in [**Modifying Vaex's Existing Backend**](#modify) remain unchanged, `backend='moneta_backend'` and `type='vaextended'` should be passed in. Otherwise, these two values should be replaced accordingly.
+
+
+Using `plot_widget()` with the Vaextended backend also requires the following keyword arguments in addition to `backend` and `type`:
+ - **legend:** A Legend object from `moneta/legend.py`
+ - **x_col:** The x-column name of the dataframe
+ - **y_col:** The y-column name of the dataframe
+ - **cache_size:** The cache size in bytes
+ - **update_stats:** A callback function that updates "Current View Stats" in the Legend object
+ - **limit:** The x and y limits in 2D array format (e.g. `[[x_min, x_max], [y_min, y_max]]`). Required because Vaex incorrectly calculates the y-limits, likely due to the memory addresses being so large in value. This causes the plot to crash from divide-by-zero, so we have to manually pass in the correct limits.
+
+
+ The following keyword arguments are technically not required, but should be included as they improve navigation and visuals:
+ - **colormap:** Colormap to use. The primary colormap Vaextended uses can be found in `moneta/settings.py` as `CUSTOM_CMAP`
+ - **selection:** Passing in `[True]` allows turning on/off access types or tags via the Legend checkboxes
+ - **what:** Determines which value out of Vaex's binned data points should be mapped to the colormap and displayed. Vaextended uses `max(Access)`
+ - **default_title:** Title of the plot, typically set to be the trace name (Default: "Moneta")
+ - **x_label:** The plot's x-axis label (Default: "Access Number")
+ - **y_label:** The plot's y-axis label (Default: "Address")
+
+An example of using `plot_widget()` with Vaextended can be found below:
 
 ```
 import vaex
-df = vaex.example()
-df.plot_widget(df.x, df.y, backend='moneta_backend', type='vaextended')
+from moneta.legend import Legend
+from moneta.settings import CUSTOM_CMAP
+
+df = vaex.open('some_trace.hdf5')
+x_min = df.index.min()
+x_max = df.index.max()
+y_min = df.Address.min()
+y_max = df.Address.max()
+
+plot = df.plot_widget(
+            df['index'],
+            df['Address'],
+            what='max(Access)',
+            colormap=CUSTOM_CMAP, 
+            selection=[True], 
+            limits=[[x_min, x_max], [y_min, y_max]],
+            backend='moneta_backend', 
+            type='vaextended', 
+            legend=Legend(),
+            default_title='Some Trace', 
+            x_col='index', 
+            y_col='Address', 
+            x_label='Access Number', 
+            y_label='Memory Address', 
+            cache_size=16384,
+            update_stats=lambda *ignore: update_legend_view_stats(legend.plot_stats, plot, False)
+            )
 ```
+
+
+
 
 ### Accessing the Backend
 

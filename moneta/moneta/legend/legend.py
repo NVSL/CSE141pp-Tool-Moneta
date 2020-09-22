@@ -6,6 +6,8 @@ from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MIS
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from moneta.legend.click_zoom import Click_Zoom
+from moneta.legend.stats import PlotStats
+
 from enum import Enum
 import numpy as np
 from vaex.jupyter.bqplot import *
@@ -13,6 +15,7 @@ from vaex.jupyter.bqplot import *
 class Legend():
     def __init__(self, model):
         self.model = model
+
 
         self.panels = v.ExpansionPanels(accordion=True, multiple=True, v_model=[])
         up = 'keyboard_arrow_up'
@@ -23,11 +26,13 @@ class Legend():
         panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.accesses = Accesses(model, self.update_selection)
+        self.stats = PlotStats()
         self.tags = Tags(model, self.update_selection)
         self.click_zoom = Click_Zoom(model, self.accesses, self.tags)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
         self.add_panel(LEGEND_CLICK_ZOOM, self.click_zoom.widgets)
+        self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
             if len(selected) == len(self.panels.children):
@@ -52,12 +57,12 @@ class Legend():
                 selections.add('(Access != %d)' % (checkbox.acc_type))
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('(Tag != %s)' % (checkbox.tag_id))
-        return '&'.join(selections) 
+                selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
+        return '&'.join(selections)
 
     @debounced(0.5)
-    def update_selection(self): 
-        self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf? 
+    def update_selection(self):
+        self.model.curr_trace.df.select(self.get_select_string())
 
     def add_panel(self, name, contents):
         acc = v.ExpansionPanel(children=[
