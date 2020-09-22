@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <ctype.h>
+#include <sys/stat.h> // mkdir
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
@@ -896,6 +897,8 @@ int main(int argc, char *argv[]) {
   output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
   output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
   output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
+  mkdir(DefaultOutputPath.c_str(), 0755);
+
 
   std::ofstream meta_file (output_metadata_path);
   meta_file << cache_size << " " << cache_line;
