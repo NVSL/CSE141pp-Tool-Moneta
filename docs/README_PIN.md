@@ -30,16 +30,10 @@ pintool.so
 
 Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 
-where command line is the exact command to run the executable such as `./sort`, `./add 1 2`, or `/usr/bin/ls`
-
-### Values
-
-Again, for our Docker image, `PIN_ROOT = /pin`.
-
 **Pin:** `PIN_ROOT/pin.sh`  
 **[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin))  
 **\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
-### trace\_tool.so: toolargs
+**\<toolargs\>:**
 
 `-name, -n [string] [default: default]`: Name of trace  
 `-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
@@ -47,6 +41,8 @@ Again, for our Docker image, `PIN_ROOT = /pin`.
 `-block, -b [int] [default: 64]`: Block size of cache line  
 `-full, -f [0 / 1] [default: 0]`: Full trace  
 `-main, -m [0 / 1] [default: 0]`: Track main  
+
+**\<command line\>**: exact command to run the executable such as `./sort`, `./add 1 2`, or `/usr/bin/ls`
 
 #### Examples
 
