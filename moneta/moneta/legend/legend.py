@@ -2,7 +2,7 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_STATS_TITLE
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_STATS_TITLE, INDEX
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from moneta.legend.stats import PlotStats
@@ -52,12 +52,12 @@ class Legend():
                 selections.add('(Access != %d)' % (checkbox.acc_type))
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('((%s < %s) | (%s > %s))' % ('Access_Number', checkbox.start, 'Access_Number', checkbox.stop))
+                selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
         return '&'.join(selections)
 
     @debounced(0.5)
     def update_selection(self):
-        self.model.curr_trace.df.select(self.get_select_string(), mode='replace') # replace not necessary for correctness, but maybe perf?
+        self.model.curr_trace.df.select(self.get_select_string())
 
     def add_panel(self, name, contents):
         acc = v.ExpansionPanel(children=[
