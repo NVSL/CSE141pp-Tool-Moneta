@@ -77,13 +77,9 @@ class BqplotBackend(BackendBase):
         self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
 
-        margin = {'bottom': 35, 'left': 60, 'right': 5, 'top': 0}
-        self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales, fig_margin=margin)
-        self.figure.layout.width = '100%'
-        self.figure.layout.max_height = '800px'
+        self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales)
+        self.figure.layout.width = 'calc(100% - 300px)'
         self.figure.layout.min_height = '800px'
-        self.figure.layout.max_width = '500px'
-        self.figure.layout.min_width = '800px'
         plt.figure(fig=self.figure)
         #self.figure.padding_y = 0
         x = np.arange(0, 10)
@@ -99,8 +95,8 @@ class BqplotBackend(BackendBase):
         for axes in self.figure.axes:
             axes.grid_lines = 'none'
             axes.color = axes.grid_color = axes.label_color = blackish
-        self.figure.axes[0].label = str(plot.x)
-        self.figure.axes[1].label = str(plot.y)
+        self.figure.axes[0].label = plot.x_label
+        self.figure.axes[1].label = plot.y_label
         self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
 
         self.curr_action = Action.other
@@ -109,7 +105,7 @@ class BqplotBackend(BackendBase):
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
-        self.widget = widgets.VBox(children=[self.figure])
+        self.widget = widgets.VBox([self.figure])
         self.create_tools()
 
     @debounced(0.2, method=True)
@@ -222,7 +218,6 @@ class BqplotBackend(BackendBase):
                                 }], children=[REDO])
             @debounced(0.5)
             def undo_redo(*args):
-                print(self.undo_actions)
                 self.curr_action = args[0]
                 (x1, x2), (y1, y2) = args[1][-1]
                 with self.scale_x.hold_trait_notifications():
@@ -273,8 +268,8 @@ class BqplotBackend(BackendBase):
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
                 df = self.dataset
-                ind = self.plot.x_label
-                addr = self.plot.y_label
+                ind = self.plot.x_col
+                addr = self.plot.y_col
                 res = df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
                 if res.count() != 0:
                     x1 = res[ind].values[0]

@@ -1,4 +1,4 @@
-from moneta.settings import NO_TAGS, INDEX_LABEL, ADDRESS_LABEL, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_ID
+from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME
 import numpy as np
 import vaex
 import csv
@@ -11,7 +11,6 @@ class Tag():
         self.address = (tag_dict[LO_ADDR], tag_dict[HI_ADDR])
         self.access = (tag_dict[F_ACC], tag_dict[L_ACC])
         self.name = tag_dict[TAG_NAME]
-        self.id_ = int(tag_dict[TAG_ID])
 
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
@@ -50,9 +49,8 @@ class Trace():
 
     def init_df(self):
         self.df = vaex.open(self.trace_path)
-        self.df.rename_column('Address', ADDRESS_LABEL)
-        num_accs = self.df[ADDRESS_LABEL].count()
-        self.df[INDEX_LABEL] = np.arange(0, num_accs)
-        self.x_lim = [self.df[INDEX_LABEL].min()[()], self.df[INDEX_LABEL].max()[()]]
-        self.y_lim = [self.df[ADDRESS_LABEL].min()[()], self.df[ADDRESS_LABEL].max()[()]]
+        num_accs = self.df[ADDRESS].count()
+        self.df[INDEX] = np.arange(0, num_accs)
+        self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()]]
+        self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]]
 
