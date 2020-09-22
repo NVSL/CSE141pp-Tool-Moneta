@@ -33,8 +33,7 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 **Pin:** `PIN_ROOT/pin.sh`  
 **[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin))  
 **\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
-**\<toolargs\>:**
-
+**\<toolargs\>:**  
 `-name, -n [string] [default: default]`: Name of trace  
 `-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
 `-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
@@ -45,21 +44,16 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 **\<command line\>**: exact command to run the executable such as `./sort`, `./add 1 2`, or `/usr/bin/ls`
 
 #### Examples
-
-Using these values and flags, a Pin execution command for `trace_tool.so` may look similar to the one below:
 ```
-/pin/pin.sh -ifeellucky -injection child -t .setup/pintool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
+/pin/pin.sh -ifeellucky -injection child -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
-
-In container, use the `pin` alias from the `~/.bashrc` file:
+In the container, use the `pin` alias from the `~/.bashrc` file:
 ```
-pin -t .setup/pintool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
+pin -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
 
 ## Output Files
-
 Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output`):
-
 - `[full_]trace_NAME.hdf5`: Table of rows containing memory address, access type (read, write x hit, capacity miss, compulsory miss), and time of access
 - `[full_]tag_map_NAME.csv`: Contains info for all traced tags. Tag name, lower and upper address bounds, first and last access
 - `[full_]meta_data_NAME.txt`: Contains one line: [cache_lines] [block]
@@ -68,5 +62,3 @@ Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output
  - In our Pintool, `trace_tool`, a fully associative cache is simulated and is used to determine if the memory access is a hit or a miss, as Pin cannot tell us if the access is a hit or miss in the system's real cache.
  - The PIN\_ROOT environment variable is set to the directory where Pin is installed. For our Docker image, `PIN_ROOT = /pin`.
  - Using the HDF5 file format is much more efficient than writing to a typical CSV file. Since we are writing large sets of data, efficiency is one of our top priorities. Not only is it faster to write to HDF5 files, it is also faster for Vaex to open HDF5 files. Using HDF5 and Vaex, we can open and process millions of lines of data in seconds. 
-
-
