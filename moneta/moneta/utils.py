@@ -174,7 +174,6 @@ def collect_traces():
     trace_list = []
     trace_list_full = []
     trace_map = dict()
-    if_full = True
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:

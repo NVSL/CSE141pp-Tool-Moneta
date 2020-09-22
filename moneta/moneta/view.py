@@ -27,20 +27,20 @@ class View():
         self.m_widget.gb.on_click(self.handle_generate_trace)
         self.m_widget.lb.on_click(self.handle_load_trace)
         self.m_widget.db.on_click(self.handle_delete_trace)
+        self.lastChanged = -1
         self.update_select_widget()
         
         self.w_1 = []
         self.w_2 = []
         self.selectors = [self.m_widget.sw, self.m_widget.sw2]
-        self.lastChanged = -1
         
         display(self.m_widget.widgets)
 
     def update_select_widget(self):
-        self.m_widget.sw.options = self.model.update_trace_list(1)
+        self.m_widget.sw.options,self.m_widget.sw2.options = self.model.update_trace_list()
         self.m_widget.sw.value = []
-        self.m_widget.sw2.options = self.model.update_trace_list(0)
         self.m_widget.sw2.value = []
+       
 
     def on_value_change(self, change):
         self.m_widget.sw2.value = ()
@@ -68,8 +68,6 @@ class View():
         
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-        self.m_widget.sw.observe(self.on_value_change, names='value')
-        self.m_widget.sw2.observe(self.on_value_change2, names='value')
 
         w_vals = [
             self.m_widget.cl.value,
@@ -86,10 +84,7 @@ class View():
             self.update_select_widget()
 
     def handle_load_trace(self, _):
-        self.m_widget.sw.observe(self.on_value_change, names='value')
-        self.m_widget.sw2.observe(self.on_value_change2, names='value')
         log.info("Load Trace clicked")
-        print(self.lastChanged)
         if (not self.model.ready_next_trace()):
             clear_output(wait=True)
             log.info("Refreshing")
