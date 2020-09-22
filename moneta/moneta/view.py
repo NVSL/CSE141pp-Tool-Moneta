@@ -1,16 +1,13 @@
 from IPython.display import clear_output, display
-from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, HISTORY_MAX, CWD_HISTORY_PATH
 from moneta.utils import (
     generate_trace, 
     delete_traces, 
-    update_cwd_file, 
-    get_curr_stats,
-    stats_hit_string,
-    stats_cap_miss_string,
-    stats_comp_miss_string
+    update_cwd_file,
+    update_legend_view_stats
 )
 from moneta.moneta_widgets import MonetaWidgets
-from moneta.legend import Legend
+from moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
@@ -41,21 +38,8 @@ class View():
         if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             update_cwd_file(self.m_widget.cwd.options)
-            log.debug("New History: {}".format(self.m_widget.cwd.options))
+            log.debug(f"New History: {self.m_widget.cwd.options}")
             
-        
-    def update_stats_widget(self, plot, is_load_trace):
-        total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot)
-
-        if(is_load_trace):
-            self.m_widget.total_hits.value = stats_hit_string(hit_count, total_count)
-            self.m_widget.total_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-            self.m_widget.total_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
-        self.m_widget.curr_hits.value = stats_hit_string(hit_count, total_count)
-        self.m_widget.curr_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-        self.m_widget.curr_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
 
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
@@ -68,10 +52,12 @@ class View():
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
-        if (not self.model.ready_next_trace()):
-            clear_output(wait=True)
-            log.info("Refreshing")
-            display(self.m_widget.widgets)
+
+        self.model.ready_next_trace()
+        clear_output(wait=True)
+        log.info("Refreshing")
+        display(self.m_widget.widgets)
+
 
         if self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0:
             print("To load a trace, select a trace")
@@ -91,14 +77,26 @@ class View():
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
         legend = Legend(self.model)
-        plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
-                 colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
-                 backend='moneta_backend', type='vaextended', legend=legend,
-                 default_title=curr_trace.name, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size,
-                 update_stats = lambda *ignore: self.update_stats_widget(plot, False)
+        plot = df.plot_widget(
+                    df[INDEX], 
+                    df[ADDRESS], 
+                    what='max(Access)',
+                    colormap=CUSTOM_CMAP, 
+                    selection=[True], 
+                    limits=[x_lim, y_lim],
+                    backend='moneta_backend', 
+                    type='vaextended', 
+                    legend=legend,
+                    default_title=curr_trace.name, 
+                    x_col=INDEX,
+                    y_col=ADDRESS,
+                    x_label=INDEX_LABEL, 
+                    y_label=ADDRESS_LABEL, 
+                    cache_size=cache_size,
+                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False)
                  )
-        self.update_stats_widget(plot, True)
-        display(self.m_widget.stats)
+
+        update_legend_view_stats(legend.stats, plot, True)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)

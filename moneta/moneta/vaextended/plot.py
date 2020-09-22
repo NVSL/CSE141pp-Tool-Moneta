@@ -28,12 +28,42 @@ class PlotBase(widgets.Widget):
     grid_limits_min = traitlets.CFloat(None, allow_none=True)
     grid_limits_max = traitlets.CFloat(None, allow_none=True)
 
-    def __init__(self, backend, dataset, x, y=None, z=None, w=None, grid=None, limits=None, shape=128, what="count(*)", f=None,
-                 vshape=16,
-                 selection=None, grid_limits=None, normalize=None, colormap="afmhot",
-                 figure_key=None, fig=None, what_kwargs={}, grid_before=None, vcount_limits=None, 
-                 show_drawer=False,
-                 controls_selection=True, **kwargs):
+    def __init__(
+                self, 
+                backend, 
+                dataset, 
+                x, 
+                y=None, 
+                z=None, 
+                w=None, 
+                grid=None, 
+                limits=None, 
+                shape=128, 
+                what="count(*)", 
+                f=None,
+                vshape=16,
+                selection=None, 
+                grid_limits=None, 
+                normalize=None, 
+                colormap="afmhot",
+                figure_key=None, 
+                fig=None, 
+                what_kwargs={}, 
+                grid_before=None, 
+                vcount_limits=None, 
+                show_drawer=False,
+                controls_selection=True, 
+                legend=None,
+                x_col=None,
+                y_col=None,
+                x_label='Access Number',
+                y_label='Address',
+                default_title='Moneta',
+                cache_size=None,
+                update_stats=None,
+                **kwargs
+                ):
+
         super(PlotBase, self).__init__(x=x, y=y, z=z, w=w, what=what, vcount_limits=vcount_limits, grid_limits=grid_limits, f=f, **kwargs)
         self.backend = backend
         self.vgrids = [None, None, None]
@@ -62,36 +92,39 @@ class PlotBase(widgets.Widget):
         # with self.output:
         if 1:
             self._cleanups = []
-
+    
             self.progress = widgets.FloatProgress(value=0.0, min=0.0, max=1.0, step=0.01)
             self.progress.layout.width = "95%"
             self.progress.layout.max_width = '500px'
             self.progress.description = "progress"
 
             self.toolbar = v.Row(pa_1=True, children=[])
+
+
+            # Vaextended arguments
+            if [x for x in (legend, x_col, y_col, cache_size, update_stats) if x == None]:
+                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, cache_size, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
+
+            self.legend = legend
+            self.x_col = x_col
+            self.y_col = y_col
+            self.x_label = x_label
+            self.y_label = y_label
+            self.cache_size = cache_size
+            self.default_title = default_title
+            self.update_stats = update_stats
+
+
+
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
 
-            if 'legend' in kwargs:
-                self.legend = kwargs.get('legend')
-            if 'x_label' in kwargs:
-                self.x_label = kwargs.get('x_label')
-            if 'y_label' in kwargs:
-                self.y_label = kwargs.get('y_label')
-            if 'cache_size' in kwargs:
-                self.cache_size = kwargs.get('cache_size')
-            if 'default_title' in kwargs:
-                self.default_title = kwargs.get('default_title')
-            if 'update_stats' in kwargs:
-                self.update_stats = kwargs.get('update_stats')
-            else:
-                self.default_title = 'Moneta'
             self.widget = PlotTemplate(components={
-                        'main-widget': widgets.VBox([widgets.HBox([self.backend.widget], layout=widgets.Layout(margin="50px 10px 10px 10px")), self.progress, self.output]),
+                        'main-widget': widgets.VBox([self.backend.widget, self.progress, self.output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
                         'default_title': self.default_title,
                         'main-legend': self.legend.widgets,
-                        'legend-control': self.legend.control_tooltip
+                        'legend-control': self.legend.legend_button
                     },
                     model=show_drawer
             )
@@ -142,7 +175,6 @@ class PlotBase(widgets.Widget):
         display(self.widget)
 
     def add_to_toolbar(self, widget):
-        print("in toolbar adding")
         self.toolbar.children += [widget]
         # TODO: find out why we need to do this, is this a bug?
         self.toolbar.send_state('children')

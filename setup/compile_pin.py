@@ -18,11 +18,9 @@ def cd(newdir):
 
 parser = argparse.ArgumentParser(description="Input and Output for compiling pintool")
 parser.add_argument('input', nargs='?', default=TRACE_TOOL)
-parser.add_argument('output_dir', nargs='?', default=OUTPUT_PATH)
 args = parser.parse_args()
 curr_dir = os.getcwd()
 input_path = args.input
-output_path = args.output_dir
 
 if input_path.rfind(".cpp") == -1:
     print(f'Error: Not a cpp file - {input_path}')
@@ -30,14 +28,6 @@ if input_path.rfind(".cpp") == -1:
 
 full_input_path = os.path.expanduser(input_path)
 print("Using - " + full_input_path)
-
-if output_path[-1] != "/":
-    output_path+="/"
-
-full_output_path = os.path.expanduser(output_path)
-if full_output_path[0] != "/":
-    full_output_path = curr_dir + "/" + full_output_path
-print("Using - " + full_output_path)
 
 try:
     subprocess.run(["cp", full_input_path, PIN_DIR], check=True)
@@ -57,11 +47,5 @@ with cd(PIN_DIR):
     stderr_output = p.stderr.decode()
     print(stderr_output)
     if len(stderr_output) > 0:
-        raise SystemExit
-
-    print("---------------Copying to output dir----------------")
-    try:
-        subprocess.run(["cp", PIN_DIR+"obj-intel64/"+pintool_so, full_output_path], check=True)
-    except:
         raise SystemExit
     print("Success!!")
