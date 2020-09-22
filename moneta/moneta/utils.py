@@ -268,7 +268,9 @@ def collect_traces():
     """Reads output directory to fill up select widget with traces"""
     log.info("Reading outfile directory")
     trace_list = []
-    trace_map = dict()
+    trace_map = {}
+    if not os.path.isdir(OUTPUT_DIR):
+        return [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
