@@ -226,7 +226,11 @@ class BqplotBackend(BackendBase):
                                     'children': self.switch_btn
                                 }], children=[SWITCH])
 
-            self.switch_btn.on_event('click', self.plot.switch_handle)
+            self.normal_plot=True
+            def switch_plot(*_):
+                self.normal_plot = not self.normal_plot
+                self.plot.switch_handle()
+            self.switch_btn.on_event('click', switch_plot)
             @debounced(0.5)
             def undo_redo(*args):
                 self.curr_action = args[0]
@@ -290,9 +294,21 @@ class BqplotBackend(BackendBase):
                     y2 = res[addr].max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if (x2 - x1 < 128): # TODO for time
-                    x1 -= (128 + x1 - x2) / 2
-                    x2 = x1 + 128
+                if self.normal_plot:
+                    if (x2 - x1 < 128): # TODO for time
+                        x1 -= (128 + x1 - x2) / 2
+                        x2 = x1 + 128
+                else:
+                    _x1 = res["index"].values[0]
+                    _x2 = res["index"].values[-1]
+                    if (_x2 - _x1 < 128):
+                        _x1 -= (128 + _x1 - _x2) / 2
+                        _x2 = _x1 + 128
+                    _x1 = max(0, _x1)
+                    _x2 = min(len(df)-1, _x2)
+                    x1 = df[ind].values[_x1]
+                    x2 = df[ind].values[_x2]
+
 
                 if (y2 - y1 < 128):
                     y1 -= (128 + y1 - y2) / 2

@@ -54,15 +54,14 @@ class View():
         clear_output(wait=True)
         log.info("Refreshing")
         display(self.m_widget.widgets)
-        if self.normal_plot:
+        if self.model.normal_plot:
             self.plot2.show()
         else:
             self.plot.show()
-        self.normal_plot = not self.normal_plot
+        self.model.normal_plot = not self.model.normal_plot
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
-        self.normal_plot = True
 
         self.model.ready_next_trace()
         clear_output(wait=True)
@@ -111,7 +110,6 @@ class View():
 
         update_legend_view_stats(legend.stats, plot, True)
 
-        legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)
 
         x_time_lim = curr_trace.x_time_lim
@@ -134,6 +132,8 @@ class View():
                     update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot2, False),
                     switch_handle=self.switch_handle,
                     show=False)
+
+        legend.set_zoom_sel_handler(plot.backend.zoom_sel, plot2.backend.zoom_sel)
         #plot2.show()
         update_legend_view_stats(legend.stats, plot2, True)
         self.plot = plot
