@@ -170,7 +170,7 @@ class Click_Zoom():
                 self.button.layout.display = "block"
             with self.widget:
                 #filter for indices and addresses and their access type that are currently displayed in main widget
-                mpl_plt.scatter(dataset.index.values, dataset.Address.values, c=colors, s=0.5)
+                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5)
                 mpl_plt.title('Mini Zoom')
                 mpl_plt.xlabel('Bytes')
                 mpl_plt.ylabel('Access Number')
