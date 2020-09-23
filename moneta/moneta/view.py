@@ -91,9 +91,9 @@ class View():
             display(self.m_widget.widgets)
 
         if(self.lastChanged==1):
-            curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0], 1)
+            curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
         elif(self.lastChanged==0):
-            curr_trace, err_message = self.model.load_trace(self.m_widget.sw2.value[0], 0)
+            curr_trace, err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
         else:
             log.debug("No trace chosen to load")
             return 

@@ -22,16 +22,8 @@ class Model():
             return False
         return True
 
-    def load_trace(self, trace_name, lastChanged):
-        if(lastChanged==1):
-            log.info("Loading tagged trace")
-            trace_path, tag_path, meta_path = self.trace_map[trace_name]      
-        elif(lastChanged==0):
-            log.info("Loading full trace")
-            trace_path, tag_path, meta_path = self.trace_map["(Full) " + trace_name]
-        else:
-            log.debug("No trace chosen")
-
+    def load_trace(self, trace_name):
+        trace_path, tag_path, meta_path = self.trace_map[trace_name]      
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         if self.curr_trace.err_message is not None:
             return None, self.curr_trace.err_message
