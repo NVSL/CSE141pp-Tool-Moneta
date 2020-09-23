@@ -13,10 +13,9 @@ ARG DIR_SETUP=/home/jovyan/work/.setup
 
 WORKDIR /
 
-# Install pintool and COPY to PATH
-# Fix PIN compilation (included in tar ball): https://chunkaichang.com/tool/pin-notes/
-ADD .setup/moneta_pintool.tar.gz /
-
+# Install pintool
+# Fix PIN compilation (included in repo): https://chunkaichang.com/tool/pin-notes/
+RUN git clone https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin.git pin
 ENV PIN_ROOT=/pin
 
 # Install python libraries
@@ -42,4 +41,3 @@ RUN python compile_pin.py
 WORKDIR ${DIR_MONETA}
 # Make Moneta a package to add path for pytest to locate
 RUN pip install -e .
-
