@@ -109,12 +109,12 @@ Again, for our Docker image, `PIN_ROOT = /pin`.
 
 Using these values and flags, a Pin execution command for `trace_tool.so` may look similar to the one below:
 ```
-/pin/pin.sh -ifeellucky -injection child -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
+/pin/pin.sh -ifeellucky -injection child -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/examples/sorting
 ```
 
 Alternatively, if you are running from the Docker command line, you can use the `pin` alias in the `~/.bashrc` file:
 ```
-pin -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/Examples/sorting
+pin -t ~/work/setup/pintool.so -c 4096 -m 1000000 -l 64 -o sorting -f 0 -- ~/work/moneta/examples/sorting
 ```
 
 ## Output Files

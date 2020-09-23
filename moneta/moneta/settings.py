@@ -13,7 +13,7 @@ OUTPUT_LINES_VAL = 10000000
 OUTPUT_LINES_DESC = "Lines to Output:"
 
 # Working Directory Path
-CWD_PATH_DEF = "e.g. ./Examples/build"
+CWD_PATH_DEF = "e.g. ./examples/build"
 CWD_PATH_DESC = "Working Directory (Optional):"
 HISTORY_MAX = 5
 
