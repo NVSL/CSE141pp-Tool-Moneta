@@ -1,4 +1,4 @@
-from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, HTML, Box
+from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, HTML, Box, Label
 from utils import int_text_factory as int_field
 from utils import text_factory as text_field
 from utils import button_factory as button
@@ -32,9 +32,11 @@ class MonetaWidgets():
                 options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
         self.sw2 = SelectMultiple (
                 options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
-        self.tt = HTML( value="<center>Tagged Trace</center>", layout=settings.TW_LAYOUT)
-        self.tf =  HTML( value="<center>Full Trace</center>", layout=settings.TW_LAYOUT)
-        self.tBox = Box(children=[self.tt, self.tf], layout=settings.TW_BOX_LAYOUT)
+
+        self.tt = Label(value = "Tagged Trace" )
+        self.tf = Label(value = "Full Trace" )
+
+        self.tBox = Box(children=[self.tt, self.tf], layout=Layout(justify_content = "space-around"))
         self.swBox = Box(children=[self.sw, self.sw2], layout=settings.TW_BOX_LAYOUT)
         self.traces = VBox([self.tBox, self.swBox], layout = Layout(flex='1 1 0%', width = 'auto'))
         self.tw = HBox([self.gt_in, self.traces], layout = Layout(flex='1 1 0%'))
