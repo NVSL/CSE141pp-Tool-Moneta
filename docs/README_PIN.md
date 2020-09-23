@@ -31,7 +31,7 @@ pintool.so
 Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 
 **Pin:** `PIN_ROOT/pin.sh`  
-**[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin))  
+**[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin#usage))  
 **\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
 **\<toolargs\>:**  
 - `-name, -n [string] [default: default]`: Name of trace  
