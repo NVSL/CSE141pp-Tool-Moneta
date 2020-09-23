@@ -23,21 +23,21 @@ int main(){
 
 
     FLUSH_CACHE();
-    DUMP_ACCESS_START_TAG("test1", &test1[0], &test1[4]);
-    DUMP_ACCESS_START_TAG("test2", &test2[0], &test2[4]);
-    DUMP_ACCESS_START_TAG("test3", &test3[0], &test3[4]);
-    DUMP_ACCESS_START_TAG("test4", &test4[0], &test4[4]);
-    DUMP_ACCESS_START_TAG("test5", &test5[0], &test5[4]);
-    DUMP_ACCESS_START_TAG("test6", &test6[0], &test6[4]);
-    DUMP_ACCESS_START_TAG("test7", &test7[0], &test7[4]);
-    DUMP_ACCESS_START_TAG("test8", &test8[0], &test8[4]);
-    DUMP_ACCESS_START_TAG("test9", &test9[0], &test9[4]);
-    DUMP_ACCESS_START_TAG("test10", &test10[0], &test10[4]);
-    DUMP_ACCESS_START_TAG("test11", &test11[0], &test11[4]);
-    DUMP_ACCESS_START_TAG("test12", &test12[0], &test12[4]);
-    DUMP_ACCESS_START_TAG("test13", &test13[0], &test13[4]);
-    DUMP_ACCESS_START_TAG("test14", &test14[0], &test14[4]);
-    DUMP_ACCESS_START_TAG("test15", &test15[0], &test15[4]);
+    DUMP_START_SINGLE("test1", &test1[0], &test1[4]);
+    DUMP_START_SINGLE("test2", &test2[0], &test2[4]);
+    DUMP_START_SINGLE("test3", &test3[0], &test3[4]);
+    DUMP_START_SINGLE("test4", &test4[0], &test4[4]);
+    DUMP_START_SINGLE("test5", &test5[0], &test5[4]);
+    DUMP_START_SINGLE("test6", &test6[0], &test6[4]);
+    DUMP_START_SINGLE("test7", &test7[0], &test7[4]);
+    DUMP_START_SINGLE("test8", &test8[0], &test8[4]);
+    DUMP_START_SINGLE("test9", &test9[0], &test9[4]);
+    DUMP_START_SINGLE("test10", &test10[0], &test10[4]);
+    DUMP_START_SINGLE("test11", &test11[0], &test11[4]);
+    DUMP_START_SINGLE("test12", &test12[0], &test12[4]);
+    DUMP_START_SINGLE("test13", &test13[0], &test13[4]);
+    DUMP_START_SINGLE("test14", &test14[0], &test14[4]);
+    DUMP_START_SINGLE("test15", &test15[0], &test15[4]);
 
     for(int i = 0; i < 5; i++){
         test1[i]++;

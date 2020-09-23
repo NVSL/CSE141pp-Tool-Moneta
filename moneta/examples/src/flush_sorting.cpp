@@ -12,8 +12,8 @@
 using namespace std;
 
 extern "C" __attribute__ ((optimize("O0"))) void FLUSH_CACHE() {}
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START_TAG(const char* tag, int* begin, int* end) {}
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP_TAG(const char* tag) {}
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_START_SINGLE(const char* tag, int* begin, int* end) {}
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START(int* begin, int* end) {}
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP() {}
 extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS(int* begin, int* end, int stop_start){}
@@ -117,32 +117,32 @@ int main(int argc, char *argv[]){
 		
 	FLUSH_CACHE();
 	//BUBBLE
-	DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
+	DUMP_START_SINGLE("Bubble", &bubble[0], &bubble[SIZE-1]);
 	
 	bubbleSort(bubble, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Bubble");
+	DUMP_STOP("Bubble");
 	
 	//INSERTION
-	DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
+	DUMP_START_SINGLE("Insertion", &insertion[0], &insertion[SIZE-1]);
 	
 	insertionSort(insertion, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Insertion");
+	DUMP_STOP("Insertion");
 	
 	//HEAP
-	DUMP_ACCESS_START_TAG("Heap", &heap[0], &heap[SIZE-1]);
+	DUMP_START_SINGLE("Heap", &heap[0], &heap[SIZE-1]);
 	
 	heapSort(heap, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Heap");
+	DUMP_STOP("Heap");
 
 	//SELECTION	
-	DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
+	DUMP_START_SINGLE("Selection", &selection[0], &selection[SIZE-1]);
 	
 	selectionSort(selection, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Selection");
+	DUMP_STOP("Selection");
 	
 
 	/* Print Sorted array

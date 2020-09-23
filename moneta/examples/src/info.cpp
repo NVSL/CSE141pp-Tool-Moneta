@@ -10,19 +10,19 @@ int main() {
   std::vector<int> mem (SIZE, 0);
 
   std::cerr << "Calibration\n";
-  DUMP_ACCESS_START_TAG("calibration", mem.data(), &mem.back());
+  DUMP_START_SINGLE("calibration", mem.data(), &mem.back());
   for (int i = 0; i < SIZE; i++) {
     mem[i]++;
   }
   for (int i = 0; i < SIZE; i++) {
     mem[i]--;
   }
-  DUMP_ACCESS_STOP_TAG("calibration");
+  DUMP_STOP("calibration");
 
   int stats[5] = {};
 
-  DUMP_ACCESS_START_TAG("vector_stats", mem.data(), &mem.back());
-  DUMP_ACCESS_START_TAG("array_stats", stats, &stats[4]);
+  DUMP_START_SINGLE("vector_stats", mem.data(), &mem.back());
+  DUMP_START_SINGLE("array_stats", stats, &stats[4]);
   for (int i = 0; i < SIZE; i++) {
     int j = rand()%SIZE;
     mem[j]++;
@@ -38,8 +38,8 @@ int main() {
       break;
     }
   }
-  DUMP_ACCESS_STOP_TAG("vector_stats");
-  DUMP_ACCESS_STOP_TAG("array_stats");
+  DUMP_STOP("vector_stats");
+  DUMP_STOP("array_stats");
 
   std::cerr << "Sum: " << stats[0] << "\n" 
     << "Mean: " << stats[1] << "\n"

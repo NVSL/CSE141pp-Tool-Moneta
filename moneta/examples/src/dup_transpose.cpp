@@ -3,8 +3,8 @@
 #include <iostream>
 
 
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_START_TAG(const char* tag, double* begin, double* end) {}
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_ACCESS_STOP_TAG(const char* tag) {}
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_START_SINGLE(const char* tag, double* begin, double* end) {}
+extern "C" __attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
 
 
 
@@ -21,22 +21,22 @@ int main(int argc, char *argv[]) {
   std::uniform_real_distribution<double> unif (LowerB, UpperB);
   std::default_random_engine re;
 
-  DUMP_ACCESS_START_TAG("K", &K[0][0], &K[N-1][M-1]);
+  DUMP_START_SINGLE("K", &K[0][0], &K[N-1][M-1]);
   // Initialization
   for (int row = 0; row < N; ++row) {
     for (int col = 0; col < M; ++col) {
       K[row][col] = unif(re);
     }
   }
-  DUMP_ACCESS_START_TAG("E", &E[0][0], &E[M-1][N-1]);
+  DUMP_START_SINGLE("E", &E[0][0], &E[M-1][N-1]);
   // Normal transpose - E = K.T
   for (int row = 0; row < M; ++row) {
     for (int col = 0; col < N; ++col) {
       E[row][col] = K[col][row];
     }
   }
-  DUMP_ACCESS_STOP_TAG("K");
-  DUMP_ACCESS_START_TAG("K", &E[0][0], &E[M-1][N-1]);
+  DUMP_STOP("K");
+  DUMP_START_SINGLE("K", &E[0][0], &E[M-1][N-1]);
 
   // Normal transpose - K = E.T
   for (int row = 0; row < N; ++row) {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  DUMP_ACCESS_STOP_TAG("E");
-  DUMP_ACCESS_STOP_TAG("K");
+  DUMP_STOP("E");
+  DUMP_STOP("K");
   return 0;
 }

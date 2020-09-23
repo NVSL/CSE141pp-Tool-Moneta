@@ -15,9 +15,9 @@ int main(){
 
 
     FLUSH_CACHE();
-    DUMP_ACCESS_START_TAG("test1", &test1[0], &test1[SIZE1]);
-    DUMP_ACCESS_START_TAG("test2", &test2[0], &test2[SIZE2]);
-    DUMP_ACCESS_START_TAG("test3", &test3[0], &test3[SIZE3]);
+    DUMP_START_SINGLE("test1", &test1[0], &test1[SIZE1]);
+    DUMP_START_SINGLE("test2", &test2[0], &test2[SIZE2]);
+    DUMP_START_SINGLE("test3", &test3[0], &test3[SIZE3]);
 
 
     for(int i = 0; i < 3000; i++){

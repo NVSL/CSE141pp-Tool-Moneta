@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
 
 
     FLUSH_CACHE();
-    DUMP_ACCESS_START_TAG("scale", &scale[0][0], &scale[SIZE-1][SIZE-1]);
+    DUMP_START_SINGLE("scale", &scale[0][0], &scale[SIZE-1][SIZE-1]);
 
 
     for(int xx = 0; xx < SIZE; xx += TILE_SIZE){
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    DUMP_ACCESS_STOP_TAG("scale");
+    DUMP_STOP("scale");
 
     cout << values[0] << endl;
 

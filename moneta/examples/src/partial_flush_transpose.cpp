@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   std::uniform_real_distribution<double> unif (LowerB, UpperB);
   std::default_random_engine re;
 
-  DUMP_ACCESS_START_TAG("K", &K[0][0], &K[N-1][M-1]);
+  DUMP_START_SINGLE("K", &K[0][0], &K[N-1][M-1]);
   FLUSH_CACHE();
   // Initialization
   for (int row = 0; row < N; ++row) {
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     }
   }
   //FLUSH_CACHE();
-  DUMP_ACCESS_START_TAG("E", &E[0][0], &E[M-1][N-1]);
+  DUMP_START_SINGLE("E", &E[0][0], &E[M-1][N-1]);
   // Normal transpose - E = K.T
   for (int row = 0; row < M; ++row) {
     for (int col = 0; col < N; ++col) {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  DUMP_ACCESS_STOP_TAG("E");
-  DUMP_ACCESS_STOP_TAG("K");
+  DUMP_STOP("E");
+  DUMP_STOP("K");
   return 0;
 }
