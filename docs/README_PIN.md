@@ -34,12 +34,12 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 **[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin))  
 **\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
 **\<toolargs\>:**  
-`-name, -n [string] [default: default]`: Name of trace  
-`-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
-`-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
-`-block, -b [int] [default: 64]`: Block size of cache line  
-`-full, -f [0 / 1] [default: 0]`: Full trace  
-`-main, -m [0 / 1] [default: 0]`: Track main  
+&nbsp;&nbsp;&nbsp;&nbsp;`-name, -n [string] [default: default]`: Name of trace  
+&nbsp;&nbsp;&nbsp;&nbsp;`-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
+&nbsp;&nbsp;&nbsp;&nbsp;`-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
+&nbsp;&nbsp;&nbsp;&nbsp;`-block, -b [int] [default: 64]`: Block size of cache line  
+&nbsp;&nbsp;&nbsp;&nbsp;`-full, -f [0 / 1] [default: 0]`: Full trace  
+&nbsp;&nbsp;&nbsp;&nbsp;`-main, -m [0 / 1] [default: 0]`: Start trace at main 
 
 **\<command line\>**: exact command to run the executable such as `./sort`, `./add 1 2`, or `/usr/bin/ls`
 
@@ -60,5 +60,5 @@ Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output
 
 ## Important Notes
  - In our Pintool, `trace_tool`, a fully associative cache is simulated and is used to determine if the memory access is a hit or a miss, as Pin cannot tell us if the access is a hit or miss in the system's real cache.
- - The PIN\_ROOT environment variable is set to the directory where Pin is installed. For our Docker image, `PIN_ROOT = /pin`.
+ - In order for Pin to compile using the Makefiles, the `PIN_ROOT` environment variable must be set to the directory where Pin is installed (contains the `pin.sh` file). Our Docker image sets `PIN_ROOT = /pin`.
  - Using the HDF5 file format is much more efficient than writing to a typical CSV file. Since we are writing large sets of data, efficiency is one of our top priorities. Not only is it faster to write to HDF5 files, it is also faster for Vaex to open HDF5 files. Using HDF5 and Vaex, we can open and process millions of lines of data in seconds. 
