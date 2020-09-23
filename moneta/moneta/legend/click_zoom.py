@@ -2,7 +2,7 @@ from ipywidgets import Button, HBox, Label, Layout, VBox
 import ipyvuetify as v
 from moneta.settings import (
         vdiv, lvdiv, hdiv, lhdiv,
-        LEGEND_CLICK_ZOOM, newc
+        LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS
 )
 from vaex.jupyter.utils import debounced
 import vaex
@@ -100,10 +100,12 @@ class Click_Zoom():
             selection = self.get_select_string()
             if len(selection) is not 0:
                 tmp_df = self.model.curr_trace.df
-                tmp_df.select(self.get_select_string()) # replace not necessary for correctness, but maybe perf? 
-                selected_address = tmp_df.evaluate(self.df.Address, selection=True)
-                selected_index = tmp_df.evaluate(self.df.index, selection=True)
-                selected_access = tmp_df.evaluate(self.df.Access, selection=True)
+                tmp_df.select(self.get_select_string())
+                selected_address = tmp_df.evaluate(self.df[ADDRESS], selection=True)
+                selected_index = tmp_df.evaluate(self.df[INDEX], selection=True)
+                selected_access = tmp_df.evaluate(self.df[ACCESS], selection=True)
+                #if constants are changed, the following code line must change accordingly
+                #using non-constants here for column names because non-constants do not work
                 selected_array = vaex.from_arrays(Access=selected_access, Address=selected_address, index=selected_index)
                 self.update_df_selections(selected_array)
             else:
@@ -128,22 +130,19 @@ class Click_Zoom():
               print("click zoom: no data to zoom into")
               return
 
-            czoom_df_filter1 = self.df[self.df.index < self.observable.czoom_xmax]
-            czoom_df_filter2 = czoom_df_filter1[self.df.index > self.observable.czoom_xmin]
-            czoom_df_filter3 = czoom_df_filter2[self.df.Address > self.observable.czoom_ymin]
-            czoom_df_filter4 = czoom_df_filter3[self.df.Address < self.observable.czoom_ymax]
-            #colors = newc[df_filter4.Access.values]
+            czoom_df_filter1 = self.df[self.df[INDEX] < self.observable.czoom_xmax]
+            czoom_df_filter2 = czoom_df_filter1[self.df[INDEX] > self.observable.czoom_xmin]
+            czoom_df_filter3 = czoom_df_filter2[self.df[ADDRESS] > self.observable.czoom_ymin]
+            czoom_df_filter4 = czoom_df_filter3[self.df[ADDRESS] < self.observable.czoom_ymax]
 
             #second check if there is no data to zoom into
             try: 
-              zoom_x = czoom_df_filter4['index'].values[-1]
+              zoom_x = czoom_df_filter4[INDEX].values[-1]
             except:
               print("click zoom: no data to zoom into")
               return
 
-            zoom_y = czoom_df_filter4['Address'].values[-1]
-            #max_x = self.df[czoom_df_filter4['Access_Number'].values[-1]]
-            #zoom_y = max_x['Bytes'].min()[()]
+            zoom_y = czoom_df_filter4[ADDRESS].values[-1]
             global click_zoom_x
             global click_zoom_y
             #set limits for data
@@ -152,12 +151,12 @@ class Click_Zoom():
             self.y_coormin = zoom_y - click_zoom_y/2
             self.y_coormax = zoom_y + click_zoom_y/2
 
-            #filter data to only those limits
-            df_filter1 = self.df[self.df.index < self.x_coormax]
-            df_filter2 = df_filter1[self.df.index > self.x_coormin]
-            df_filter3 = df_filter2[self.df.Address > self.y_coormin]
-            df_filter4 = df_filter3[self.df.Address < self.y_coormax]
-            colors = newc[df_filter4.Access.values]
+            #filter data to only those limits from newly created dataframe
+            df_filter1 = self.df[self.df[INDEX] < self.x_coormax]
+            df_filter2 = df_filter1[self.df[INDEX] > self.x_coormin]
+            df_filter3 = df_filter2[self.df[ADDRESS] > self.y_coormin]
+            df_filter4 = df_filter3[self.df[ADDRESS] < self.y_coormax]
+            colors = newc[df_filter4[ACCESS].values]
 
 
             
