@@ -179,4 +179,3 @@ class Click_Zoom():
                 mpl_plt.ylim(ylim_min, ylim_max)
                 mpl_plt.show()
     
-
