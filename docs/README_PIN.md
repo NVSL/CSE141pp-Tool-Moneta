@@ -34,12 +34,12 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 **[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin))  
 **\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
 **\<toolargs\>:**  
-&nbsp;&nbsp;&nbsp;&nbsp;`-name, -n [string] [default: default]`: Name of trace  
-&nbsp;&nbsp;&nbsp;&nbsp;`-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
-&nbsp;&nbsp;&nbsp;&nbsp;`-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
-&nbsp;&nbsp;&nbsp;&nbsp;`-block, -b [int] [default: 64]`: Block size of cache line  
-&nbsp;&nbsp;&nbsp;&nbsp;`-full, -f [0 / 1] [default: 0]`: Full trace  
-&nbsp;&nbsp;&nbsp;&nbsp;`-main, -m [0 / 1] [default: 0]`: Start trace at main 
+- `-name, -n [string] [default: default]`: Name of trace  
+- `-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
+- `-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
+- `-block, -b [int] [default: 64]`: Block size of cache line  
+- `-full, -f [0 / 1] [default: 0]`: Full trace  
+- `-main, -m [0 / 1] [default: 0]`: Start trace at main 
 
 **\<command line\>**: exact command to run the executable such as `./sort`, `./add 1 2`, or `/usr/bin/ls`
 
