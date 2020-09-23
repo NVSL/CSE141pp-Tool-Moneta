@@ -226,11 +226,7 @@ class BqplotBackend(BackendBase):
                                     'children': self.switch_btn
                                 }], children=[SWITCH])
 
-            self.normal_plot=True
-            def switch_plot(*_):
-                self.normal_plot = not self.normal_plot
-                self.plot.switch_handle()
-            self.switch_btn.on_event('click', switch_plot)
+            self.switch_btn.on_event('click', self.plot.switch_handle)
             @debounced(0.5)
             def undo_redo(*args):
                 self.curr_action = args[0]
@@ -287,25 +283,26 @@ class BqplotBackend(BackendBase):
                 ind = self.plot.x_col
                 addr = self.plot.y_col
                 res = df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
-                if res.count() != 0:
+                point_count = res.count()
+                if point_count != 0:
                     x1 = res[ind].values[0]
                     x2 = res[ind].values[-1]
                     y1 = res[addr].min()[()]
                     y2 = res[addr].max()[()]
 
                 # Fix for plot getting stuck at one value axis
-                if self.normal_plot:
-                    if (x2 - x1 < 128): # TODO for time
+                if self.plot.model.normal_plot:
+                    if (x2 - x1 < 128):
                         x1 -= (128 + x1 - x2) / 2
                         x2 = x1 + 128
-                else:
+                elif point_count > 0: # Error message when it's time for x and no points?
                     _x1 = res["index"].values[0]
                     _x2 = res["index"].values[-1]
                     if (_x2 - _x1 < 128):
                         _x1 -= (128 + _x1 - _x2) / 2
                         _x2 = _x1 + 128
-                    _x1 = max(0, _x1)
-                    _x2 = min(len(df)-1, _x2)
+                    _x1 = max(0, int(_x1))
+                    _x2 = min(len(df)-1, int(_x2))
                     x1 = df[ind].values[_x1]
                     x2 = df[ind].values[_x2]
 

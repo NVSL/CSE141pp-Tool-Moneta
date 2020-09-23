@@ -62,6 +62,7 @@ class PlotBase(widgets.Widget):
                 cache_size=None,
                 update_stats=None,
                 switch_handle=None,
+                model=None,
                 **kwargs
                 ):
 
@@ -103,8 +104,8 @@ class PlotBase(widgets.Widget):
 
 
             # Vaextended arguments
-            if [x for x in (legend, x_col, y_col, cache_size, update_stats, switch_handle) if x == None]:
-                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, cache_size, update_stats, switch_handle\n\nSee docs/README_VAEXTENDED.md for more information')
+            if [x for x in (legend, x_col, y_col, cache_size, update_stats, switch_handle, model) if x == None]:
+                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, cache_size, update_stats, switch_handle, model\n\nSee docs/README_VAEXTENDED.md for more information')
 
             self.legend = legend
             self.x_col = x_col
@@ -115,6 +116,7 @@ class PlotBase(widgets.Widget):
             self.default_title = default_title
             self.update_stats = update_stats
             self.switch_handle = switch_handle
+            self.model = model
 
 
 

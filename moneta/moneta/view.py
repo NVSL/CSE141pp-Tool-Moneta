@@ -105,6 +105,7 @@ class View():
                     cache_size=cache_size,
                     update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False),
                     switch_handle=self.switch_handle,
+                    model = self.model,
                     show=False)
         plot.show()
 
@@ -131,6 +132,7 @@ class View():
                     cache_size=cache_size,
                     update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot2, False),
                     switch_handle=self.switch_handle,
+                    model=self.model,
                     show=False)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel, plot2.backend.zoom_sel)
