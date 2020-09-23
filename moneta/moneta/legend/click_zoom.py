@@ -100,7 +100,7 @@ class Click_Zoom():
             selection = self.get_select_string()
             if len(selection) is not 0:
                 tmp_df = self.model.curr_trace.df
-                tmp_df.select(self.get_select_string()) # replace not necessary for correctness, but maybe perf? 
+                tmp_df.select(self.get_select_string())
                 selected_address = tmp_df.evaluate(self.df.Address, selection=True)
                 selected_index = tmp_df.evaluate(self.df.index, selection=True)
                 selected_access = tmp_df.evaluate(self.df.Access, selection=True)
@@ -180,4 +180,3 @@ class Click_Zoom():
                 mpl_plt.ylim(ylim_min, ylim_max)
                 mpl_plt.show()
     
-
