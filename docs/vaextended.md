@@ -2,7 +2,7 @@
 
 Adapted version of Vaex to allow local control over the backend (Default Path: `moneta/moneta/vaextended`);
 
-**IMPORTANT:** Moneta currently uses the following versions of Vaex, as `plot_widget()` is depricated in newer versions. These should be already specified in `setup/requirements.txt`:
+**IMPORTANT:** Moneta currently uses the following versions of Vaex, as `plot_widget()` is deprecated in newer versions. These should be already specified in `setup/requirements.txt`:
 ```
 vaex-arrow: 0.4.2
 vaex-astro 0.6.1
@@ -14,16 +14,25 @@ vaex-ui:  0.3.0
 vaex-viz: 0.3.8
 ```
 
-## <a name="modify"></a> Modifying Vaex's Existing Backend
+## Table of Contents:
+ * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
+    * [bqplot.py](#bqplotpy)
+    * [plot.py](#plotpy)
+    * [widgets.py](#widgetspy)
+ * [Using Vaextended](#using-vaextended)
+ * [Other Notes](#other-notes)
+     * [Vaex Inverted Navigation](#vaex-inverted-navigation)
+     * [@extend-class Decorator](#extend_class-decorator)
+
+## Modifying Vaex's Existing Backend
 
 Vaex's original files are located in the `/opt/conda/lib/python3.7/site-packages/vaex` directory. We will refer to this directory as `VAEX_ROOT` for brevity.
 
 ### bqplot.py
 
-Add or modify backends in the following way (the code below is from `moneta/moneta/view.py`):
+Add or modify backends in the following way (([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/view.py#L16))):
 
 ```python
-import vaex
 import vaex.jupyter.plot
 vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
 ```
@@ -32,10 +41,9 @@ This will create a new backend called `moneta_backend` based off the `BqplotBack
 
 ### plot.py
 
-In order to expand on aspects the plot itself, such as saving metadata (i.e. x/y labels, cache size) and increasing plot point size, we need to change the `PlotBase` class in `plot.py`. To use our modified `PlotBase` instead of Vaex's original `PlotBase` in `VAEX_ROOT/jupyter/plot.py`, we need to include the following code in `moneta/moneta/vaextended/__init__.py` .
+In order to expand on aspects the plot itself, such as saving metadata (i.e. x/y labels, cache size) and increasing plot point size, we need to change the `PlotBase` class in `plot.py`. To use our modified `PlotBase` instead of Vaex's original `PlotBase` in `VAEX_ROOT/jupyter/plot.py`, we need to include the following code in `moneta/moneta/vaextended/__init__.py` ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/__init__.py#L3)):
 
 ```python
-import vaex.jupyter.plot
 from vaextended.plot import PlotBase
 vaex.jupyter.plot.type_map['vaextended'] = PlotBase
 ```
@@ -46,22 +54,11 @@ To use the modified `PlotBase`, pass `type='vaextended'` into `plot_widget()`.
 
 ### widgets.py
 
-The `PlotTemplate` class in `widgets.py` contains a base widget for the plot. This includes the top nav bar (title, pan/zoom, etc.), legend, and the plot itself. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original `PlotTemplate` class.
+The `PlotTemplate` class in `widgets.py` contains a base widget for the plot. This includes the top nav bar (title, pan/zoom, etc.), legend, and the plot itself. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original `PlotTemplate` class ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/plot.py#L6)).
 
 ```python
 from vaextended.widgets import PlotTemplate
 ```
-
-### Vaextended Directory Location
-
-If `Moneta.ipynb` is not in the directory that contains `vaextended`, the path may need to be extended using the following function:
-
-```python
-sys.path.append('PATH_TO_VAEXTENDED')
-```
-
-**Note:** `PATH_TO_VAEXTENDED` does **NOT** include the `vaextended` directory itself. For the most part, this should not be an issue since the GitHub repository tree places `vaextended` in the same directory as `Moneta.ipynb`.
-
 
 ## Using Vaextended
 
@@ -85,7 +82,7 @@ Using `plot_widget()` with the Vaextended backend requires the following keyword
  - **x_label:** The plot's x-axis label (Default: "Access Number")
  - **y_label:** The plot's y-axis label (Default: "Address")
 
-An example of using `plot_widget()` with Vaextended can be found below. For backend and type, we will use the names set in [**Modifying Vaex's Existing Backend**](#modify):
+An example of using `plot_widget()` with Vaextended can be found below. For backend and type, we will use the names set in [**Modifying Vaex's Existing Backend**](#modifying-vaexs-existing-backend):
 
 ```python
 # Assume this file has three columns: "index", "Address", and "Access"
@@ -121,9 +118,10 @@ plot = df.plot_widget(
 
 ### Vaex Inverted Navigation
 
-The default installation of Vaex has a bug where `plot_widget()` has it's vertical navigation inverted. We have fixed this bug in Vaextended's `plot.py` in by rotating the plot on line 304:
+The default installation of Vaex has a bug where `plot_widget()` has it's vertical navigation inverted. We have fixed this bug in `moneta/moneta/vaextended/plot.py` in by rotating the plot in `_update_image()` ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/plot.py#L303)):
 ```diff
 + I = np.rot90(color_grid).copy()
+self.backend.update_image(I)
 ```
 
 
@@ -131,7 +129,7 @@ The default installation of Vaex has a bug where `plot_widget()` has it's vertic
 
 **Note:** This is a legacy feature not being used in the current iteration of Vaextended. To add or modify additional functions, simply make those changes in the corresponding file in the `vaextended` directory.
 
-The decorator is located in `vaextended/utils.py`. To add, override, and/or modify features in the `BqplotBackend` class, use the following format:
+The decorator is located in `moneta/moneta/vaextended/utils.py`. To add, override, and/or modify features in the `BqplotBackend` class, use the following format:
 
 ```python
 @extend_class(BqplotBackend)
