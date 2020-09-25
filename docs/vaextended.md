@@ -2,7 +2,7 @@
 
 Adapted version of Vaex to allow local control over the backend (Default Path: `moneta/moneta/vaextended`);
 
-**IMPORTANT:** Moneta currently uses the following versions of Vaex, as `plot_widget()` is deprecated in newer versions. These should be already specified in `setup/requirements.txt`:
+**IMPORTANT:** Moneta currently uses the following versions of Vaex, as `plot_widget()` is deprecated in newer versions. These should be already specified in `setup/requirements.txt` [here](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/setup/requirements.txt#L40):
 ```
 vaex-arrow: 0.4.2
 vaex-astro 0.6.1
