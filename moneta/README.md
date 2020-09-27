@@ -36,7 +36,7 @@ int main() {
 See `~/work/moneta/Examples/src/` for more examples
 
 ## Analyzing the Program
-![Moneta Cell](../assets/StartCell.png?raw=true)
+![Moneta Cell](../../assets/StartCell.png?raw=true)
 
 ## Important Notes
 
