@@ -18,7 +18,7 @@ int main() {
     int arr [5] = {0}; // An array of 5 ints
     DUMP_START_SINGLE("acc_array", arr, arr+4); // arr is the address of first element, arr + 4 == fifth element's address
     ... // Do stuff with array such as
-    std::cout << arr[0] << "\n";
+    std::cout << "Hello world! " << arr[0] << "\n";
     DUMP_STOP("acc_array");
     ...
     DUMP_START_MULTI("loop_array", arr, arr+4); // new tag to indicate different part of the program, multi so shows up as loop_array0
@@ -33,10 +33,29 @@ int main() {
     return 0;
 }
 ```
-See `~/work/moneta/Examples/src/` for more examples
+See `~/work/moneta/Examples/src/` for more examples  
+Make sure to compile your program
 
 ## Analyzing the Program
+Now to visualize those accesses for your program. We need to run the pintool and plot the accesses. The jupyter notebook encompasses this functionality.
+
+
+After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.  
+You should see input boxes appear like below:
 ![Moneta Cell](../../assets/StartCell.png?raw=true)
+
+**Inputs:**  
+- `Cache Lines`: The number of lines in our fully-associative cache model (4096)  
+- `Block Size`: Size of each cache line in bytes (64) - So default cache size is (4096 * 64 bytes - a 256 KB cache)  
+- `Lines to Output`: Maximum number of memory accesses to record (10,000,000) **Large numbers can crash the kernel**  
+- `Working Directory (opt)`: Directory the executable is run in (`~/work/moneta/`)  
+- `Executable Path and Args`: Executable to run such as `/usr/bin/ls` and `./add 1 2`  
+- `Name for Output`: Name your trace as it will appear on the right  
+- `Tagged Trace/Full Trace`: Tagged - Only accesses between tag calls are recorded. Otherwise, everything is recorded
+- `Track from Beginning/Track main`: Beginning - Trace from first tagged/normal access. Main - Start recording once main is called
+
+Let's go with the defaults for now and enter the path to your executable. Name it `hello_world`. Then, hit `Generate Trace`  
+On success, `hello_world` shows up in the trace list. Select it and hit `Load Trace`
 
 ## Important Notes
 
