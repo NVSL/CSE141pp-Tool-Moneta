@@ -59,6 +59,16 @@ Let's go with the defaults for now and enter the path to your executable. Name i
 On success, `hello_world` shows up in the trace list. Select it and hit `Load Trace`  
 ![Load Trace](../../assets/Load.png?raw=true)
 
+With Access Number on the x-axis and the addresses on the y-axis, you can notice the 10 diagonals each with 10 points or 5 unique accesses that our nested loop iterates through.
+
+#### Toolbar
+![Toolbar](../../assets/Toolbar.png?raw=true)
+At init, we start off with being able to pan and zoom around the plot ("hand"). The middle button enables zoom to selection where dragging and selecting a region moves plot to any points in that region with a hard limit of 128 on each dimension. The right button ("mouse") activates click zoom.
+
+The refresh button resets plot to limits on load. Undo/redo are triggered by any panning and zooming with a history of 50 udpates.
+
+The x and y checkboxes enable panning and zooming in their respective dimensions.
+
 ## Important Notes
 
  - Throughout this README, you will see Pin referenced a few times. Pin is the instrumentation tool that we used to read and interpret memory accesses at runtime. It runs in the background whenever you generate traces and produces the trace files for your program.
