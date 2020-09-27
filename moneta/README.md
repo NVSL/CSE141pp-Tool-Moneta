@@ -80,6 +80,8 @@ In this panel, we see the tags we added to our program just like we expected! Tr
 
 Each tag comes with a button which on hover shows detailed information of the tag including accesses and hit rate. You can click on the button to zoom in to just the tag you want to see.
 
+Lastly, we have the click zoom and stats panels. The click zoom panel shows the result of using the click zoom toggle. The stats panel shows the hit rates of the overall plot and the current view.
+
 ## Important Notes
 
  - Throughout this README, you will see Pin referenced a few times. Pin is the instrumentation tool that we used to read and interpret memory accesses at runtime. It runs in the background whenever you generate traces and produces the trace files for your program.
@@ -92,161 +94,9 @@ Each tag comes with a button which on hover shows detailed information of the ta
  ```
  8888/tcp -> 0.0.0.0:####
  ```
-
-
-## Tagging Programs
-
-`pin_tags.h` is the header file containing the functions to tag memory traces for your program. By default, it is located in the `~/work/moneta` directory, but you are free to copy this file to any directory that you find convenient. The functions in this file will indicate to Pin when it should start and stop writing memory accesses to file, and which memory address ranges it should trace.
-
-To use `pin_tags.h` you will need to add `#include "PATH_TO_FILE/pin_tags.h"` (Default: `#include "/home/jovyan/work/moneta/pin_tags.h`) to the top of your C++ file. 
-
-### Pin Tag Functions
-The following three functions can be used to tag your code:
-```
-DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
-DUMP_ACCESS_STOP_TAG(const char* tag)
-FLUSH_CACHE()
-```
-
-#### Parameters:
-**tag:** A string name to identify the trace
-
-**begin:** Identifies the memory address lower bound to trace (Array/Vector Example: `&arr[0]`)
-
-**end:** Identifies the memory address upper bound to trace (Array/Vector Example: `&arr[arr.size()-1]`)
-
-#### Usage:
-
-`DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` is used to indicate to Pin the lines of code and the memory regions to trace.
-
-Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
-
-For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/Examples/src`.
-
-## Tracing a Program with Moneta
-
-We will use `sorting.cpp` to demonstrate how to use Moneta to trace a program. Make sure you have run either `make` or `make sorting` in the `~/work/moneta` directory beforehand. 
-
-This program is pre-tagged with the `pin_tag.h` functions. The code is tagged as follows:
-```
-DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
-bubbleSort(bubble, SIZE);
-DUMP_ACCESS_STOP_TAG("Bubble");
-	
-DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
-insertionSort(insertion, SIZE);
-DUMP_ACCESS_STOP_TAG("Insertion");
-
-DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
-heapSort(heap, SIZE);
-DUMP_ACCESS_STOP_TAG("Heap sort");
-
-DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
-selectionSort(selection, SIZE);
-DUMP_ACCESS_STOP_TAG("Selection");
-```
-
-More implementation details can be found by viewing the source code (Path: `~/work/moneta/Examples/src/sorting.cpp`).
-
-### Generating a Trace
-After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.
-
-You should see input boxes appear like below:
-
-![](https://i.gyazo.com/21ad23f58b629498a9afc96984d3235b.png "Moneta Inputs")
-
-Once you have inputted your desired values, click the `Generate Trace` button to generate the trace. Trace files can be found in the `~/work/moneta/.output` directory.
-
-#### Input Details
-
-**Cache Lines:** The number of lines in our fully-associative cache model (Default: 4096)
-
-**Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
-
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
-
-**Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
-
-**Executable Path and Args:** The path to the exectuable (executable name included). Relative paths will be relative to the directory specified in the `Working Directory` input.
-
-**Name for Output:** The name to save the trace as
-
-**Trace Everything:** Disregard all `pin_tag.h` function specifications and trace the entire program for all memory accesses.
-
-#### Example Inputs
-
-**Cache Lines:** 4096
-
-**Block Size (Bytes):** 64
-
-**Lines to Output:** 10,000,000
-
-**Working Directory (Optional):** ./Examples/build
-
-**Executable Path and Args:** ./sorting (This will run as if you `cd` into `./Examples/build` and then ran `./sorting`)
-
-**Name for Output:** trace\_sorting
-
-**Trace Everything:** Unchecked
-
-### Loading a Trace
-
-If the trace generated successfully, you should see `trace_sorting` appear in the Trace box to the right of the input boxes. Select `trace_sorting` and then click `Load Trace`.
-
-If you find that the trace is taking a very long time to load, or the kernel is consistently dying, try reducing `Lines to Output`.
-
-### Analyzing a Trace
-
-If the trace loaded successfully, you should see a memory access plot appear like the one below:
-
-**TODO: UPDATE IMAGE WHEN LEGEND SCROLLBARS ARE FIXED**
-![](https://via.placeholder.com/150 "Sorting Plot")
-
-#### Moneta Plot Features
-
-##### Axes, Plot Points, and Cache Line
-
-The x-axis is the access number. The memory addresses are plotted in the order in which they are accessed.
-
-The y-axis is bytes. It is always fixed to start at 0 and shows the number of bytes from one point to another.
-
-The plot point colors show the general memory access pattern in that region. Since there are a large number of plot points, multiple plot points are aggregated into a small area of the plot and displayed based on a weighting. Each memory access type (hit, miss, read, write) is given an internal weighting, with misses being weighted higher than the other access types, and the plot displays the point of the highest weight. For the most accurate display of memory access type, we recommend zooming in more.
-
-The plot displays a cache line on the left side of the plot (the lime green line by default). The cache line size is based off the cache lines and block size inputs and is used as a scale bar to visualize how the plotted accesses fit in the cache.
-
-##### Top Menubar
-
-The top menubar contains zooming controls. From left to right:
-
-**x/y checkboxes:** When unchecked, prevent clicking/dragging and zooming in that direction
-
-**Pan & Zoom:** When selected, click and drag to pan the plot and scroll to zoom in/out
-
-**Zoom to Selection:** When selected, click and drag a square area to zoom into
-
-**Reset Zoom:** When clicked, resets the plot's location and zoom to it's initial load state
-
-**Undo/Redo:** When clicked, undos/redos the last pan or zoom (Max Undos/Redos: 50)
-
-##### Legend
-
-The legend matches memory access type with the plot colors and allows toggling the display of memory access types. From top to bottom:
-
-**Hit/Miss Checkboxes:** When checked, shows the corresponding hit/capacity miss/compulsory miss on the graph. Can be combined with Read/Write Checkboxes
-
-**Read/Write Checkboxes:** When checked, shows the corresponding read/write on the graph. Can be combined with Hit/Miss Checkboxes
-
-**Colorpickers:** When clicked, displays a menu of colors that you can choose from. The corresponding access type will be displayed in your selected color on the plot
-
-**Reset Colorpickers:** When clicked, resets the colors of the Colorpickers and the plot to their original colors
-
-##### Tags
-
-**Checkboxes:** When checked, plots memory accesses that fall within the address range specified by the tag name
-
-**Zoom To Tag/Hover Tooltip Stats:** When clicked, zooms to the memory address ranges specified by the tag name. When hovered, displays memory access stats about the tag
-
-
-### Deleting a Trace
-
-From the Trace box, select the traces you want to delete. Note that you can select multiple traces by holding `SHIFT` or `CTRL` while clicking. Clicking `Delete Trace` will permanently remove all files related to the selected traces.
+ 
+ - You can delete one or more traces by selecting them and hitting the `Delete Trace` button.
+ 
+ - `FLUSH_CACHE()` can be used in your program to reset the cache and start again with compulsory misses.
+ 
+ - The plot point colors show the general memory access pattern in that region. Since there are a large number of plot points, multiple plot points are aggregated into a small area of the plot and displayed based on a weighting. Each memory access type (hit, miss, read, write) is given an internal weighting, with misses being weighted higher than the other access types, and the plot displays the point of the highest weight. For the most accurate display of memory access type, we recommend zooming in more.
