@@ -17,7 +17,7 @@ docker build -t moneta-img .
 ```
 
 
-### Running the Container
+### Creating the Container
 
 Due to the way Windows interprets paths, these next few instructions may differ slightly depending on your operating system. If you are using Windows, [skip to this section](#windows).
 
