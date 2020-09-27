@@ -2,7 +2,7 @@
 
 Instructions on how to tag and analyze programs with Moneta
 
-## Tagging Programs
+## Tagging a Program
 A tag represents a part of the execution of a program bounded by a lower and upper memory address. There are several functions defined in `~/work/moneta/pin_tags.h` that can be used to create a tag. The pintool looks for these calls to manage tags.
 
 `DUMP_START_SINGLE(const char* tag, void* begin, void* end)` - Create a tag for the memory region [begin, end] (inclusive) from when this function is called to when the corresponding `DUMP_STOP` is called.  
