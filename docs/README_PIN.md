@@ -2,7 +2,7 @@
 
 Intel’s PIN allows a user to instrument a program to analyze many aspects of the execution. We are using a subset of PIN’s functionality in order to track memory accesses throughout a student’s executable. For more information about PIN with examples, visit [Intel's Pin Documentation](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/) for a User Guide. For the APIs used in the tool, visit [Modules](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/modules.html).
 
-Our Pin files are located [here](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin).
+Our Pin files are located [here](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin). Check [Important Notes](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/docs_pin/docs/README_PIN.md#important-notes) if any step fails.
 <hr>
 
 ## Compiling the Pintool
