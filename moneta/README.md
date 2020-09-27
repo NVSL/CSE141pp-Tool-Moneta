@@ -36,7 +36,7 @@ int main() {
 See `~/work/moneta/Examples/src/` for more examples  
 Make sure to compile your program at `-O0` initially, so nothing is optimized out!
 
-## Analyzing the Program
+## Analyzing a Program
 Now to visualize those accesses for your program. We need to run the pintool and plot the accesses. The jupyter notebook encompasses this functionality.
 
 
