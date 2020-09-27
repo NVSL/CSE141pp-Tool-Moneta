@@ -39,8 +39,14 @@ class Tags():
                     borders='none', align_items='center'
                 ))
         def zoom_to_selection(*_):
-            self.zoom_sel_handler(float(tag.access[0])-1, float(tag.access[1])+0.001,
-                                    float(tag.address[0]), float(tag.address[1])+1)
+            x1, x2 = float(tag.access[0]), float(tag.access[1])
+            print("before: ", x1, x2, type(x2))
+            self.zoom_sel_handler(x1, x2,
+                                    float(tag.address[0]), float(tag.address[1]))
+            #x2+=1
+            #print("after: ", x1, x2, type(x2))
+            #self.zoom_sel_handler(x1, x2,
+            #                        float(tag.address[0]), float(tag.address[1]))
         btn.on_click(zoom_to_selection)
         return btn
 
