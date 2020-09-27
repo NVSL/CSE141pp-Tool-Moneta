@@ -62,7 +62,7 @@ On success, `hello_world` shows up in the trace list. Select it and hit `Load Tr
 With Access Number on the x-axis and the addresses on the y-axis, you can notice the 10 diagonals each with 10 points or 5 unique accesses that our nested loop iterates through.
 
 #### Toolbar
-![Toolbar](../../assets/Toolbar.png?raw=true)
+<img src="../../assets/Toolbar.png" alt="Toolbar" width="400px">  
 At init, we start off with being able to pan and zoom around the plot ("hand"). The middle button enables zoom to selection where dragging and selecting a region moves plot to any points in that region with a hard limit of 128 on each dimension. The right button ("mouse") activates click zoom.
 
 The refresh button resets plot to limits on load. Undo/redo are triggered by any panning and zooming with a history of 50 udpates.
