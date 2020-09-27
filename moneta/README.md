@@ -1,6 +1,42 @@
 # Using Moneta
 
-Instructions on how to run and use Moneta
+Instructions on how to tag and analyze programs with Moneta
+
+## Tagging Programs
+A tag represents a part of the execution of a program bounded by a lower and upper memory address. There are several functions defined in `~/work/moneta/pin_tags.h` that can be used to create a tag. The pintool looks for these calls to manage tags.
+
+`DUMP_START_SINGLE(const char* tag, void* begin, void* end)` - Create a tag for the memory region [begin, end] (inclusive) from when this function is called to when the corresponding `DUMP_STOP` is called.  
+`DUMP_START_MULTI(const char* tag, void* begin, void* end)` - Same as Single except each start call with the same tag name results in a separate tag (ex. `tag1`, `tag2`, etc.)  
+`DUMP_START(const char* tag)` - Shorthand for the above two calls after they've been called already automatically using the same address range and single/multi option since **the same tag cannot be redefined with a different address range**  
+`DUMP_STOP(const char* tag)` - Stops tracing the tag
+
+### Example
+```c++
+...
+#include 'pin_tags.h'
+int main() {
+    int arr [5] = {0}; // An array of 5 ints
+    DUMP_START_SINGLE("acc_array", arr, arr+4); // arr is the address of first element, arr + 4 == fifth element's address
+    ... // Do stuff with array such as
+    std::cout << arr[0] << "\n";
+    DUMP_STOP("acc_array");
+    ...
+    DUMP_START_MULTI("loop_array", arr, arr+4); // new tag to indicate different part of the program, multi so shows up as loop_array0
+    for (int i = 0; i < 10; i++) {
+        DUMP_START("loop_array"); // using shorthand, same address range of [arr, arr+4]
+        for (int j = 0; j < 5; j++) { // being a multi tag, each inner loop will fall into `loop_array1`, `loop_array2`, ..., `loop_array10`
+	    arr[j]+=i;
+	}
+	DUMP_STOP("loop_array"); // stop each loop tag
+    }
+    DUMP_STOP("loop_array"); // remember to stop the initial call as well!!
+    return 0;
+}
+```
+See `~/work/moneta/Examples/src/` for more examples
+
+## Analyzing the Program
+![Moneta Cell](../assets/StartCell.png?raw=true)
 
 ## Important Notes
 
@@ -44,27 +80,6 @@ FLUSH_CACHE()
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
 
 For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/Examples/src`.
-
-## Running Moneta
-
-Run `moneta` from any directory to start the local Jupyter Notebook server where the Moneta Jupyter Notebook will be hosted on.
-
-You should see a list of URLs appear. Go to your preferred web browser and paste the link that looks like the following:
-
-<pre>
-http://127.0.0.1<b>:8888</b>/?token=...
-</pre>
-
-**Notice the `8888` in the link. If you used a port number other than `8888` when creating the Docker container, replace `8888` with your port number.**
-
-**Note For Docker Toolbox**: If you are using Docker Toolbox (this is different from Docker Desktop) as your Docker environment, you will also have to replace `127.0.0.1` with `192.168.99.100` to access the link.
-
-<pre>
-http://192.168.99.100<b>:8888</b>/?token=...
-</pre>
-
-If you were able to successfully connect, you will see a Jupyter tab on your browser with a list of the files/subdirectories in the `~/work/moneta` directory. Open the `Moneta.ipynb` file.
-
 
 ## Tracing a Program with Moneta
 
