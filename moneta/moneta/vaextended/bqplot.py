@@ -87,7 +87,7 @@ class BqplotBackend(BackendBase):
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
 
         self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales)
-        self.figure.layout.width = 'calc(100% - 300px)'
+        self.figure.layout.width = 'calc(100% - 400px)'
         self.figure.layout.min_height = '800px'
         plt.figure(fig=self.figure)
         #self.figure.padding_y = 0

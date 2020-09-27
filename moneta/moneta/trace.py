@@ -51,6 +51,6 @@ class Trace():
         self.df = vaex.open(self.trace_path)
         num_accs = self.df[ADDRESS].count()
         self.df[INDEX] = np.arange(0, num_accs)
-        self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()]]
-        self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]]
+        self.x_lim = [self.df[INDEX].min()[()]-1, self.df[INDEX].max()[()] + 0.001]
+        self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]+1]
 
