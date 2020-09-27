@@ -17,7 +17,7 @@ docker build -t moneta-img .
 ```
 
 
-### Building the Container
+### Running the Container
 
 Due to the way Windows interprets paths, these next few instructions may differ slightly depending on your operating system. If you are using Windows, [skip to this section](#windows).
 
@@ -41,6 +41,24 @@ To connect to the container, you may need be prompted to use `winpty`:
 ```
 winpty docker exec -it moneta bash
 ```
+
+### Opening the Notebook
+Run `moneta` from any directory to start the local Jupyter Notebook server where the Moneta Jupyter Notebook will be hosted on.
+
+You should see a list of URLs appear. Go to your preferred web browser and paste the link that looks like the following:
+
+```
+http://127.0.0.1<b>:8888</b>/?token=...
+```
+**Notice the `8888` in the link. If you used a port number other than `8888` when [creating the Docker container](#port), replace `8888` with your port number.**
+
+**Note For Docker Toolbox**: If you are using Docker Toolbox (this is different from Docker Desktop) as your Docker environment, you will also have to replace `127.0.0.1` with `192.168.99.100` to access the link.
+
+```
+http://192.168.99.100<b>:8888</b>/?token=...
+```
+
+If you were able to successfully connect, you will see a Jupyter tab on your browser with a list of the files/subdirectories in the `~/work/moneta` directory. Open the `Moneta.ipynb` file.
 
 ## Developers
  - Amithab Arumugam
