@@ -34,7 +34,7 @@ int main() {
 }
 ```
 See `~/work/moneta/Examples/src/` for more examples  
-Make sure to compile your program
+Make sure to compile your program at `-O0` initially, so nothing is optimized out!
 
 ## Analyzing the Program
 Now to visualize those accesses for your program. We need to run the pintool and plot the accesses. The jupyter notebook encompasses this functionality.
@@ -42,7 +42,7 @@ Now to visualize those accesses for your program. We need to run the pintool and
 
 After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.  
 You should see input boxes appear like below:
-![Moneta Cell](../../assets/StartCell.png?raw=true)
+![Start Cell](../../assets/StartCell.png?raw=true)
 
 **Inputs:**  
 - `Cache Lines`: The number of lines in our fully-associative cache model (4096)  
@@ -55,7 +55,9 @@ You should see input boxes appear like below:
 - `Track from Beginning/Track main`: Beginning - Trace from first tagged/normal access. Main - Start recording once main is called
 
 Let's go with the defaults for now and enter the path to your executable. Name it `hello_world`. Then, hit `Generate Trace`  
-On success, `hello_world` shows up in the trace list. Select it and hit `Load Trace`
+![Generate Trace](../../assets/Generate.png?raw=true)
+On success, `hello_world` shows up in the trace list. Select it and hit `Load Trace`  
+![Load Trace](../../assets/Load.png?raw=true)
 
 ## Important Notes
 
