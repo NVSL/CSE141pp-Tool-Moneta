@@ -69,6 +69,12 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
+            print("in image: ", self.image.x)
+            print("in image: ", self.image.y)
+            print("in: ", self.scale_x)
+            print("in: ", self.scale_y)
+            print(self.figure.axes)
+            print(self.figure.scale_x)
             self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
@@ -114,14 +120,39 @@ class BqplotBackend(BackendBase):
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
+        self.observe(self.update_lim, "limits")
         self.widget = widgets.VBox([self.figure])
         self.create_tools()
 
-    @debounced(0.2, method=True)
+    def update_lim(self, *args):
+        with self.output:
+            print("update scales basically")
+            #print(dir(self.figure))
+            print(dir(self.figure.axes[0]))
+            self.scale_x.unobserve(self._update_limits)
+            self.scale_y.unobserve(self._update_limits)
+            with self.scale_x.hold_trait_notifications():
+                
+                self.scale_x.min, self.scale_x.max = self.limits[0]
+                self.figure.axes[0].scale = self.scale_x
+                self.figure.scale_x = self.scale_x
+            with self.scale_y.hold_trait_notifications():
+                self.scale_y.min, self.scale_y.max = self.limits[1]
+            self.scale_x.observe(self._update_limits)
+            self.scale_y.observe(self._update_limits)
+            print("end of update scales")
+    #@debounced(0.2, method=True)
     def _update_limits(self, *args):
         with self.output:
+            print("---------update limits")
             limits = copy.deepcopy(self.limits)
+            print(self.limits)
+            print("axes: ")
+            print(self.figure.axes)
+            print("scales: ")
+            print(self.scale_x, self.scale_y)
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
+            """
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
             if self.counter == 2:
                 if self.curr_action in [Action.redo, Action.other]:
@@ -147,10 +178,13 @@ class BqplotBackend(BackendBase):
                 self.curr_action = Action.other
                 self.counter = 1
                 self._update_limits(self, *args)
+                self.limits = limits
             else:
                 self.counter = 2
-
+            """
             self.limits = limits
+            print("---------------end of update")
+
 
     def create_tools(self):
         self.tools = []
@@ -326,12 +360,17 @@ class BqplotBackend(BackendBase):
                 self.zoom_brush.selected_y = None
 
     def zoom_sel(self, x1, x2, y1, y2):
-        with self.scale_x.hold_trait_notifications():
-            self.scale_x.min = x1
-            self.scale_x.max = x2
-        with self.scale_y.hold_trait_notifications():
-            self.scale_y.min = y1
-            self.scale_y.max = y2
+        with self.output:
+
+            self.limits = [[x1, x2], [y1, y2]]
+            self.figure.interaction = self.panzoom
+            #with self.scale_x.hold_trait_notifications():
+            #    
+            #    self.scale_x.min, self.scale_x.max = x1, x2
+            #with self.scale_y.hold_trait_notifications():
+            #    self.scale_y.min, self.scale_y.max = y1, y2
+            #        #self.scale_x.min, self.scale_x.max = x1, x2
+            #        #self.scale_y.min, self.scale_y.max = y1, y2
 
     def update_click_brush(self, *args):
         if not self.click_brush.brushing:
