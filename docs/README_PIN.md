@@ -54,7 +54,7 @@ pin -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./
 
 ## Output Files
 Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output`):
-- `[full_]trace_NAME.hdf5`: Table of rows containing memory address, access type ({read, write} x {hit, capacity miss, compulsory miss}), and time of access (seconds)
+- `[full_]trace_NAME.hdf5`: Table of rows containing memory address (64-bit), access type ({read, write} x {hit, capacity miss, compulsory miss}), and time of access (seconds)
 - `[full_]tag_map_NAME.csv`: Contains info for all traced tags. Tag name, lower and upper address bounds, first and last access
 - `[full_]meta_data_NAME.txt`: Contains one line: [cache_lines] [block]
 
