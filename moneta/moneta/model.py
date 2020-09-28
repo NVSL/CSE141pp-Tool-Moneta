@@ -1,5 +1,5 @@
-from utils import collect_traces, delete_traces
-from trace import Trace
+from moneta.utils import collect_traces, delete_traces
+from moneta.trace import Trace
 
 import logging
 log = logging.getLogger(__name__)
@@ -25,9 +25,7 @@ class Model():
     def load_trace(self, trace_name):
         trace_path, tag_path, meta_path = self.trace_map[trace_name]      
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
-        if self.curr_trace.err_message is not None:
-            return None, self.curr_trace.err_message
-        return self.curr_trace, None
+        return self.curr_trace.err_message
 
 
     def delete_traces(self, traces, lastChanged):

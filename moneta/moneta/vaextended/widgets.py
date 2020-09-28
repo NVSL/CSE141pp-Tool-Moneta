@@ -22,6 +22,7 @@ class PlotTemplate(v.VuetifyTemplate):
     button_text = Unicode('menu').tag(sync=True)
     drawers = Any(['Default (no property)', 'Permanent', 'Temporary']).tag(sync=True)
     edit_title = Bool(False).tag(sync=True)
+    show_legend = Bool(True).tag(sync=True)
     template = Unicode('''
 
 <v-app>
@@ -41,16 +42,36 @@ class PlotTemplate(v.VuetifyTemplate):
         @keydown="function (e) {if (e.keyCode == 13 || e.keyCode == 27) \
           {edit_title = false; if (title === '') title = default_title}}"
       ></v-text-field>
-      <v-spacer></v-spacer>
-      <extra-widget />
-      <v-spacer></v-spacer>
+      <v-spacer />
+      <toolbar />
+      <v-spacer />
+      Legend
+      <legend-control/>
+     </v-btn>
     </v-app-bar>
-    <v-main>
-    <v-container>
-          <main-widget/>
-          </v-container>
+    <v-main class="overflow-hidden">
+      <main-widget/>
+      <v-navigation-drawer
+        v-model="show_legend"
+        permanent
+        class="mt-12"
+        width="400"
+        right
+        absolute
+        height='auto'
+      >
+        <main-legend/>
+      </v-navigation-drawer>
     </v-main>
 </v-app>
 ''').tag(sync=True)
 
+    def __init__(self, *args, **kwargs): 
+      # change the title (must be done before the widget gets built!!!)
+      if 'components' in kwargs:
+          if 'default_title' in kwargs['components']:
+              self.default_title = kwargs['components']['default_title']
+
+      # proceed with original constructor    
+      super().__init__(*args, **kwargs)
 

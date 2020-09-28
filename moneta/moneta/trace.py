@@ -1,4 +1,4 @@
-from settings import NO_TAGS, INDEX_LABEL, ADDRESS_LABEL
+from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME
 import numpy as np
 import vaex
 import csv
@@ -7,11 +7,10 @@ import logging
 log = logging.getLogger(__name__)
 
 class Tag():
-    def __init__(self, tag_dict): # TODO - Move constants out
-        self.address = (tag_dict['Low_Address'], tag_dict['High_Address'])
-        self.access = (tag_dict['First_Access'], tag_dict['Last_Access'])
-        self.name = tag_dict['Tag_Name']
-        self.id_ = int(tag_dict['Tag_Value'])
+    def __init__(self, tag_dict):
+        self.address = (tag_dict[LO_ADDR], tag_dict[HI_ADDR])
+        self.access = (tag_dict[F_ACC], tag_dict[L_ACC])
+        self.name = tag_dict[TAG_NAME]
 
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
@@ -32,11 +31,14 @@ class Trace():
 
 
     def retrieve_tags(self):
-        self.tags = list()
-        with open(self.tag_path) as f:
-            rows = csv.DictReader(f)
-            for row in rows:
-                self.tags.append(Tag(row))
+        self.tags = []
+        try:
+            with open(self.tag_path) as f:
+                rows = csv.DictReader(f)
+                for row in rows:
+                    self.tags.append(Tag(row))
+        except:
+            pass
 
     def retrieve_cache_info(self):
         with open(self.meta_path) as f:
@@ -47,9 +49,8 @@ class Trace():
 
     def init_df(self):
         self.df = vaex.open(self.trace_path)
-        self.df.rename_column('Address', ADDRESS_LABEL)
-        num_accs = self.df[ADDRESS_LABEL].count()
-        self.df[INDEX_LABEL] = np.arange(0, num_accs)
-        self.x_lim = [self.df[INDEX_LABEL].min()[()], self.df[INDEX_LABEL].max()[()]]
-        self.y_lim = [self.df[ADDRESS_LABEL].min()[()], self.df[ADDRESS_LABEL].max()[()]]
+        num_accs = self.df[ADDRESS].count()
+        self.df[INDEX] = np.arange(0, num_accs)
+        self.x_lim = [self.df[INDEX].min()[()]-1, self.df[INDEX].max()[()] + 0.001]
+        self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]+1]
 

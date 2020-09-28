@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#define SIZE 1000
+constexpr int SIZE {1000};
 
 
 void bubbleSort(int data[], int n){
@@ -102,34 +102,38 @@ int main(int argc, char *argv[]){
 		//cout<<dat3a[i]<<", ";
 	}
 	//cout<<"\n";
+	DUMP_START_MULTI("start", 0, 0);
+	DUMP_START("start");
+	DUMP_STOP("start");
 		
 	//BUBBLE
-	DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
+	DUMP_START_SINGLE("Bubble", &bubble[0], &bubble[SIZE-1]);
 	
 	bubbleSort(bubble, SIZE);
+	DUMP_STOP("start");
 	
-	DUMP_ACCESS_STOP_TAG("Bubble");
+	DUMP_STOP("Bubble");
 	
 	//INSERTION
-	DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
+	DUMP_START_SINGLE("Insertion", &insertion[0], &insertion[SIZE-1]);
 	
 	insertionSort(insertion, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Insertion");
+	DUMP_STOP("Insertion");
 	
 	//HEAP
-	DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
+	DUMP_START_SINGLE("Heap sort", &heap[0], &heap[SIZE-1]);
 	
 	heapSort(heap, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Heap sort");
+	DUMP_STOP("Heap sort");
 
 	//SELECTION	
-	DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
+	DUMP_START_SINGLE("Selection", &selection[0], &selection[SIZE-1]);
 	
 	selectionSort(selection, SIZE);
 	
-	DUMP_ACCESS_STOP_TAG("Selection");
+	DUMP_STOP("Selection");
 	
 
 	/* Print Sorted array

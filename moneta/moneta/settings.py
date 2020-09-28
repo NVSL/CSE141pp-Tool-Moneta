@@ -26,7 +26,12 @@ TRACE_NAME_DEF = "e.g. baseline"
 TRACE_NAME_DESC = "Name for Trace:"
 
 # Full Trace
-FULL_TRACE_DESC = "Trace everything (Ignore program tags)?"
+FULL_TRACE_DESC = "Full trace"
+NORMAL_TRACE_DESC = "Tagged trace"
+
+# Track Main
+TRACK_MAIN = "Track main"
+TRACK_NORMAL = "Track from beginning"
 
 # Select Multiple
 SELECT_MULTIPLE_DESC = "Trace:"
@@ -50,7 +55,7 @@ logging.getLogger('matplotlib').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 from matplotlib.colors import ListedColormap
-from ipywidgets import Layout
+from ipywidgets import Layout, HBox, VBox, Layout
 import numpy as np
 import os
 
@@ -65,6 +70,20 @@ newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
 newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 CUSTOM_CMAP = ListedColormap(newc)
 
+# print() Text Colors
+class TextStyle():
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
+
 
 BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='100%', border='1px solid black')
@@ -74,20 +93,32 @@ TW_BOX_LAYOUT = Layout(display='flex',
                     width='100%')
 TW_LAYOUT = Layout(flex='1 1 0%', width='100%')
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
-MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta"
+MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta/"
 OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
-TOOL_PATH = MONETA_BASE_DIR + ".setup/trace_tool.so"
+TOOL_PATH = "/pin/source/tools/ManualExamples/obj-intel64/trace_tool.so"
 WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 
 # Errors
-NO_TAGS = "No tags were traced"
+ERROR_LABEL = f"{TextStyle.RED}{TextStyle.BOLD}Error:{TextStyle.END}"
+WARNING_LABEL = f"{TextStyle.YELLOW}{TextStyle.BOLD}Warning:{TextStyle.END}"
+
+NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
+           f"If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
+           f"If there are no tags, you will need to tag the file or use a full trace.{TextStyle.END}")
 
 ## Vaex
 
-INDEX_LABEL = "Access_Number"
+### Dataframe Columns
+INDEX = "index"
+ADDRESS = "Address"
+ACCESS = "Access"
+TAG = "Tag"
+
+### Axis Labels
+INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Bytes"
 
 # Pintool Enumerations
@@ -97,3 +128,46 @@ WRITE_MISS = 4
 READ_MISS = 3
 WRITE_HIT = 2
 READ_HIT = 1
+
+# Tag file
+LO_ADDR = "Low_Address"
+HI_ADDR = "High_Address"
+F_ACC = "First_Access"
+L_ACC = "Last_Access"
+TAG_NAME = "Tag_Name"
+
+# Legend variables
+LEGEND_MEM_ACCESS_TITLE = 'Accesses'
+LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_CLICK_ZOOM = 'Click Zoom'
+LEGEND_STATS_TITLE = 'Stats'
+
+# Legend grid box
+vdiv = HBox([
+    VBox(layout=Layout(
+        padding='0',
+        border='1px solid black',
+        width='0',
+        height='50px', margin='0'))
+    ], layout=Layout(justify_content='center'))
+lvdiv = HBox([
+    VBox(layout=Layout(
+        padding='0',
+        border='1px solid #cccbc8',
+        width='0',
+        height='50px', margin='0'))
+            ], layout=Layout(justify_content='center'))
+hdiv = VBox([
+    HBox(layout=Layout(
+        padding='0',
+        border='1px solid black',
+        width='100px',
+        height='0'))
+    ], layout=Layout(justify_content='center'))
+lhdiv = VBox([
+    HBox(layout=Layout(
+        padding='0',
+        border='1px solid #cccbc8',
+        width='100px',
+        height='0'))
+            ], layout=Layout(justify_content='center'))

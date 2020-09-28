@@ -10,18 +10,12 @@
 #include <unordered_map>
 #include <algorithm>
 #include <assert.h>
+#include <ctype.h>
+#include <sys/stat.h> // mkdir
 
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
 
-using std::string;
-using std::hex;
-using std::setw;
-using std::cerr;
-using std::dec;
-using std::endl;
-using std::vector;
-using std::pair;
 
 // Pin comes with some old standard libraries.
 namespace pintool {
@@ -38,7 +32,6 @@ constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {0};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
-constexpr bool TAG_DEBUG   {0};
 
 static int read_insts = 0;
 // Cache debug
@@ -52,6 +45,7 @@ constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
 const std::string DefaultOutputPath {"/home/jovyan/work/moneta/.output"};
+constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
 const std::string TracePrefix    {"trace_"};
@@ -66,14 +60,22 @@ const std::string FullPrefix     {"full_"};
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
+static bool full_trace {0};
+static bool track_main {0};
 static std::string output_trace_path;
 static std::string output_tagfile_path;
 static std::string output_metadata_path;
 
 // Macros to track
-const std::string DUMP_MACRO_BEG {"DUMP_ACCESS_START_TAG"};
-const std::string DUMP_MACRO_END {"DUMP_ACCESS_STOP_TAG"};
-const std::string FLUSH_CACHE    {"FLUSH_CACHE"};
+const std::string M_DUMP_START_SINGLE {"DUMP_START_SINGLE"};
+const std::string M_DUMP_START_MULTI  {"_DUMP_START_MULTI"};
+const std::string M_DUMP_START        {"DUMP_START"};
+const std::string M_DUMP_STOP         {"_DUMP_STOP"};
+const std::string FLUSH_CACHE         {"FLUSH_CACHE"};
+
+// Stack/Heap
+const std::string STACK {"Stack"};
+const std::string HEAP {"Heap"};
 
 // Access type
 enum { 
@@ -87,49 +89,88 @@ enum {
   HIT, CAP_MISS, COMP_MISS
 };
 
-// How to record duplicate addr in multiple ranges
-constexpr bool RECORD_ONCE {true};
-
 static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id for every new tag
-static int curr_id {2}; // Reserved for stack and heap
+static int curr_id {0};
+
+struct TagData;
+
+struct Tag {
+  const TagData* parent;
+  const int id;
+  bool active {true};
+  std::pair<int, int> x_range {-1, -1};
+  std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
+
+  Tag(TagData* td, int id) : parent {td}, id {id} {}
+
+  void update(ADDRINT addr, int access) {
+    addr_range.first = std::min(addr_range.first, addr);
+    addr_range.second = std::max(addr_range.second, addr);
+    if (x_range.first == -1) {
+      x_range.first = access;
+    }
+    x_range.second = access;
+  }
+};
 
 struct TagData {
-  const std::pair<ADDRINT, ADDRINT> addr_range; // Read only
-  const std::string tag_name;
   const int id;
-  bool active;                 // R/W
-  std::pair<int, int> x_range;
+  const bool single;
+  const std::string tag_name;
+  const std::pair<ADDRINT, ADDRINT> addr_range;
+
+  std::vector<Tag*> tags;
   
-  TagData(std::string tn, ADDRINT low, ADDRINT hi) : 
-	  addr_range({low, hi}),
-	  tag_name(tn), 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool single) : 
 	  id(curr_id++),
-	  active {true},
-    x_range({-1, -1}) {}
+	  single {single},
+	  tag_name {tag_name},
+	  addr_range({low, hi})
+  {
+    this->create_new_tag();
+  }
+
+  void create_new_tag() {
+    tags.push_back(new Tag(this, tags.size()));
+  }
+
+  bool update(ADDRINT addr, int access) {
+    bool updated {0};
+    for (Tag* t : tags) {
+      if (t->active) {
+        t->update(addr, access);
+	updated = true;
+      }
+    }
+    return updated;
+  }
   // Default destructor
+  ~TagData() {
+    for (Tag* t : tags) {
+      delete t;
+    }
+  }
 };
 
 // Only the id is output to out_file.
-typedef pair<ADDRINT, ADDRINT> AddressRange; 
+typedef std::pair<ADDRINT, ADDRINT> AddressRange; 
 
 pintool::unordered_map<std::string, TagData*> all_tags;
-//pintool::unordered_map<string
 
 
-constexpr int MAIN_LIMIT {400000};
+struct Access {
+  TagData* tag;
+  int type;
+  ADDRINT addr;
+} prev_acc;
 
-std::vector<std::pair<ADDRINT, int>> before_main;
-static bool reached_main {false};
-ADDRINT lower_stack;
-ADDRINT upper_stack;
-ADDRINT lower_heap;
-ADDRINT upper_heap;
-int last_acc_stack {0};
-int last_acc_heap  {0};
-int first_acc_stack {-1};
-int first_acc_heap {-1};
+bool is_prev_acc {0};
+ADDRINT min_rsp {ULLONG_MAX};
+bool is_last_acc {0};
+
+bool reached_main {0};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -138,7 +179,6 @@ int first_acc_heap {-1};
  */
 
 // Output Columns
-const std::string TagColumn     {"Tag"};
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
 //const std::string CacheAccessColumn {"CacheAccess"};
@@ -150,7 +190,6 @@ class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
   uint8_t accs[chunk_size];
-  int tags[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
@@ -178,7 +217,7 @@ class HandleHdf5 {
   // Open files, dataspace, and datasets
   void setup_files() {
     if (HDF_DEBUG) {
-      cerr << "Setting up hdf5 files\n";
+      std::cerr << "Setting up hdf5 files\n";
     }
     // Try catch block here highly recommended!!!
     //H5::Exception::dontPrint(); // Don't print exceptions - Let catch block do it
@@ -188,7 +227,6 @@ class HandleHdf5 {
     hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
-    tag_d = mem_file.createDataSet(TagColumn.c_str(), H5::PredType::NATIVE_INT, m_dataspace, plist);
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
@@ -199,22 +237,17 @@ class HandleHdf5 {
   // Extends dataset and writes stored chunk
   void extend_write_mem() {
     if (HDF_DEBUG) {
-      cerr << "Extending and writing dataset for memory accesses\n";
+      std::cerr << "Extending and writing dataset for memory accesses\n";
     }
-    tag_d.extend( total_ds_dims ); // Extend size of dataset
-    acc_d.extend( total_ds_dims );
+    acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
 
-    H5::DataSpace old_dataspace = tag_d.getSpace(); // Get old dataspace
+    H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset); // Select slab in extended dataset
-    tag_d.write( tags, H5::PredType::NATIVE_INT, new_dataspace, old_dataspace); // Write to the extended part
+    acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace); // Write to extended part
 
-    old_dataspace = acc_d.getSpace(); // Rinse and repeat
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
-    acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
-
-    old_dataspace = addr_d.getSpace();
+    old_dataspace = addr_d.getSpace(); // Rinse and repeat
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
   }
@@ -222,7 +255,7 @@ class HandleHdf5 {
   // Extends dataset and writes stored chunk
   /*void extend_write_cache() {
     if (HDF_DEBUG) {
-      cerr << "Extending and writing dataset for cache\n";
+      std::cerr << "Extending and writing dataset for cache\n";
     }
     cache_d.extend( total_ds_dims_c ); // Extend
     H5::DataSpace old_dataspace = cache_d.getSpace(); // Get old dataspace
@@ -249,7 +282,7 @@ public:
   // Destructor
   ~HandleHdf5() {
     if (HDF_DEBUG) {
-      cerr << "Hdf5 Destructor\n";
+      std::cerr << "Hdf5 Destructor\n";
     }
     if (mem_ind != 0) { // New data to write
       curr_chunk_dims[0] = mem_ind; // Not full chunk size
@@ -272,13 +305,12 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(int tag, int access, ADDRINT address) {
+  int write_data_mem(ADDRINT address, int access) {
     if (HDF_DEBUG) {
-      cerr << "Write to Hdf5 - memory\n";
+      std::cerr << "Write to Hdf5 - memory\n";
     }
-    tags[mem_ind] = tag; // Write to memory first
-    accs[mem_ind] = access;
-    addrs[mem_ind++] = address;
+    addrs[mem_ind] = address; // Write to memory first
+    accs[mem_ind++] = access;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
     }
@@ -288,7 +320,7 @@ public:
       
     total_ds_dims[0] += chunk_size; // Update size and offset
     offset[0] += chunk_size;
-    /*try { // Should add this error checking somwhere
+    /*try { // Should add this error checking somewhere
     } catch( H5::FileIException error ) {
       error.printError(); // Add custom messages here?
       return -1; // Exit program?
@@ -308,7 +340,7 @@ public:
   // Write data for cache access to file
   /*int write_data_cache(ADDRINT address) {
     if (HDF_DEBUG) {
-      cerr << "Write to Hdf5 - cache\n";
+      std::cerr << "Write to Hdf5 - cache\n";
     }
     cache_addrs[cache_ind++] = address;
     if (cache_ind < chunk_size) { 
@@ -364,24 +396,45 @@ static char * buffer2 = new char[BUF_SIZE];
 static char * buffer3 = new char[BUF_SIZE];
 
 // Command line options for pintool
+KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
+    "name", "", "specify name of output trace");
+
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "o", "default", "specify name of output trace and tag map file");
+    "n", "default", "specify name of output trace");
+
+KNOB<UINT64> KnobMaxOutputLong(KNOB_MODE_WRITEONCE, "pintool",
+    "output_lines", "", "specify max lines of output");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
-    "m", "0", "specify max lines of output");
+    "ol", "10000000", "specify max lines of output");
+
+KNOB<UINT64> KnobCacheSizeLong(KNOB_MODE_WRITEONCE, "pintool",
+    "cache_lines", "", "specify # of lines in L1 cache");
 
 KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
-    "c", "0", "specify entries in L1 cache");
+    "c", "4096", "specify # of lines in L1 cache");
+
+KNOB<UINT64> KnobCacheLineSizeLong(KNOB_MODE_WRITEONCE, "pintool",
+    "block", "", "specify block size in bytes");
 
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
-    "l", "0", "specify size of cache line for L1 cache");
+    "b", "64", "specify block size in bytes");
+
+KNOB<BOOL> KnobTrackAllLong(KNOB_MODE_WRITEONCE, "pintool",
+    "full", "", "Track all memory accesses");
 
 KNOB<BOOL> KnobTrackAll(KNOB_MODE_WRITEONCE, "pintool",
-    "f", "0", "Ignores tags, tracks all memory accesses");
+    "f", "0", "Track all memory accesses");
+
+KNOB<BOOL> KnobStartMainLong(KNOB_MODE_WRITEONCE, "pintool",
+    "main", "", "Start trace at main");
+
+KNOB<BOOL> KnobStartMain(KNOB_MODE_WRITEONCE, "pintool",
+    "m", "0", "Start trace at main");
 
 VOID flush_cache() {
   if (CACHE_DEBUG) {
-    cerr << "Flushing cache\n";
+    std::cerr << "Flushing cache\n";
   }
   inorder_acc.clear();
   all_accesses.clear();
@@ -389,138 +442,115 @@ VOID flush_cache() {
 }
 
 
-VOID write_to_memfile(TagData* t, int op, ADDRINT addr, bool is_stack){
-  int id = 0;
+VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   if (is_stack) {
-    if (first_acc_stack == -1) {
-      first_acc_stack = curr_lines;
-    }
-    last_acc_stack = curr_lines;
+    all_tags[STACK]->update(addr, curr_lines);
   } else {
-    if (first_acc_heap == -1) {
-      first_acc_heap = curr_lines;
-    }
-    last_acc_heap = curr_lines;
-    id = 1;
+    all_tags[HEAP]->update(addr, curr_lines);
   }
-  if (t) { // Only if running with tags
-    id = t->id;
-    if (t->x_range.first == -1) { // First time accessed
-      t->x_range.first  = curr_lines;
-    }
-    t->x_range.second = curr_lines;
-  }
-  hdf_handler->write_data_mem(id, op, addr);
+  hdf_handler->write_data_mem(addr, acc_type);
   curr_lines++; // Afterward, for 0-based indexing
   
-  if(curr_lines >= max_lines) { // If reached file size limit, exit
+  if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
     PIN_ExitApplication(0);
   }
 }
 
-
-VOID halt_layout_calc() {
-  if (!reached_main) { // Should only be called once
-    std::cerr << "Size of main trace: " << before_main.size() << "\n";
-    reached_main = true;
-    ADDRINT max_diff = 0;
-    std::sort(before_main.begin(), before_main.end(), [](const std::pair<ADDRINT,int> &left, const std::pair<ADDRINT,int> &right) {
-      return left.first < right.first;
-    });
-
-    for (size_t i = 1; i < before_main.size(); i++) {
-      ADDRINT curr_diff = before_main[i].first - before_main[i-1].first;
-      if (curr_diff > max_diff) {
-        max_diff = curr_diff;
-        upper_heap = before_main[i-1].first;
-        lower_stack = before_main[i].first;
-      }
-    }
-    lower_heap = before_main.front().first;
-    upper_stack = before_main.back().first;
-    //std::cerr << "lower heap and upper stack: " << lower_heap << " " << upper_stack << "\n";
-
-    /*for (int i = 0; i < 10; i++) {
-      std::cerr << "[" << i << "]: " << before_main[i].first << ", " << before_main[i].second << "\n";
-    }*/
-    if (KnobTrackAll) {
-      for (size_t i = 0; i < before_main.size(); i++) {
-        bool is_stack = false;
-        if (before_main[i].first <= upper_heap) {
-          if (first_acc_heap == -1) {
-            first_acc_heap = i;
-          }
-          last_acc_heap = i;
-        } else {
-          if (first_acc_stack == -1) {
-            first_acc_stack = i;
-          }
-          last_acc_stack = i;
-          is_stack = true;
-        }
-        write_to_memfile(0, before_main[i].second, before_main[i].first, is_stack);
-      }
-    }
-    //last_acc_stack = before_main.size(); // Assume both heap and stack are accessed up to start of main
-    //last_acc_heap = before_main.size();
-  }
-
-}
-
-VOID dump_beg_called(VOID * tag, ADDRINT begin, ADDRINT end) {
-  char* s = (char *)tag;
-  string str_tag (s);
+VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
+  char* s = (char *)tag_name;
+  std::string str_tag (s);
 
   if (DEBUG) {
-    cerr << "Dump begin called - " << begin << ", " << end << " TAG: " << str_tag << "\n";
+    std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
   }
 
-  if (str_tag == "Heap" || str_tag == "Stack") {
-      cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
+  if (str_tag == HEAP || str_tag == STACK) {
+    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
               "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
   }
   if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
-      cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
-      cerr << "Range: " << begin << ", " << end << "\n";
+      std::cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
+      std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    TagData *new_tag = new TagData(str_tag, begin, end);
-    all_tags[str_tag] = new_tag;
+    all_tags[str_tag] = new TagData(str_tag, low, hi, single);
 
   } else { // Reuse tag
     if (DEBUG) {
-      cerr << "Dump begin called - Old tag\n";
+      std::cerr << "Dump define called - Old tag\n";
     }
 
+    // TODO - make sure single is not different value
     // Exit program if redefining tag
-    TagData *old_tag = all_tags[str_tag];
-    if (old_tag->addr_range.first != begin || // Must be same range
-      old_tag->addr_range.second != end) {
-      cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
+    TagData* old_tag = all_tags[str_tag];
+    if (old_tag->addr_range.first != low || // Must be same range
+      old_tag->addr_range.second != hi) {
+      std::cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
     }
-    old_tag->active = true;
+    if (old_tag->single) {
+      old_tag->tags.front()->active = true;
+    } else {
+      old_tag->create_new_tag();
+    }
   }
 }
 
-VOID dump_end_called(VOID * tag) {
-  char *s = (char *)tag;
-  string str_tag (s);
+VOID dump_start_called(VOID * tag_name) {
+  char* s = (char *)tag_name;
+  std::string str_tag (s);
+  if (str_tag == HEAP || str_tag == STACK) {
+    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
+              "Exiting Trace Early...\n";
+      PIN_ExitApplication(0);
+  }
+  if (all_tags.find(str_tag) == all_tags.end()) {
+    std::cerr << "Error: Can't use define new tags with this call. Try DUMP_START_SINGLE or MULTI\n"
+              "Exiting Trace Early...\n";
+      PIN_ExitApplication(0);
+  }
+  TagData* old_tag = all_tags[str_tag];
+  if (old_tag->single) {
+    old_tag->tags.front()->active = true;
+  } else {
+    old_tag->create_new_tag();
+  }
+}
+
+VOID dump_stop_called(VOID * tag_name) {
+  char *s = (char *)tag_name;
+  std::string str_tag (s);
   if (DEBUG) {
-    cerr << "End TAG: " << str_tag << "\n";
+    std::cerr << "End TAG: " << str_tag << "\n";
+  }
+  if (str_tag == HEAP || str_tag == STACK) {
+    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
+              "Exiting Trace Early...\n";
+      PIN_ExitApplication(0);
   }
 
   // Assert tag exists
   // Could be try catch or if else
-  assert(all_tags.find(str_tag) != all_tags.end());
-  all_tags[str_tag]->active = false;
+  std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
+  assert(iter != all_tags.end());
+  for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
+		  i != iter->second->tags.rend(); ++i) {
+    if ((*i)->active) {
+      (*i)->active = false;
+      break;
+    }
+  }
 
     /*if (DEBUG) { // Could iterate through all_tags and print if none are active
-      cerr << "End TAG - Deactivated analysis\n";
+        std::cerr << "End TAG - Deactivated analysis\n";
     }*/
+}
+
+VOID signal_main() {
+  reached_main = true;
 }
 
 /*
@@ -548,7 +578,7 @@ int add_to_simulated_cache(ADDRINT addr) {
     accesses.insert(std::make_pair(addr, inorder_acc.begin()));
     all_accesses.insert(addr);
     if (CACHE_DEBUG) {
-      cerr << cache_writes << "th write (comp miss): " << addr << "\n";
+      std::cerr << cache_writes << "th write (comp miss): " << addr << "\n";
     }
     return COMP_MISS;
   }
@@ -557,13 +587,13 @@ int add_to_simulated_cache(ADDRINT addr) {
   if (iter != accesses.end()) { // In cache, move to front - Hit
     inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
     if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
-      cerr << cache_writes << "th write (Hit): " << addr << "\n";
+      std::cerr << cache_writes << "th write (Hit): " << addr << "\n";
     }
     return HIT;
   } // Not in cache, move to front - Capacity miss
   if (CACHE_DEBUG) {
     cap_misses++;
-    cerr << cache_writes << "th write (cap miss): " << addr << "\n";
+    std::cerr << cache_writes << "th write (cap miss): " << addr << "\n";
   }
   if (accesses.size() >= cache_size) { // Evict
     accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
@@ -584,45 +614,39 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-VOID RecordMemAccess(ADDRINT addr, bool is_read) {
+void record(ADDRINT addr, int acc_type) {
+  is_prev_acc = true;
+  prev_acc.addr = addr;
+  prev_acc.type = acc_type;
+}
+
+VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   if (DEBUG) {
     read_insts++;
   }
+  min_rsp = std::min(rsp, min_rsp);
+  if (is_prev_acc) {
+    is_prev_acc = false;
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+  }
+  if (track_main && !reached_main) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
-  if (!reached_main) {
-    before_main.push_back({addr, access_type});
-    if (before_main.size() == MAIN_LIMIT) {
-      halt_layout_calc();
+  bool recorded {0};
+  for (auto& tag_iter : all_tags) {
+    TagData* td = tag_iter.second;
+    if (td->tag_name == STACK || td->tag_name == HEAP) continue;
+    if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
+		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
+      bool updated = td->update(addr, curr_lines);
+      if (!recorded && updated) {
+        record(addr, access_type);
+        recorded = true;
+      }
     }
-    return;
   }
 
-  bool is_stack = false;
-  if (addr >= lower_stack) {
-    is_stack = true;
-  } else if (addr <= upper_heap) {
-    is_stack = false;
-  } else {
-    // rearrange to 2*addr < lower_stack + upper_heap?
-    if (addr - upper_heap < lower_stack - addr) {
-      is_stack = false;
-      upper_heap = addr;
-    } else {
-      is_stack = true;
-      lower_stack = addr;
-    }
-  }
-  bool recorded {false};
-  for (auto& tag_iter : all_tags) {
-    TagData* t = tag_iter.second;
-    if (t->active && t->addr_range.first <= addr && addr <= t->addr_range.second) {
-      recorded = true;
-      write_to_memfile(t, access_type, addr, is_stack);
-      if (RECORD_ONCE) break;
-    }
-  }
-  if (!recorded && KnobTrackAll) {
-    write_to_memfile(0, access_type, addr, is_stack);
+  if (!recorded && full_trace) {
+    record(addr, access_type);
   }
 }
 
@@ -633,11 +657,11 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read) {
 VOID Fini(INT32 code, VOID *v) {
 
   if (DEBUG) {
-    cerr << "Number of read insts: " << read_insts << "\n";
+    std::cerr << "Number of read insts: " << read_insts << "\n";
   }
   if (CACHE_DEBUG) {
-    cerr << "Number of compulsory misses: " << comp_misses << "\n";
-    cerr << "Number of capacity misses: " << cap_misses << "\n";
+    std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
+    std::cerr << "Number of capacity misses: " << cap_misses << "\n";
   }
 
   // Updated cache write - Must check if it's in any of the tagged ranges
@@ -661,61 +685,44 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
-  if (!reached_main) {
-    halt_layout_calc();
+  if (is_prev_acc) {
+    is_last_acc = true;
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+    is_prev_acc = false;
   }
-  if (TAG_DEBUG) {
-    std::cerr << "Stack,0," << lower_stack << "," << upper_stack <<
-      "," << first_acc_stack << "," << last_acc_stack << "\n";
-    std::cerr << "Heap,1," << lower_heap << "," << upper_heap <<
-      "," << first_acc_heap  << "," << last_acc_heap << "\n";
-    for (auto& x : all_tags) {
-      TagData* t = x.second;
-      std::cerr << t->tag_name << "," << t->id << ","
-               << t->addr_range.first << ","
-               << t->addr_range.second << ","
-               << t->x_range.first << "," << t->x_range.second << "\n";
-    }
+  std::vector<Tag*> tags;
+  for (auto& tag_iter : all_tags) {
+    TagData* td = tag_iter.second;
+    tags.reserve(tags.size() + distance(td->tags.begin(), td->tags.end()));
+    tags.insert(tags.end(), td->tags.begin(), td->tags.end());
   }
-  std::ofstream map_file (output_tagfile_path);
-  map_file << "Tag_Name,Tag_Value,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-  if (first_acc_stack != -1 && last_acc_stack != -1) {
-    map_file << "Stack,0," << lower_stack 
-      << "," << upper_stack 
-      << "," << first_acc_stack 
-      << "," << last_acc_stack << "\n";
-  }
-  if (first_acc_heap != -1 && last_acc_heap != -1) {
-    map_file << "Heap,1," << lower_heap 
-      << "," << upper_heap 
-      << "," << first_acc_heap 
-      << "," << last_acc_heap << "\n";
-  }
-  std::vector<std::pair<std::string, TagData*>> vec_tags (all_tags.begin(), all_tags.end());
-  std::sort(vec_tags.begin(), vec_tags.end(), 
-    [](const std::pair<std::string, TagData*> &left, const std::pair<std::string, TagData*> &right) {
-      return left.second->id < right.second->id;
+  std::sort(tags.begin(), tags.end(), 
+    []( Tag* left,  Tag* right) {
+      return left->x_range.first < right->x_range.first;
   });
-  for (auto& x : vec_tags) {
-    TagData* t = x.second;
-    if (t->x_range.first != -1 && t->x_range.second != -1) {
-      map_file << t->tag_name << "," << t->id // Could overload in TagData struct
-        << "," << t->addr_range.first
-        << "," << t->addr_range.second
-        << "," << t->x_range.first 
-        << "," << t->x_range.second << "\n";
+
+  std::ofstream tag_file (output_tagfile_path);
+  tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+  for (Tag* t : tags) {
+    if (t->x_range.first != -1) {
+      /*if (t->x_range.first == t->x_range.second) { // Minimum of 2 for x_range for easier plotting
+        t->x_range.second++;
+      }*/
+      //tag_file << t->to_string() << "\n";
+      tag_file << t->parent->tag_name << (t->parent->single ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
+	      << t->addr_range.second << "," << t->x_range.first << ","
+	      << t->x_range.second << "\n";
     }
   }
 
   // Close files
-  map_file.flush();
-  map_file.close();
+  tag_file.flush();
+  tag_file.close();
 
   //hdf_handler.~HandleHdf5();
   delete hdf_handler;
-  // Delete all TagData's
-  for (auto& x : all_tags) {
-    delete x.second;
+  for (auto& tag_iter : all_tags) {
+    delete tag_iter.second;
   }
 }
 
@@ -739,6 +746,7 @@ VOID Instruction(INS ins, VOID *v)
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
+                IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -749,28 +757,50 @@ VOID Instruction(INS ins, VOID *v)
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
+                IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
     }
 }
 
-// Find the DUMP_MACRO and SET_MAX_OUTPUT routines in the current image and insert a call
+// Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
-	RTN rtn = RTN_FindByName(img, DUMP_MACRO_BEG.c_str());
+	RTN rtn = RTN_FindByName(img, M_DUMP_START_SINGLE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_beg_called,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+				IARG_BOOL, true,
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, DUMP_MACRO_END.c_str());
+	rtn = RTN_FindByName(img, M_DUMP_START_MULTI.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_end_called,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+				IARG_BOOL, false,
+				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, M_DUMP_START.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_start_called,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, M_DUMP_STOP.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_stop_called,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_BOOL, true,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -781,19 +811,29 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
-  rtn = RTN_FindByName(img, "main");
-  if (RTN_Valid(rtn)) {
-    RTN_Open(rtn);
-    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)halt_layout_calc, IARG_END);
-    RTN_Close(rtn);
-  }
+	rtn = RTN_FindByName(img, "__libc_start_main");
+	if (RTN_Valid(rtn)) {
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_main,
+				IARG_END);
+		RTN_Close(rtn);
+	}
 }
 
 INT32 Usage() {
-  std::cerr << "Tracks memory accesses and instruction pointers between dump accesses" << std::endl;
-  std::cerr << std::endl << KNOB_BASE::StringKnobSummary() << std::endl;
+  std::cerr << "Tracks memory accesses and instruction pointers between dump accesses\n";
+  std::cerr << "\n" << KNOB_BASE::StringKnobSummary() << "\n";
   return -1;
 }
+
+bool check_alnum(const std::string& str) {
+  for (char c : str) {
+    if (!std::isalnum(c) && c != '_') {
+      return false;
+    }
+  }
+  return true;
+};
 
 int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
@@ -801,37 +841,64 @@ int main(int argc, char *argv[]) {
   if (PIN_Init(argc, argv)) return Usage();
   
   if (DEBUG) {
-    cerr << "Debugging mode\n";
+    std::cerr << "Debugging mode\n";
   }
 
   // User input
-  output_trace_path = KnobOutputFile.Value();
-  std::string pref = KnobTrackAll ? FullPrefix : "";
+  output_trace_path = KnobOutputFileLong.Value();
+  if (output_trace_path == "") {
+    output_trace_path = KnobOutputFile.Value();
+    if (output_trace_path == "") {
+      output_trace_path = "default";
+    }
+  }
+  if (!check_alnum(output_trace_path)) {
+    std::cerr << "Output name (" << output_trace_path << ") can only contain alphanumeric characters or _\n";
+    return -1;
+  }
+
+  max_lines = KnobMaxOutputLong.Value();
+  if (max_lines == 0) {
+    max_lines = KnobMaxOutput.Value();
+    if (max_lines == 0) {
+      max_lines = DefaultMaximumLines;
+    }
+  }
+
+  cache_size = KnobCacheSizeLong.Value();
+  if (cache_size == 0) {
+    cache_size = KnobCacheSize.Value();
+    if (cache_size == 0) {
+      cache_size = NumberCacheEntries;
+    }
+  }
+
+  cache_line = KnobCacheLineSizeLong.Value();
+  if (cache_line == 0) {
+    cache_line = KnobCacheLineSize.Value();
+    if (cache_line == 0) {
+      cache_line = DefaultCacheLineSize;
+    }
+  }
+
+  full_trace = KnobTrackAllLong || KnobTrackAll;
+  track_main = KnobStartMainLong || KnobStartMain;
+
+  if (INPUT_DEBUG) {
+    std::cerr << "Max lines of trace: "   << max_lines <<
+	    "\n# of cache entries: " << cache_size <<
+	    "\nCache line size in bytes: " << cache_line << 
+	    "\nOutput trace file at: " << output_trace_path << 
+	    "\nFull trace: " << full_trace <<
+	    "\nTracking main: " << track_main << "\n";
+  }
+
+  std::string pref = full_trace ? FullPrefix : "";
   output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
   output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
   output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
+  mkdir(DefaultOutputPath.c_str(), 0755);
 
-  UINT64 in_output_limit = KnobMaxOutput.Value();
-  UINT64 in_cache_size = KnobCacheSize.Value();
-  UINT64 in_cache_line = KnobCacheLineSize.Value();
-  if (INPUT_DEBUG) {
-    cerr << "User input: " << in_output_limit << ", " << in_cache_size << ", " << in_cache_line << "\n";
-  }
-  if (in_output_limit > 0) {
-    max_lines = in_output_limit;
-  }
-  if (in_cache_size > 0) {
-    cache_size = in_cache_size;
-  }
-  if (in_cache_line > 0) {
-    cache_line = in_cache_line;
-  }
-  if (INPUT_DEBUG) {
-    cerr << "Max lines of trace: "   << max_lines <<
-	    "\n# of cache entries: " << cache_size <<
-	    "\nCache line size in bytes: " << cache_line << 
-	    "\nOutput trace file at: " << output_trace_path << "\n";
-  }
 
   std::ofstream meta_file (output_metadata_path);
   meta_file << cache_size << " " << cache_line;
@@ -847,8 +914,10 @@ int main(int argc, char *argv[]) {
   PIN_AddFiniFunction(Fini, 0);
 
   if (DEBUG) {
-    cerr << "Starting now\n";
+    std::cerr << "Starting now\n";
   }
+  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, true);
+  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT, true);
   PIN_StartProgram();
   
   return 0;

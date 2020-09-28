@@ -1,11 +1,16 @@
 from IPython.display import clear_output, display
-from settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, HISTORY_MAX, CWD_HISTORY_PATH
-from utils import generate_trace, delete_traces, update_cwd_file, parse_cwd
-from moneta_widgets import MonetaWidgets
-from legend import Legend
+from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.utils import (
+    generate_trace, 
+    delete_traces, 
+    update_cwd_file,
+    update_legend_view_stats
+)
+from moneta.moneta_widgets import MonetaWidgets
+from moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['bqplot_v2'] = ("vaextended.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -59,60 +64,86 @@ class View():
             self.lastChanged = 0
 
     def update_cwd_widget(self, cwd_path):
-        cwd_path = parse_cwd(cwd_path)
         if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
             self.m_widget.cwd.options = [cwd_path, *self.m_widget.cwd.options][0:HISTORY_MAX]
             update_cwd_file(self.m_widget.cwd.options)
-            log.debug("New History: {}".format(self.m_widget.cwd.options))
+            log.debug(f"New History: {self.m_widget.cwd.options}")
             
-        
+
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-
-        w_vals = [
-            self.m_widget.cl.value,
-            self.m_widget.cb.value,
-            self.m_widget.ml.value,
-            self.m_widget.cwd.value,
-            self.m_widget.ex.value,
-            self.m_widget.to.value,
-            self.m_widget.ft.value
-        ]
         
-        if generate_trace(*w_vals):
-            self.update_cwd_widget(self.m_widget.cwd.value)
+        w_vals = self.m_widget.get_widget_values()
+
+        if generate_trace(w_vals):
+            self.update_cwd_widget(w_vals['display_path'])
             self.update_select_widget()
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
-        if (not self.model.ready_next_trace()):
-            clear_output(wait=True)
-            log.info("Refreshing")
-            display(self.m_widget.widgets)
+ 
 
+        self.model.ready_next_trace()
+        clear_output(wait=True)
+        log.info("Refreshing")
+        display(self.m_widget.widgets)
+
+
+        if self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0:
+            print("To load a trace, select a trace")
+            return
+        if self.m_widget.sw2.value is None or len(self.m_widget.sw2.value) == 0:
+            print("To load a trace, select a trace")
+            return
+        elif len(self.m_widget.sw.value) > 1 or len(self.m_widget.sw2.value) > 1:
+            print("To load a trace, select a single trace")
+            return
+         
         if(self.lastChanged==1):
-            curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
+            #curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
+            err_message = self.model.load_trace(self.m_widget.sw.value[0])
+
         elif(self.lastChanged==0):
-            curr_trace, err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
+            #curr_trace, err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
+            err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
+
         else:
             log.debug("No trace chosen to load")
-            return 
-
+            return
+          
+        #err_message = self.model.load_trace(self.m_widget.sw.value[0])
         if err_message is not None:
             print(err_message)
             return
 
         log.info(self.lastChanged)
+        curr_trace = self.model.curr_trace
         df = curr_trace.df
         x_lim = curr_trace.x_lim
         y_lim = curr_trace.y_lim
         cache_size = curr_trace.cache_lines*curr_trace.cache_block
         tags = curr_trace.tags
-        legend = Legend(tags, df)
-        plot = df.plot_widget(df[INDEX_LABEL], df[ADDRESS_LABEL], what='max(Access)',
-                 colormap = CUSTOM_CMAP, selection=[True], limits = [x_lim, y_lim],
-                 backend='bqplot_v2', type='custom_plot1', legend=legend.widgets,
-                 x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, cache_size=cache_size)
+        legend = Legend(self.model)
+        plot = df.plot_widget(
+                    df[INDEX], 
+                    df[ADDRESS], 
+                    what='max(Access)',
+                    colormap=CUSTOM_CMAP, 
+                    selection=[True], 
+                    limits=[x_lim, y_lim],
+                    backend='moneta_backend', 
+                    type='vaextended', 
+                    legend=legend,
+                    default_title=curr_trace.name, 
+                    x_col=INDEX,
+                    y_col=ADDRESS,
+                    x_label=INDEX_LABEL, 
+                    y_label=ADDRESS_LABEL, 
+                    cache_size=cache_size,
+                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, False)
+                 )
+
+        update_legend_view_stats(legend.stats, plot, True)
 
         legend.set_zoom_sel_handler(plot.backend.zoom_sel)
         legend.set_plot(plot)

@@ -12,3 +12,9 @@ moneta/.output/*
 
 # Swap
 *.swp
+*.swo
+
+# Package egg
+*.egg-info
+
+.DS_Store
