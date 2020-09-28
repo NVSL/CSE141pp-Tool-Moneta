@@ -32,12 +32,12 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 
 **Pin:** `PIN_ROOT/pin.sh`  
 **[OPTION]:** `-ifeellucky -injection child` (See [**Usage**](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin#usage))  
-**\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/home/jovyan/work/.setup/trace_tool.so`)  
+**\<tool\>:** `PATH_TO_TOOL/trace_tool.so` (Default: `/PIN_ROOT/source/tools/ManualExamples/obj-intel64/trace_tool.so`)  
 **\<toolargs\>:**  
 - `-name, -n [string] [default: default]`: Name of trace  
 - `-output_lines, -ol [int] [default: 10000000]`: Maximum memory accesses to write to file  
 - `-cache_lines, -c [int] [default: 4096]`: Number of lines in the cache  
-- `-block, -b [int] [default: 64]`: Block size of cache line  
+- `-block, -b [int] [default: 64]`: Block size of cache line in bytes  
 - `-full, -f [0 / 1] [default: 0]`: Full trace  
 - `-main, -m [0 / 1] [default: 0]`: Start trace at main 
 
@@ -47,14 +47,14 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 ```
 /pin/pin.sh -ifeellucky -injection child -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
-In the container, use the `pin` alias from the `~/.bashrc` file:
+In the container, the `pin` alias from the `~/.bashrc` file condenses `/pin/pin.sh -ifeellucky -injection child`:
 ```
 pin -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
 
 ## Output Files
 Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output`):
-- `[full_]trace_NAME.hdf5`: Table of rows containing memory address, access type (read, write x hit, capacity miss, compulsory miss), and time of access
+- `[full_]trace_NAME.hdf5`: Table of rows containing memory address, access type ({read, write} x {hit, capacity miss, compulsory miss}), and time of access (seconds)
 - `[full_]tag_map_NAME.csv`: Contains info for all traced tags. Tag name, lower and upper address bounds, first and last access
 - `[full_]meta_data_NAME.txt`: Contains one line: [cache_lines] [block]
 
