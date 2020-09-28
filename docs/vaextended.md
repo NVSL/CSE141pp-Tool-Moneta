@@ -15,50 +15,14 @@ vaex-viz: 0.3.8
 ```
 
 ## Table of Contents:
+ * [Using Vaextended](#using-vaextended)
  * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
     * [bqplot.py](#bqplotpy)
     * [plot.py](#plotpy)
     * [widgets.py](#widgetspy)
- * [Using Vaextended](#using-vaextended)
  * [Other Notes](#other-notes)
      * [Vaex Inverted Navigation](#vaex-inverted-navigation)
      * [@extend-class Decorator](#extend_class-decorator)
-
-## Modifying Vaex's Existing Backend
-
-Vaex's original files are located in the `/opt/conda/lib/python3.7/site-packages/vaex` directory. We will refer to this directory as `VAEX_ROOT` for brevity.
-
-### bqplot.py
-
-Add or modify backends in the following way (([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/view.py#L16))):
-
-```python
-import vaex.jupyter.plot
-vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
-```
-
-This will create a new backend called `moneta_backend` based off the `BqplotBackend` class in `moneta/moneta/vaextended/bqplot.py` instead of the original `BqplotBackend` in  `VAEX_ROOT/jupyter/bqplot.py`. To use the modified `BqplotBackend`, pass `backend='moneta_backend'` into `plot_widget()`.
-
-### plot.py
-
-In order to expand on aspects the plot itself, such as saving metadata (i.e. x/y labels, cache size) and increasing plot point size, we need to change the `PlotBase` class in `plot.py`. To use our modified `PlotBase` instead of Vaex's original `PlotBase` in `VAEX_ROOT/jupyter/plot.py`, we need to include the following code in `moneta/moneta/vaextended/__init__.py` ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/__init__.py#L3)):
-
-```python
-from vaextended.plot import PlotBase
-vaex.jupyter.plot.type_map['vaextended'] = PlotBase
-```
-To use the modified `PlotBase`, pass `type='vaextended'` into `plot_widget()`. 
-
-**Note:** The `PlotBase` object is what `plot_widget()` returns.
-
-
-### widgets.py
-
-The `PlotTemplate` class in `widgets.py` contains a base widget for the plot. This includes the top nav bar (title, pan/zoom, etc.), legend, and the plot itself. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original `PlotTemplate` class ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/plot.py#L6)).
-
-```python
-from vaextended.widgets import PlotTemplate
-```
 
 ## Using Vaextended
 
@@ -112,6 +76,54 @@ plot = df.plot_widget(
             )
 ```
 
+
+## Modifying Vaex's Existing Backend
+
+Vaex's original files are located in the `/opt/conda/lib/python3.7/site-packages/vaex` directory. We will refer to this directory as `VAEX_ROOT` for brevity. 
+
+Making changes to Vaex's backend mainly requires us to override Vaex's classes and/or files with our own modified versions. As a general guide, look through the source code in `VAEX_ROOT` (Tip: Use `grep -nri`) to see which files you want to change and where the target classes are initialized. Then, make a copy of the file/class and make any changes within the preexisting functions. Since this is an exact copy of the original Vaex file, Vaex still uses/calls the same classes, variables, and functions, so any missing attributes will likely cause Vaex to crash entirely, and any new attributes can only be used/called by preexisting function. Once the modifications are made, override the files/classes accordingly by replacing the value of the Vaex import with your custom backend import.
+
+Basic Example (Examples specific to Vaextended can be found in the below sections):
+```
+import vaex.original
+import vaextended.modified.plot
+vaex.original.plot = vaextended.modified.plot
+vaex.original.dictionary['new_key'] = vaextended.modified.new_value
+```
+
+For Vaextended, we modified 3 of Vaex's files: `bqplot.py`, `plot.py`, and `widgets.py`.
+
+### bqplot.py
+
+Add or modify backends in the following way (([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/view.py#L16))):
+
+```python
+import vaex.jupyter.plot
+vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
+```
+
+This will create a new backend called `moneta_backend` based off the `BqplotBackend` class in `moneta/moneta/vaextended/bqplot.py` instead of the original `BqplotBackend` in  `VAEX_ROOT/jupyter/bqplot.py`. To use the modified `BqplotBackend`, pass `backend='moneta_backend'` into `plot_widget()`.
+
+### plot.py
+
+In order to expand on aspects the plot itself, such as saving metadata (i.e. x/y labels, cache size) and increasing plot point size, we need to change the `PlotBase` class in `plot.py`. To use our modified `PlotBase` instead of Vaex's original `PlotBase` in `VAEX_ROOT/jupyter/plot.py`, we need to include the following code in `moneta/moneta/vaextended/__init__.py` ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/__init__.py#L3)):
+
+```python
+from vaextended.plot import PlotBase
+vaex.jupyter.plot.type_map['vaextended'] = PlotBase
+```
+To use the modified `PlotBase`, pass `type='vaextended'` into `plot_widget()`. 
+
+**Note:** The `PlotBase` object is what `plot_widget()` returns.
+
+
+### widgets.py
+
+The `PlotTemplate` class in `widgets.py` contains a base widget for the plot. This includes the top nav bar (title, pan/zoom, etc.), legend, and the plot itself. To use this modified `PlotTemplate`, we need to add the following import to `plot.py` to override the original `PlotTemplate` class ([Source](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/master/moneta/moneta/vaextended/plot.py#L6)).
+
+```python
+from vaextended.widgets import PlotTemplate
+```
 
 
 ## Other Notes
