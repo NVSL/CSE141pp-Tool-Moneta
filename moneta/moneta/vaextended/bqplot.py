@@ -123,6 +123,7 @@ class BqplotBackend(BackendBase):
             limits = copy.deepcopy(self.limits)
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+            self.figure.axes[0].scale=bqplot.LinearScale(min=self.scale_x.min, max=self.scale_x.max, allow_padding=False)
             if self.counter == 2:
                 if self.curr_action in [Action.redo, Action.other]:
                     self.undo_btn.disabled = False
