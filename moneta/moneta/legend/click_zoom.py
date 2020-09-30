@@ -2,7 +2,8 @@ from ipywidgets import Button, HBox, Label, Layout, VBox
 import ipyvuetify as v
 from moneta.settings import (
         vdiv, lvdiv, hdiv, lhdiv,
-        LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS
+        LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS,
+        TextStyle, WARNING_LABEL
 )
 from vaex.jupyter.utils import debounced
 import vaex
@@ -127,7 +128,7 @@ class Click_Zoom():
             self.update_selection()
             #first check if there is no data to zoom into
             if updating is not True:
-              print("click zoom: no data to zoom into")
+              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
               return
 
             czoom_df_filter1 = self.df[self.df[INDEX] < self.observable.czoom_xmax]
@@ -139,7 +140,7 @@ class Click_Zoom():
             try: 
               zoom_x = czoom_df_filter4[INDEX].values[-1]
             except:
-              print("click zoom: no data to zoom into")
+              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
               return
 
             zoom_y = czoom_df_filter4[ADDRESS].values[-1]
@@ -164,7 +165,10 @@ class Click_Zoom():
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
  
         def plot_click_zoom(self, dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
-            print("plotting click zoom")
+            plot_message = "Done plotting click zoom"
+            print(f"{TextStyle.GREEN}{TextStyle.BOLD}\n"
+                  f"{plot_message}\n"
+                  f"{TextStyle.END}\n")
             self.widget.clear_output()
             if self.button.layout.display == "none":
                 self.button.layout.display = "block"
