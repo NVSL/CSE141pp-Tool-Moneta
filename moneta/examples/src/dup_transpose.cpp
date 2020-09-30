@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     }
   }
   DUMP_STOP("K");
-  DUMP_START("K", &E[0][0], &E[M-1][N-1]);
+  DUMP_START("K");
 
   // Normal transpose - K = E.T
   for (int row = 0; row < N; ++row) {
