@@ -306,12 +306,12 @@ class PlotBase(widgets.Widget):
                 rows = len(fgrid[0])
                 cols = len(fgrid[0][0])
                 n_fgrid = copy.deepcopy(fgrid)
-                for row in range(rows-1, -1, -1):
+                for row in range(rows):
                     for col in range(cols):
                         val = fgrid[0][row][col]
                         if val != 0:
-                            for i in range(row, max(-1, row-new_size), -1):
-                                for j in range(col, min(cols,col+new_size)):
+                            for i in range(row, min(rows, row+new_size)):
+                                for j in range(col, min(cols, col+new_size)):
                                     if fgrid[0][i][j] == 0:
                                         n_fgrid[0][i][j] = val
                 fgrid = n_fgrid

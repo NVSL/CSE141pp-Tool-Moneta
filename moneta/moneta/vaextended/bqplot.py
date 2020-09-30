@@ -87,7 +87,7 @@ class BqplotBackend(BackendBase):
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
 
         self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales)
-        self.figure.layout.width = 'calc(100% - 300px)'
+        self.figure.layout.width = 'calc(100% - 400px)'
         self.figure.layout.min_height = '800px'
         plt.figure(fig=self.figure)
         #self.figure.padding_y = 0
@@ -123,6 +123,7 @@ class BqplotBackend(BackendBase):
             limits = copy.deepcopy(self.limits)
             limits[0:2] = [[scale.min, scale.max] for scale in [self.scale_x, self.scale_y]]
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+            self.figure.axes[0].scale=bqplot.LinearScale(min=self.scale_x.min, max=self.scale_x.max, allow_padding=False)
             if self.counter == 2:
                 if self.curr_action in [Action.redo, Action.other]:
                     self.undo_btn.disabled = False
@@ -149,8 +150,8 @@ class BqplotBackend(BackendBase):
                 self._update_limits(self, *args)
             else:
                 self.counter = 2
-
             self.limits = limits
+
 
     def create_tools(self):
         self.tools = []
@@ -327,11 +328,9 @@ class BqplotBackend(BackendBase):
 
     def zoom_sel(self, x1, x2, y1, y2):
         with self.scale_x.hold_trait_notifications():
-            self.scale_x.min = x1
-            self.scale_x.max = x2
+            self.scale_x.min, self.scale_x.max = x1, x2
         with self.scale_y.hold_trait_notifications():
-            self.scale_y.min = y1
-            self.scale_y.max = y2
+            self.scale_y.min, self.scale_y.max = y1, y2
 
     def update_click_brush(self, *args):
         if not self.click_brush.brushing:

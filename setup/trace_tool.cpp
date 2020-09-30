@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
-#include <assert.h>
 #include <ctype.h>
 #include <sys/stat.h> // mkdir
 
@@ -532,10 +531,12 @@ VOID dump_stop_called(VOID * tag_name) {
       PIN_ExitApplication(0);
   }
 
-  // Assert tag exists
-  // Could be try catch or if else
   std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
-  assert(iter != all_tags.end());
+  if (iter == all_tags.end()) {
+    std::cerr << "Error: Stopping a tag that was never started: " << str_tag << "\n"
+	    "Exiting Trace Early...\n";
+    PIN_ExitApplication(0);
+  }
   for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
 		  i != iter->second->tags.rend(); ++i) {
     if ((*i)->active) {
