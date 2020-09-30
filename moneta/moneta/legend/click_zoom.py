@@ -2,7 +2,8 @@ from ipywidgets import Button, HBox, Label, Layout, VBox
 import ipyvuetify as v
 from moneta.settings import (
         vdiv, lvdiv, hdiv, lhdiv,
-        LEGEND_CLICK_ZOOM, newc
+        LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS,
+        TextStyle, WARNING_LABEL, INDEX_LABEL, ADDRESS_LABEL
 )
 from vaex.jupyter.utils import debounced
 import vaex
@@ -100,11 +101,13 @@ class Click_Zoom():
             selection = self.get_select_string()
             if len(selection) is not 0:
                 tmp_df = self.model.curr_trace.df
-                tmp_df.select(self.get_select_string(), mode="replace") # replace not necessary for correctness, but maybe perf? 
-                selected_bytes = tmp_df.evaluate(self.df.Bytes, selection=True)
-                selected_access_number = tmp_df.evaluate(self.df.Access_Number, selection=True)
-                selected_access = tmp_df.evaluate(self.df.Access, selection=True)
-                selected_array = vaex.from_arrays(Bytes=selected_bytes, Access_Number=selected_access_number, Access=selected_access)
+                tmp_df.select(self.get_select_string())
+                selected_address = tmp_df.evaluate(self.df[ADDRESS], selection=True)
+                selected_index = tmp_df.evaluate(self.df[INDEX], selection=True)
+                selected_access = tmp_df.evaluate(self.df[ACCESS], selection=True)
+                #if constants are changed, the following code line must change accordingly
+                #using non-constants here for column names because non-constants do not work
+                selected_array = vaex.from_arrays(Access=selected_access, Address=selected_address, index=selected_index)
                 self.update_df_selections(selected_array)
             else:
                 self.update_df_selections(self.model.curr_trace.df)
@@ -116,7 +119,7 @@ class Click_Zoom():
                     selections.add('(Access != %d)' % (checkbox.acc_type))
             for checkbox in self.tags.checkboxes:
                 if checkbox.widget.v_model == False:
-                    selections.add('(Tag != %s)' % (checkbox.tag_id))
+                    selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
             return '&'.join(selections)
 
         @debounced(0.5, method=True)
@@ -125,25 +128,22 @@ class Click_Zoom():
             self.update_selection()
             #first check if there is no data to zoom into
             if updating is not True:
-              print("click zoom: no data to zoom into")
+              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
               return
 
-            czoom_df_filter1 = self.df[self.df.Access_Number < self.observable.czoom_xmax]
-            czoom_df_filter2 = czoom_df_filter1[self.df.Access_Number > self.observable.czoom_xmin]
-            czoom_df_filter3 = czoom_df_filter2[self.df.Bytes > self.observable.czoom_ymin]
-            czoom_df_filter4 = czoom_df_filter3[self.df.Bytes < self.observable.czoom_ymax]
-            #colors = newc[df_filter4.Access.values]
+            czoom_df_filter1 = self.df[self.df[INDEX] < self.observable.czoom_xmax]
+            czoom_df_filter2 = czoom_df_filter1[self.df[INDEX] > self.observable.czoom_xmin]
+            czoom_df_filter3 = czoom_df_filter2[self.df[ADDRESS] > self.observable.czoom_ymin]
+            czoom_df_filter4 = czoom_df_filter3[self.df[ADDRESS] < self.observable.czoom_ymax]
 
             #second check if there is no data to zoom into
             try: 
-              zoom_x = czoom_df_filter4['Access_Number'].values[-1]
+              zoom_x = czoom_df_filter4[INDEX].values[-1]
             except:
-              print("click zoom: no data to zoom into")
+              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
               return
 
-            zoom_y = czoom_df_filter4['Bytes'].values[-1]
-            #max_x = self.df[czoom_df_filter4['Access_Number'].values[-1]]
-            #zoom_y = max_x['Bytes'].min()[()]
+            zoom_y = czoom_df_filter4[ADDRESS].values[-1]
             global click_zoom_x
             global click_zoom_y
             #set limits for data
@@ -152,31 +152,34 @@ class Click_Zoom():
             self.y_coormin = zoom_y - click_zoom_y/2
             self.y_coormax = zoom_y + click_zoom_y/2
 
-            #filter data to only those limits
-            df_filter1 = self.df[self.df.Access_Number < self.x_coormax]
-            df_filter2 = df_filter1[self.df.Access_Number > self.x_coormin]
-            df_filter3 = df_filter2[self.df.Bytes > self.y_coormin]
-            df_filter4 = df_filter3[self.df.Bytes < self.y_coormax]
-            colors = newc[df_filter4.Access.values]
+            #filter data to only those limits from newly created dataframe
+            df_filter1 = self.df[self.df[INDEX] < self.x_coormax]
+            df_filter2 = df_filter1[self.df[INDEX] > self.x_coormin]
+            df_filter3 = df_filter2[self.df[ADDRESS] > self.y_coormin]
+            df_filter4 = df_filter3[self.df[ADDRESS] < self.y_coormax]
+            colors = newc[df_filter4[ACCESS].values]
+
 
             
 	    #df_filter4.evaluate(selection=True)
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
  
         def plot_click_zoom(self, dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
-            print("plotting click zoom")
+            plot_message = "Done plotting click zoom"
+            print(f"{TextStyle.GREEN}{TextStyle.BOLD}\n"
+                  f"{plot_message}\n"
+                  f"{TextStyle.END}\n")
             self.widget.clear_output()
             if self.button.layout.display == "none":
                 self.button.layout.display = "block"
             with self.widget:
                 #filter for indices and addresses and their access type that are currently displayed in main widget
-                mpl_plt.scatter(dataset.Access_Number.values, dataset.Bytes.values, c=colors, s=0.5)
+                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5)
                 mpl_plt.title('Mini Zoom')
-                mpl_plt.xlabel('Bytes')
-                mpl_plt.ylabel('Access Number')
+                mpl_plt.xlabel(INDEX_LABEL)
+                mpl_plt.ylabel(ADDRESS_LABEL)
                 #set limits
                 mpl_plt.xlim(xlim_min, xlim_max)
                 mpl_plt.ylim(ylim_min, ylim_max)
                 mpl_plt.show()
     
-

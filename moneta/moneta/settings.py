@@ -13,7 +13,7 @@ OUTPUT_LINES_VAL = 10000000
 OUTPUT_LINES_DESC = "Lines to Output:"
 
 # Working Directory Path
-CWD_PATH_DEF = "e.g. ./Examples/build"
+CWD_PATH_DEF = "e.g. ./examples/build"
 CWD_PATH_DESC = "Working Directory (Optional):"
 HISTORY_MAX = 5
 
@@ -89,9 +89,10 @@ BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
         height='40px', width='90%', border='1px solid black')
 MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
 MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta/"
-OUTPUT_DIR = MONETA_BASE_DIR + "moneta/.output/"
+OUTPUT_DIR = MONETA_BASE_DIR + "moneta/output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
+#TOOL_PATH = MONETA_BASE_DIR + "setup/trace_tool.so"
 TOOL_PATH = "/pin/source/tools/ManualExamples/obj-intel64/trace_tool.so"
 WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')

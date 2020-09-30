@@ -44,13 +44,12 @@ class MonetaWidgets():
         self.bs = HBox([self.gb, self.lb, self.db])
         self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
 
-
     def handle_full_trace(self, switch, _, new):
         switch.label = settings.FULL_TRACE_DESC if new else settings.NORMAL_TRACE_DESC
 
     def handle_track_main(self, switch, _, new):
         switch.label = settings.TRACK_MAIN if new else settings.TRACK_NORMAL
-
+ 
     def get_widget_values(self):
         e_file, e_args = parse_exec_input(self.ex.value)
 
