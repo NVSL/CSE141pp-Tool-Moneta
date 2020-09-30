@@ -85,4 +85,6 @@ class Checkbox:
         self.widget = v.Checkbox(label=tag.name, v_model=True, class_='ma-0 mt-1 pa-0')
         self.start = tag.access[0] # Could fix x-axis being 1 access here aka access[0] == access[1]
         self.stop = tag.access[1]
+        self.top = tag.address[1]
+        self.bottom = tag.address[0]
 
