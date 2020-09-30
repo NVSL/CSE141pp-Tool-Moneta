@@ -3,7 +3,7 @@ import ipyvuetify as v
 from moneta.settings import (
         vdiv, lvdiv, hdiv, lhdiv,
         LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS,
-        TextStyle, WARNING_LABEL
+        TextStyle, WARNING_LABEL, INDEX_LABEL, ADDRESS_LABEL
 )
 from vaex.jupyter.utils import debounced
 import vaex
@@ -176,8 +176,8 @@ class Click_Zoom():
                 #filter for indices and addresses and their access type that are currently displayed in main widget
                 mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5)
                 mpl_plt.title('Mini Zoom')
-                mpl_plt.xlabel('Bytes')
-                mpl_plt.ylabel('Access Number')
+                mpl_plt.xlabel(INDEX_LABEL)
+                mpl_plt.ylabel(ADDRESS_LABEL)
                 #set limits
                 mpl_plt.xlim(xlim_min, xlim_max)
                 mpl_plt.ylim(ylim_min, ylim_max)
