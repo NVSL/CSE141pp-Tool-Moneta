@@ -81,7 +81,6 @@ class View():
 
     def handle_load_trace(self, _):
         log.info("Load Trace clicked")
- 
 
         self.model.ready_next_trace()
         clear_output(wait=True)
@@ -89,16 +88,15 @@ class View():
         display(self.m_widget.widgets)
 
 
-        if self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0:
-            print("To load a trace, select a trace")
-            return
-        if self.m_widget.sw2.value is None or len(self.m_widget.sw2.value) == 0:
+        if (self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0) and (self.m_widget.sw2.value is None or len(self.m_widget.sw2.value) == 0):
             print("To load a trace, select a trace")
             return
         elif len(self.m_widget.sw.value) > 1 or len(self.m_widget.sw2.value) > 1:
             print("To load a trace, select a single trace")
             return
-         
+        elif(len(self.m_widget.sw.value)!=0 and len(self.m_widget.sw2.value)!=0):
+            print("To load a trace, select a single trace from Tagged or Full Traces")
+
         if(self.lastChanged==1):
             #curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
             err_message = self.model.load_trace(self.m_widget.sw.value[0])

@@ -33,7 +33,7 @@ class MonetaWidgets():
         self.ft.on_event("change", self.handle_full_trace)
         self.tm = v.Switch(v_model=False, label=settings.TRACK_NORMAL, inset=True, style_="color: black; background: white; margin-top: 0; padding-left: 50px")
         self.tm.on_event("change", self.handle_track_main)
-        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.tm, self.vh, self.vh2], layout=Layout(width='100%'))
+        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.tm, self.vh, self.vh2], layout=Layout(width='50%'))
 
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
         self.lb = button(settings.LOAD_DESC, color=settings.LOAD_COLOR)
