@@ -17,7 +17,7 @@ Generate and visualize billions of memory accesses with this project built on PI
          * [Analyzing a Trace](#analyzing-a-trace)
             * [Moneta Plot Features](#moneta-plot-features)
          * [Deleting a Trace](#deleting-a-trace)
-    * [Developers](#developers)
+   * [Developers](#developers)
 
 ## Getting Started
 
