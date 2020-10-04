@@ -6,7 +6,7 @@ This directory contains useful information regarding the implementation of the f
 
 ## Table of Contents
 
-   * [General Workflow:](#general-workflow)
+   * [General Workflow](#general-workflow)
    * [Developer Guide: Pin](#developer-guide-pin)
       * [Compiling the Pintool](#compiling-the-pintool)
       * [Running the Pintool](#running-the-pintool)
