@@ -17,7 +17,7 @@ This directory contains useful information regarding the implementation of the f
       * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
       * [Other Notes](#other-notes)
 
-## General Workflow:
+## General Workflow
 1.	Student annotates their program with tag functions and tags data structures of interest
 2.	Student compiles their program as an executable
 3.	Student opens the Jupyter Notebook, sets values for Cache Lines, Block Size, Lines to Output, Working Directory, Executable Path, Name for Trace and Trace Everything
