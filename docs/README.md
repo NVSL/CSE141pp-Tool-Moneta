@@ -17,8 +17,6 @@ This directory contains useful information regarding the implementation of the f
       * [Using Vaextended](#using-vaextended)
       * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
       * [Other Notes](#other-notes)
-         * [Vaex Inverted Navigation](#vaex-inverted-navigation)
-         * [@extend_class Decorator](#extend_class-decorator)
 
 ## General Workflow:
 1.	Student annotates their program with tag functions and tags data structures of interest
@@ -93,6 +91,8 @@ Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output
   - In order for Pin to compile using the Makefiles, the `PIN_ROOT` environment variable must be set to the directory where Pin is installed (contains the `pin.sh` file). Our Docker image sets `PIN_ROOT = /pin`.
    - Using the HDF5 file format is much more efficient than writing to a typical CSV file. Since we are writing large sets of data, efficiency is one of our top priorities. Not only is it faster to write to HDF5 files, it is also faster for Vaex to open HDF5 files. Using HDF5 and Vaex, we can open and process millions of lines of data in seconds. 
 
+___
+
 # Developer Guide: Vaextended
 
 Adapted version of Vaex to allow local control over the backend (Default Path: `moneta/moneta/vaextended`);
@@ -108,16 +108,6 @@ vaex-server: 0.2.1
 vaex-ui:  0.3.0
 vaex-viz: 0.3.8
 ```
-
-## Table of Contents:
- * [Using Vaextended](#using-vaextended)
- * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
-    * [bqplot.py](#bqplotpy)
-    * [plot.py](#plotpy)
-    * [widgets.py](#widgetspy)
- * [Other Notes](#other-notes)
-     * [Vaex Inverted Navigation](#vaex-inverted-navigation)
-     * [@extend-class Decorator](#extend_class-decorator)
 
 ## Using Vaextended
 
