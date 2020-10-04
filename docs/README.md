@@ -13,7 +13,6 @@ This directory contains useful information regarding the implementation of the f
       * [Output Files](#output-files)
       * [Important Notes](#important-notes)
    * [Developer Guide: Vaextended](#developer-guide-vaextended)
-      * [Table of Contents:](#table-of-contents)
       * [Using Vaextended](#using-vaextended)
       * [Modifying Vaex's Existing Backend](#modifying-vaexs-existing-backend)
       * [Other Notes](#other-notes)
