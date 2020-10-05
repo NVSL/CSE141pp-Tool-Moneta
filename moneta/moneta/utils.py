@@ -70,11 +70,14 @@ def parse_exec_input(e_input):
 
 
 def load_cwd_file():
+    if not os.path.isfile(CWD_HISTORY_PATH):
+        log.debug(f"History file doesn't exist")
+        return []
     try:
         with open(CWD_HISTORY_PATH, "a+") as history:
             history.seek(0)
             cwd_history = history.read().split()
-            logging.debug(f"Reading history from file: {cwd_history}")
+            log.debug(f"Reading history from file: {cwd_history}")
             return cwd_history
     except Exception as e: 
         # Allows tool to still work, just no history, if there is a problem with the file
@@ -274,7 +277,7 @@ def collect_traces():
 
     trace_map = {}
     if not os.path.isdir(OUTPUT_DIR):
-        return [], {}
+        return [], [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
