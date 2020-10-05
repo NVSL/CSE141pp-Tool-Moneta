@@ -274,7 +274,8 @@ def collect_traces():
 
     trace_map = {}
     if not os.path.isdir(OUTPUT_DIR):
-        return [], {}
+        print("am i here?")
+        return [], [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
@@ -305,7 +306,7 @@ def collect_traces():
             trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
-    
+    print("or here?")
     return trace_list, trace_list_full, trace_map 
 
 
