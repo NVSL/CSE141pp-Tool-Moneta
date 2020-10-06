@@ -29,6 +29,115 @@ void heapify(std::vector<int> & data, int n, int i){
   }
 }
 
+void mystery_a(std::vector<int> & a) {
+  int u, v;
+  for (int i = 1; i < SIZE; i++) {
+    v = a[i];
+    u = i-1;
+
+    while (u >= 0 && a[u] > v) {
+      a[u+1] = a[u];
+      u--;
+    }
+    a[u+1] = v;
+  }
+}
+
+void mystery_b(std::vector<int> & b) {
+  int v;
+  for (int i = 0; i < SIZE; i++) {
+    int j = rand()%SIZE;
+    b[j] = i*j;
+  }
+  for (int j = 0; j < SIZE*4; j++) {
+    int i = j/4;
+    b[i] += i*i;
+    v+=b[i]+b[SIZE-i-1];
+    b[SIZE-i-1] += i*i;
+  }
+  for (int i = 0; i < SIZE; i++) {
+    int j = rand()%SIZE;
+    b[j] = i*j;
+  }
+}
+
+void mystery_c(std::vector<int> & c) {
+  int v;
+  for (int i = 0; i < SIZE-1; i++) {
+    v = i;
+    for (int j = i + 1; j < SIZE; j++) {
+      if (c[j] < c[v]) {
+        v = j;
+      }
+    }
+    std::swap(c[v], c[i]);
+  }
+}
+
+void mystery_d(std::vector<int> & d) {
+  for (int i = SIZE/2 - 1; i >= 0; i--) {
+    heapify(d, SIZE, i);
+  }
+  for (int i = SIZE - 1; i > 0; i--) {
+    std::swap(d[0], d[i]);
+    heapify(d, i, 0);
+  }
+}
+
+void mystery_e(std::vector<int> & e) {
+  for (int i = 0; i < SIZE; i+=SIZE/100) {
+    e[i]=i*i;
+  }
+  for (int i = 0; i < SIZE*10; i++) {
+    if (i%2 == 0) {
+      e[SIZE-1]++;
+    } else {
+      e[0]++;
+    }
+  }
+  for (int i = 0; i < SIZE; i+=SIZE/100) {
+    e[i] = i*i;
+  }
+}
+
+void mystery_f(std::vector<int> & f) {
+  for (int i = 0; i < SIZE-17; i+=18) {
+    for (int j = i; j < i+9; j++) {
+      std::swap(f[j], f[j-17]);
+    }
+  }
+  for (int i = 0; i < SIZE*10; i++) {
+    if (i%2 == 0) {
+      f[SIZE/2-100]++;
+    } else {
+      f[SIZE/2+100]++;
+    }
+  }
+  for (int i = 0; i < SIZE-17; i+=18) {
+    for (int j = i; j < i+9; j++) {
+      std::swap(f[j], f[j-17]);
+    }
+  }
+}
+
+void mystery_g(std::vector<int> & g) {
+  std::normal_distribution<double> norm_dist(SIZE/2, SIZE/10);
+  for (int i = 0; i < SIZE*10; i++) {
+    int j = std::min(std::max((int)norm_dist(engine), 0), SIZE-1);
+    g[j] = i*j;
+  }
+}
+
+void mystery_h(std::vector<int> & h) {
+  for (int i = 0; i < SIZE-1; i++) {
+    for (int j = 0; j < SIZE-i-1; j++) {
+      if (h[j] > h[j+1]) {
+        std::swap(h[j], h[j+1]);
+      }
+    }
+  }
+}
+
 void fill_v(std::vector<int> & v) {
   for (int i = 0; i < SIZE; i++) {
     v[i] = distribution(engine);
@@ -54,120 +163,46 @@ int main() {
   fill_v(G);
   fill_v(H);
 
-  int u, v;
+  DUMP_START_SINGLE("vectors", &H.front(), &A.back());
 
   // A
   DUMP_START_SINGLE("A", &A.front(), &A.back());
-  for (int i = 1; i < SIZE; i++) {
-    v = A[i];
-    u = i-1;
-
-    while (u >= 0 && A[u] > v) {
-      A[u+1] = A[u];
-      u--;
-    }
-    A[u+1] = v;
-  }
+  mystery_a(A);
   DUMP_STOP("A");
 
   // B
   DUMP_START_SINGLE("B", &B.front(), &B.back());
-  for (int i = 0; i < SIZE; i++) {
-    int j = rand()%SIZE;
-    B[j] = i*j;
-  }
-  for (int j = 0; j < SIZE*4; j++) {
-    int i = j/4;
-    B[i] += i*i;
-    v+=B[i]+B[SIZE-i-1];
-    B[SIZE-i-1] += i*i;
-  }
-  for (int i = 0; i < SIZE; i++) {
-    int j = rand()%SIZE;
-    B[j] = i*j;
-  }
+  mystery_b(B);
   DUMP_STOP("B");
 
   // C
-  for (int i = 0; i < SIZE-1; i++) {
-    v = i;
-    for (int j = i + 1; j < SIZE; j++) {
-      if (C[j] < C[v]) {
-        v = j;
-      }
-    }
-    std::swap(C[v], C[i]);
-  }
+  mystery_c(C);
 
   // D
   DUMP_START_SINGLE("D", &D.front(), &D.back());
-  for (int i = SIZE/2 - 1; i >= 0; i--) {
-    heapify(D, SIZE, i);
-  }
-  for (int i = SIZE - 1; i > 0; i--) {
-    std::swap(D[0], D[i]);
-    heapify(D, i, 0);
-  }
+  mystery_d(D);
   DUMP_STOP("D");
 
 
   // E
-  for (int i = 0; i < SIZE; i+=SIZE/100) {
-    E[i]=i*i;
-  }
-  for (int i = 0; i < SIZE*10; i++) {
-    if (i%2 == 0) {
-      E[SIZE-1]++;
-    } else {
-      E[0]++;
-    }
-  }
-  for (int i = 0; i < SIZE; i+=SIZE/100) {
-    E[i] = i*i;
-  }
+  mystery_e(E);
 
   // F
   DUMP_START_SINGLE("F", &F.front(), &F.back());
-  for (int i = 0; i < SIZE-17; i+=18) {
-    for (int j = i; j < i+9; j++) {
-      std::swap(F[j], F[j-17]);
-    }
-  }
-  for (int i = 0; i < SIZE*10; i++) {
-    if (i%2 == 0) {
-      F[SIZE/2-100]++;
-    } else {
-      F[SIZE/2+100]++;
-    }
-  }
-  for (int i = 0; i < SIZE-17; i+=18) {
-    for (int j = i; j < i+9; j++) {
-      std::swap(F[j], F[j-17]);
-    }
-  }
+  mystery_f(F);
   DUMP_STOP("F");
 
   // G
   DUMP_START_SINGLE("G", &G.front(), &G.back());
-  std::normal_distribution<double> norm_dist(SIZE/2, SIZE/10);
-  for (int i = 0; i < SIZE*10; i++) {
-    int j = std::min(std::max((int)norm_dist(engine), 0), SIZE-1);
-    G[j] = i*j;
-  }
+  mystery_g(G);
   DUMP_STOP("G");
 
   // H
   DUMP_START_SINGLE("H", &H.front(), &H.back());
-  for (int i = 0; i < SIZE-1; i++) {
-    for (int j = 0; j < SIZE-i-1; j++) {
-      if (H[j] > H[j+1]) {
-        std::swap(H[j], H[j+1]);
-      }
-    }
-  }
+  mystery_h(H);
   DUMP_STOP("H");
-
   
 
+  DUMP_STOP("vectors");
   return 0;
 }
