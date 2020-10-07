@@ -45,16 +45,16 @@ Run `moneta` from any directory to start the local Jupyter Notebook server where
 
 You should see a list of URLs appear. Go to your preferred web browser and paste the link that looks like the following:
 
-```
+<pre>
 http://127.0.0.1<b>:8888</b>/?token=...
-```
+</pre>
 **Notice the `8888` in the link. If you used a port number other than `8888` when [creating the Docker container](#port), replace `8888` with your port number.**
 
 **Note For Docker Toolbox**: If you are using Docker Toolbox (this is different from Docker Desktop) as your Docker environment, you will also have to replace `127.0.0.1` with `192.168.99.100` to access the link.
 
-```
+<pre>
 http://192.168.99.100<b>:8888</b>/?token=...
-```
+</pre>
 
 If you were able to successfully connect, you will see a Jupyter tab on your browser with a list of the files/subdirectories in the `~/work/moneta` directory. Open the `Moneta.ipynb` file.
 
