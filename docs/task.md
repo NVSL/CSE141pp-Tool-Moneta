@@ -34,18 +34,29 @@ Open up the Moneta notebook
 **IMPORTANT** We'll be using a 256 KB cache which is also the default
 
 Fill in the path to the executable  
+
 Fill in enough number of lines to get at least two iterations of the outer loop (we used 100 million which is not the default)  
+
 Name it "row_major"  
+
 Select full trace  
+
 Select start from main since we are focusing on the accesses in main  
+
 Hit generate  
+
 Load the trace  
+
 With these very large arrays we find they are allocated near the top of the heap area, you should see a large horizontal line in the plot (ours was at the top):  
 <img src="../../assets/InitialRowMajor.png" alt="RowMajorZoomedOut" width="400px">  
+
 Zoom into the top line with zoom selection  
 Keep zooming to that rectangle until you see something like this:  
 <img src="../../assets/RowMajor.png" alt="RowMajorZoomedIn" width="400px">  
+<hr>
 **IMPORTANT** If at any time the kernel crashes, ensure you have 4-8 GB for Docker. Also, you may attempt the lab with one iteration or if the problem persists, reduce the size of the array by a tenth  
+<hr>
+
 Open up the stats panel in the legend and record the current view stats noting the cache hit rate. This is the maximum hit rate for linear accesses with the default cache parameters.  
 
 Since the program entirely revolves around just these accesses, the total stats should have similar rates, so zooming in is not necessary
@@ -54,6 +65,7 @@ Since the program entirely revolves around just these accesses, the total stats 
 
 To complete this lab, you need to change the cache parameters (cache lines and block size) when running `col_major.cpp` to try to hit (or beat!) row major's hit rate
 
+<hr>
 #### Rules
 * Do not modify any of the interal structure of either program
 * You may tag these programs to make zooming and analyzing easier
