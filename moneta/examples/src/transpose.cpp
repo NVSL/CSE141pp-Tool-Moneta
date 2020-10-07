@@ -1,11 +1,7 @@
 #include <random>
 #include <vector>
 #include <iostream>
-
-
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_START_SINGLE(const char* tag, double* begin, double* end) {}
-extern "C" __attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
-
+#include "../../pin_tags.h"
 
 
 const int M = 1000;
@@ -31,15 +27,27 @@ int main(int argc, char *argv[]) {
   DUMP_START_SINGLE("E", &E[0][0], &E[M-1][N-1]);
   // Normal transpose - E = K.T
   for (int row = 0; row < M; ++row) {
+    if (row >= 20 && row <= 40) {
+      DUMP_START_MULTI("k_t", LIMIT, LIMIT);
+    }
     for (int col = 0; col < N; ++col) {
       E[row][col] = K[col][row];
+    }
+    if (row >= 20 && row <= 40) {
+      DUMP_STOP("k_t");
     }
   }
 
   // Normal transpose - K = E.T
   for (int row = 0; row < N; ++row) {
+    if (row >= 20 && row <= 40) {
+      DUMP_START_MULTI("e_t", LIMIT, LIMIT);
+    }
     for (int col = 0; col < M; ++col) {
       K[row][col] = E[col][row];
+    }
+    if (row >= 20 && row <= 40) {
+      DUMP_STOP("e_t");
     }
   }
 
