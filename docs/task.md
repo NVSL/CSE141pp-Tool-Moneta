@@ -59,7 +59,7 @@ Keep zooming to that rectangle until you see something like this:
 
 Open up the stats panel in the legend and record the current view stats noting the cache hit rate. This is the maximum hit rate for linear accesses with the default cache parameters.  
 
-Since the program entirely revolves around just these accesses, the total stats should have similar rates, so zooming in is not necessary
+Since the program revolves entirely around just these accesses, the total stats should have similar rates, so zooming in is not necessary
 
 ### Increase Hit Rate of Column Major
 
