@@ -70,9 +70,9 @@ def parse_exec_input(e_input):
 
 
 def load_cwd_file():
-    if not os.path.isfile(CWD_HISTORY_PATH):
-        log.debug(f"History file doesn't exist")
-        return []
+    if not os.path.isdir(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
+        log.debug(f"Making output dir")
     try:
         with open(CWD_HISTORY_PATH, "a+") as history:
             history.seek(0)
