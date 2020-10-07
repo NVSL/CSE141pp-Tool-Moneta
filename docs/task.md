@@ -66,6 +66,7 @@ Since the program revolves entirely around just these accesses, the total stats 
 To complete this lab, you need to change the cache parameters (cache lines and block size) when running `col_major.cpp` to try to hit (or beat!) row major's hit rate
 
 <hr>
+
 #### Rules
 * Do not modify any of the interal structure of either program
 * You may tag these programs to make zooming and analyzing easier
