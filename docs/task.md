@@ -74,7 +74,7 @@ To complete this lab, you need to change the cache parameters (cache lines and b
 * The upper limit for the cache is 256 KB
 * Generate enough accesses for at least one iteration
 
-### Recommendations
+#### Recommendations
 * Stick to the format we used for row major:
 * Trace from main
 * Use multiples of 2 for the cache parameters
