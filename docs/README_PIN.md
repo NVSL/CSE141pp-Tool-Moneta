@@ -1,6 +1,6 @@
 # Developer Guide: Pin
 
-Intel’s PIN allows a user to instrument a program to analyze many aspects of the execution. We are using a subset of PIN’s functionality in order to track memory accesses throughout a student’s executable. For more information about PIN with examples, visit [Intel's Pin Documentation](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/) for a User Guide. For the APIs used in the tool, visit [Modules](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/modules.html).
+Intels PIN allows a user to instrument a program to analyze many aspects of the execution. We are using a subset of PINs functionality in order to track memory accesses throughout a students executable. For more information about PIN with examples, visit [Intel's Pin Documentation](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/) for a User Guide. For the APIs used in the tool, visit [Modules](https://software.intel.com/sites/landingpage/pintool/docs/71313/Pin/html/modules.html).
 
 Our Pin files are located [here](https://github.com/NVSL/CSE141pp-Tool-Moneta-Pin). Check [Important Notes](https://github.com/NVSL/CSE141pp-Tool-Moneta/blob/docs_pin/docs/README_PIN.md#important-notes) if any step fails.
 <hr>
@@ -20,7 +20,7 @@ pintool.so
 We wrapped this up in a script:
 
 ```
-> python .setup/compile_pin.py <PATH_TO_PINTOOL/pintool.cpp> [default: .setup/trace_tool.cpp]
+> python setup/compile_pin.py <PATH_TO_PINTOOL/pintool.cpp> [default: setup/trace_tool.cpp]
 > ls PIN_ROOT/source/tools/ManualExamples/obj-intel64/
 
 pintool.so
@@ -45,11 +45,11 @@ Usage: `pin [OPTION] [-t <tool> [<toolargs>]] -- <command line>`
 
 #### Examples
 ```
-/pin/pin.sh -ifeellucky -injection child -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
+/pin/pin.sh -ifeellucky -injection child -t setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
 In the container, the `pin` alias from the `~/.bashrc` file condenses `/pin/pin.sh -ifeellucky -injection child`:
 ```
-pin -t .setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
+pin -t setup/trace_tool.so -n sorting -ol 1000000 -c 4096 -b 64 -f 0 -m 0 -- ./moneta/Examples/sorting
 ```
 
 ## Output Files
@@ -60,5 +60,5 @@ Located in Moneta's `.output` folder (Default: `/home/jovyan/work/moneta/.output
 
 ## Important Notes
  - In our Pintool, `trace_tool`, a fully associative cache is simulated and is used to determine if the memory access is a hit or a miss, as Pin cannot tell us if the access is a hit or miss in the system's real cache.
- - In order for Pin to compile using the Makefiles, the `PIN_ROOT` environment variable must be set to the directory where Pin is installed (contains the `pin.sh` file). Our Docker image sets `PIN_ROOT = /pin`.
- - Using the HDF5 file format is much more efficient than writing to a typical CSV file. Since we are writing large sets of data, efficiency is one of our top priorities. Not only is it faster to write to HDF5 files, it is also faster for Vaex to open HDF5 files. Using HDF5 and Vaex, we can open and process millions of lines of data in seconds. 
+  - In order for Pin to compile using the Makefiles, the `PIN_ROOT` environment variable must be set to the directory where Pin is installed (contains the `pin.sh` file). Our Docker image sets `PIN_ROOT = /pin`.
+   - Using the HDF5 file format is much more efficient than writing to a typical CSV file. Since we are writing large sets of data, efficiency is one of our top priorities. Not only is it faster to write to HDF5 files, it is also faster for Vaex to open HDF5 files. Using HDF5 and Vaex, we can open and process millions of lines of data in seconds. 

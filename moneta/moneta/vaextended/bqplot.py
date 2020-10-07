@@ -343,8 +343,8 @@ class BqplotBackend(BackendBase):
                     coor_xmax = self.czoom_xmax = max(x1, x2)
                     coor_ymin = self.czoom_ymin = min(y1, y2)
                     coor_ymax = self.czoom_ymax = max(y1, y2)
-                    ind = self.plot.x_label
-                    addr = self.plot.y_label
+                    ind = self.plot.x_col
+                    addr = self.plot.y_col
                     res = df[(df[ind] >= coor_xmin) & (df[ind] <= coor_xmax) & (df[addr] >= coor_ymin) & (df[addr] <= coor_ymax)]	
 
                     #if there are values selected within the region

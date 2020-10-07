@@ -8,7 +8,7 @@ Instructions on how to run and use Moneta
 
  - After connecting to the Docker container, you should be in the `~/work/moneta` directory. This is Moneta's base directory. When using Moneta, any relative paths you input into the text boxes will be relative to this directory.
 
- - A number of example programs are available under the `~work/moneta/Examples/src` directory. These programs were used by the developers to test Moneta's capabilities and have been left here to use as sample programs for exploring the tool. If you would like to use these programs, you will need to compile them first by running `make` in the `~/work/moneta` directory (or `make filename` without the `.cpp` to compile individual programs). Note that the Makefile compiles the programs with `-O0`. The resulting executables will be located in the `~/work/moneta/Examples/build` directory. 
+ - A number of example programs are available under the `~work/moneta/examples/src` directory. These programs were used by the developers to test Moneta's capabilities and have been left here to use as sample programs for exploring the tool. If you would like to use these programs, you will need to compile them first by running `make` in the `~/work/moneta` directory (or `make filename` without the `.cpp` to compile individual programs). Note that the Makefile compiles the programs with `-O0`. The resulting executables will be located in the `~/work/moneta/examples/build` directory. 
 
  - **Know your port number.** The port number was set when you ran the Docker commands to build the container (see main `README`). If you do not remember your port number, open a new terminal and run `docker port moneta` (do **not** connect to the Moneta container). You will see an output like the one below. The `####` is your port number. **You will need this to connect to the Jupyter Notebook.**
  ```
@@ -43,7 +43,7 @@ FLUSH_CACHE()
 
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
 
-For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/Examples/src`.
+For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/examples/src`.
 
 ## Running Moneta
 
@@ -89,7 +89,7 @@ selectionSort(selection, SIZE);
 DUMP_ACCESS_STOP_TAG("Selection");
 ```
 
-More implementation details can be found by viewing the source code (Path: `~/work/moneta/Examples/src/sorting.cpp`).
+More implementation details can be found by viewing the source code (Path: `~/work/moneta/examples/src/sorting.cpp`).
 
 ### Generating a Trace
 After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.
@@ -124,9 +124,9 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Lines to Output:** 10,000,000
 
-**Working Directory (Optional):** ./Examples/build
+**Working Directory (Optional):** ./examples/build
 
-**Executable Path and Args:** ./sorting (This will run as if you `cd` into `./Examples/build` and then ran `./sorting`)
+**Executable Path and Args:** ./sorting (This will run as if you `cd` into `./examples/build` and then ran `./sorting`)
 
 **Name for Output:** trace\_sorting
 

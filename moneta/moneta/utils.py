@@ -270,9 +270,11 @@ def collect_traces():
     """Reads output directory to fill up select widget with traces"""
     log.info("Reading outfile directory")
     trace_list = []
+    trace_list_full = []
+
     trace_map = {}
     if not os.path.isdir(OUTPUT_DIR):
-        return [], {}
+        return [], [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
@@ -299,10 +301,12 @@ def collect_traces():
                 print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.{TextStyle.END}")
                 continue
             
-            trace_list.append("(Full) " + trace_name)
+            trace_list_full.append(trace_name)
             trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
-    return trace_list, trace_map
+            log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
+    return trace_list, trace_list_full, trace_map 
+
 
 def delete_traces(trace_paths):
     for trace_path, tag_path, meta_path in trace_paths:

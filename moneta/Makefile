@@ -1,5 +1,5 @@
-SRC_DIR := ./Examples/src
-EXE_DIR := ./Examples/build
+SRC_DIR := ./examples/src
+EXE_DIR := ./examples/build
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 EXECUTABLES := $(patsubst $(SRC_DIR)/%.cpp,%,$(SRC_FILES))
 

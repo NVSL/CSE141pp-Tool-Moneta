@@ -21,18 +21,47 @@ class View():
         self.model = model
         self.init_widgets()
 
+        #added to resolve first one not being correct error 
+        self.m_widget.sw.observe(self.on_value_change, names='value')
+        self.m_widget.sw2.observe(self.on_value_change2, names='value')
+        
+
     def init_widgets(self):
         log.info("Initializing widgets")
         self.m_widget = MonetaWidgets()
         self.m_widget.gb.on_click(self.handle_generate_trace)
         self.m_widget.lb.on_click(self.handle_load_trace)
         self.m_widget.db.on_click(self.handle_delete_trace)
+        self.lastChanged = -1
         self.update_select_widget()
+        
+        self.w_1 = []
+        self.w_2 = []
+        self.selectors = [self.m_widget.sw, self.m_widget.sw2]
+        
         display(self.m_widget.widgets)
 
     def update_select_widget(self):
-        self.m_widget.sw.options = self.model.update_trace_list()
+        self.m_widget.sw.options,self.m_widget.sw2.options = self.model.update_trace_list()
         self.m_widget.sw.value = []
+        self.m_widget.sw2.value = []
+       
+
+    def on_value_change(self, change):
+        self.m_widget.sw2.value = ()
+        self.m_widget.sw.value = change['new']
+        if(not change['new']):
+            self.lastChanged=-1
+        else:
+            self.lastChanged = 1
+
+    def on_value_change2(self, change):
+        self.m_widget.sw.value = ()
+        self.m_widget.sw2.value = change['new']
+        if(not change['new']):
+            self.lastChanged=-1
+        else:
+            self.lastChanged = 0
 
     def update_cwd_widget(self, cwd_path):
         if not cwd_path in (".", "./") and not cwd_path in self.m_widget.cwd.options:
@@ -59,17 +88,33 @@ class View():
         display(self.m_widget.widgets)
 
 
-        if self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0:
+        if (self.m_widget.sw.value is None or len(self.m_widget.sw.value) == 0) and (self.m_widget.sw2.value is None or len(self.m_widget.sw2.value) == 0):
             print("To load a trace, select a trace")
             return
-        elif len(self.m_widget.sw.value) > 1:
+        elif len(self.m_widget.sw.value) > 1 or len(self.m_widget.sw2.value) > 1:
             print("To load a trace, select a single trace")
             return
-        err_message = self.model.load_trace(self.m_widget.sw.value[0])
+        elif(len(self.m_widget.sw.value)!=0 and len(self.m_widget.sw2.value)!=0):
+            print("To load a trace, select a single trace from Tagged or Full Traces")
+
+        if(self.lastChanged==1):
+            #curr_trace, err_message = self.model.load_trace(self.m_widget.sw.value[0])
+            err_message = self.model.load_trace(self.m_widget.sw.value[0])
+
+        elif(self.lastChanged==0):
+            #curr_trace, err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
+            err_message = self.model.load_trace("(Full) " + self.m_widget.sw2.value[0])
+
+        else:
+            log.debug("No trace chosen to load")
+            return
+          
+        #err_message = self.model.load_trace(self.m_widget.sw.value[0])
         if err_message is not None:
             print(err_message)
             return
 
+        log.info(self.lastChanged)
         curr_trace = self.model.curr_trace
         df = curr_trace.df
         x_lim = curr_trace.x_lim
@@ -104,9 +149,22 @@ class View():
     
     def handle_delete_trace(self, _):
         log.info("Delete Trace clicked")
-        if (not self.model.delete_traces(self.m_widget.sw.value)):
-            clear_output(wait=True)
-            log.info("Refreshing")
-            display(self.m_widget.widgets)
-        self.update_select_widget()
-        pass
+
+        if(self.lastChanged==1):
+            log.info("Deleting tagged trace")
+            if (not self.model.delete_traces(self.m_widget.sw.value, 1)):
+                clear_output(wait=True)
+                log.info("Refreshing")
+                display(self.m_widget.widgets)
+            self.update_select_widget()
+            pass
+        elif (self.lastChanged==0):
+            log.info("Deleting full trace")
+            if (not self.model.delete_traces(self.m_widget.sw2.value, 0)):
+                clear_output(wait=True)
+                log.info("Refreshing")
+                display(self.m_widget.widgets)
+            self.update_select_widget()
+            pass
+        else:
+            log.debug("No trace chosen to delete")

@@ -1,3 +1,0 @@
-
-alias pin="${PIN_ROOT}/pin.sh -ifeellucky -injection child"
-alias moneta="jupyter notebook --allow-root ~/work/moneta"
