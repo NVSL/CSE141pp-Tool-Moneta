@@ -19,9 +19,7 @@ docker build -t moneta-img .
 
 ### Creating the Container
 
-Due to the way Windows interprets paths, these next few instructions may differ slightly depending on your operating system. If you are using Windows, [skip to this section](#windows).
-
-<a name="port"></a>Start a detached docker container named `moneta`. **Take note of the `####:8888` in the command.** The `####` will be your **port number** for running the notebook. The port number will be `8888` here but can be changed if there are any conflicts. **Note that you will have to change the Jupyter Notebook URL port to the port set here when you run the `moneta` command.**
+<a name="port"></a>Start a detached docker container named `moneta`. **Take note of the `####:8888` in the command.** The `####` will be your **port number** for running the notebook. The port number will be `8888` here but can be changed if there are any conflicts. **Note that you will have to change the Jupyter Notebook URL port to the port set here when you run the `moneta` command.** If you are using Windows, [run the Windows commands instead](#windows).
 ```
 docker run --detach --name moneta -p 8888:8888  -v "$PWD":/home/jovyan/work --user root -e GRANT_SUDO=yes -e JUPYTER_ENABLE_LAB=yes moneta-img bash -c "while true; do sleep 10;done"
 ```
