@@ -53,7 +53,8 @@ With these very large arrays we find they are allocated near the top of the heap
 Zoom into the top line with zoom selection  
 Keep zooming to that rectangle until you see something like this:  
 <img src="../../assets/RowMajor.png" alt="RowMajorZoomedIn" width="400px">  
-<hr>
+<hr>  
+
 **IMPORTANT** If at any time the kernel crashes, ensure you have 4-8 GB for Docker. Also, you may attempt the lab with one iteration or if the problem persists, reduce the size of the array by a tenth  
 <hr>
 
