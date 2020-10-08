@@ -2,7 +2,7 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM, LEGEND_STATS_TITLE, INDEX
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM, LEGEND_STATS_TITLE, INDEX, ADDRESS
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from moneta.legend.click_zoom import Click_Zoom
@@ -57,7 +57,7 @@ class Legend():
                 selections.add('(Access != %d)' % (checkbox.acc_type))
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
+                selections.add('((%s < %s) | (%s > %s) | (%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop, ADDRESS, checkbox.bottom, ADDRESS, checkbox.top))
         return '&'.join(selections)
 
     @debounced(0.5)
