@@ -57,8 +57,8 @@ class Tags():
                 f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
                 f'Capacity Read Misses: {stats[2]} ({stats_percent(stats[2],total)}) \n'
                 f'Capacity Write Misses: {stats[3]} ({stats_percent(stats[3],total)}) \n'
-                f'Compulsory Read Hits: {stats[4]} ({stats_percent(stats[4],total)}) \n'
-                f'Compulsort Write Hits: {stats[5]} ({stats_percent(stats[5],total)}) \n'
+                f'Compulsory Read Misses: {stats[4]} ({stats_percent(stats[4],total)}) \n'
+                f'Compulsory Write Misses: {stats[5]} ({stats_percent(stats[5],total)}) \n'
         )
         return final_tooltip
 
