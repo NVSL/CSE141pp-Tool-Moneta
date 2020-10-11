@@ -32,7 +32,8 @@ class Tags():
 
     def create_zoom_button(self, tag): #TODO move constants out
         df = self.model.curr_trace.df
-        stats = df[int(tag.access[0]):int(tag.access[1])+1][df[ADDRESS] >= int(tag.address[0]) and df[ADDRESS] <= int(tag.address[1])].count(binby=[df.Access], limits=[1,7], shape=[6])
+        #TODO: For some reason, or works and not and
+        stats = df[int(tag.access[0]):int(tag.access[1])+1][df[ADDRESS] >= int(tag.address[0]) or df[ADDRESS] <= int(tag.address[1])].count(binby=[df.Access], limits=[1,7], shape=[6])
 
         btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
                 style={'button_color': 'transparent'},
