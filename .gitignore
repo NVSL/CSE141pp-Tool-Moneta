@@ -1,7 +1,7 @@
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
 **/*.py[cod]
-moneta/Examples/build/*
+moneta/examples/build/*
 moneta/output/*
 
 # IPython checkpoints
@@ -16,5 +16,8 @@ moneta/output/*
 
 # Package egg
 *.egg-info
+
+# Pin error
+**/pin.log
 
 .DS_Store
