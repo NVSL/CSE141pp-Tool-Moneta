@@ -4,6 +4,7 @@ import argparse
 import os
 
 PIN_DIR = "/pin/source/tools/ManualExamples/"
+OBJ_INTEL = "obj-intel64/"
 TRACE_TOOL = "~/work/setup/trace_tool.cpp"
 OUTPUT_PATH = "~/work/setup/"
 
@@ -33,6 +34,9 @@ try:
     subprocess.run(["cp", full_input_path, PIN_DIR], check=True)
 except:
     raise SystemExit
+
+if not os.path.isdir(PIN_DIR+OBJ_INTEL):
+    os.mkdir(PIN_DIR+OBJ_INTEL)
 
 print("\n---------------Changing Directories-----------------")
 with cd(PIN_DIR):

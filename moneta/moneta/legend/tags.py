@@ -1,6 +1,7 @@
 from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
 from moneta.utils import stats_percent
+from moneta.settings import ADDRESS
 
 class Tags():
     def __init__(self, model, update_selection):
@@ -30,8 +31,8 @@ class Tags():
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="240px", max_width="200px")])
 
     def create_zoom_button(self, tag): #TODO move constants out
-        df = self.model.curr_trace.df
-        stats = df[int(tag.access[0]):int(tag.access[1])+1].count(binby=[df.Access], limits=[1,7], shape=[6])
+        df = self.model.curr_trace.df        
+        stats = df[df[int(tag.access[0]):int(tag.access[1])+1][f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
 
         btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
                 style={'button_color': 'transparent'},
