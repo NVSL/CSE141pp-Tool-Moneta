@@ -28,7 +28,6 @@ Throughout this tutorial, you will complete the following 3 tasks based off `exa
 
 Compile `example.cpp` with `04` and save the executable as `example`.
 ```
-TODO: Find out how to compile within Jupyter
 g++ example.cpp -04 -o example
 ```
 
@@ -96,7 +95,6 @@ DUMP_STOP("B")
 
 Then, compile `example.cpp` with `04` and save the executable as `example_tagged`.
 ```
-TODO: Find out how to compile within Jupyter
 g++ example.cpp -04 -o example_tagged
 ```
 
