@@ -5,10 +5,10 @@ Generate and visualize billions of memory accesses with this project built on PI
 ## Table of Contents
 
    * **Getting Started**
-      * [Building the Image](#building-the-image)
+      * [Building the Image](#getting-started)
       * [Building the Container](#building-the-container)
    * **Using Moneta**
-      * [Important Notes](#important-notes)
+      * [Important Notes](#using-moneta)
       * [Tagging Programs](#tagging-programs)
       * [Running Moneta](#running-moneta)
       * [Tracing a Program with Moneta](#tracing-a-program-with-moneta)
