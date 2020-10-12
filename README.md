@@ -4,10 +4,10 @@ Generate and visualize billions of memory accesses with this project built on PI
 
 ## Table of Contents
 
-   * [Getting Started]
+   * **Getting Started**
       * [Building the Image](#building-the-image)
       * [Building the Container](#building-the-container)
-   * [Using Moneta]
+   * **Using Moneta**
       * [Important Notes](#important-notes)
       * [Tagging Programs](#tagging-programs)
       * [Running Moneta](#running-moneta)
@@ -16,7 +16,7 @@ Generate and visualize billions of memory accesses with this project built on PI
          * [Loading a Trace](#loading-a-trace)
          * [Analyzing a Trace](#analyzing-a-trace)
          * [Deleting a Trace](#deleting-a-trace)
-   * [Developers]
+   * **Developers**
 
 ## Getting Started
 
