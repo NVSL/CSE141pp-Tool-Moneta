@@ -26,10 +26,10 @@ Throughout this tutorial, you will complete the following 3 tasks based off `exa
 
 ### Generating Your Trace
 
-Compile `example.cpp` with `O0` and save the executable as `example`.
+Compile `example.cpp` with `04` and save the executable as `example`.
 ```
 TODO: Find out how to compile within Jupyter
-g++ example.cpp -O0 -o example
+g++ example.cpp -04 -o example
 ```
 
 Go back to the `Moneta` window. You will see a few customization options for generating a trace.
@@ -94,10 +94,10 @@ DUMP_STOP("B")
 //And so on...
 ```
 
-Then, compile `example.cpp` with `O0` and save the executable as `example_tagged`.
+Then, compile `example.cpp` with `04` and save the executable as `example_tagged`.
 ```
 TODO: Find out how to compile within Jupyter
-g++ example.cpp -O0 -o example_tagged
+g++ example.cpp -04 -o example_tagged
 ```
 
 Return to Moneta and generate a new trace with the following options:
