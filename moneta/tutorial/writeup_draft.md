@@ -45,14 +45,7 @@ For the "Name for Trace", you can enter any name you want. We will use the name 
 For the toggles, switch the first toggle from "Tagged trace" (we haven't tagged anything, so nothing will be recorded) to "Full trace". Leave the second toggle as is.
 
 The inputs should be as follows:
- * **Cache Lines:** 4096 (Default)
- * **Block Size:** 64 (Default)
- * **Lines to Output:** 10000000 (Default)
- * **Working Directory:** tutorial
- * **Executable Path:** example
- * **Name of Trace:** example_trace
- * **Toggle 1:** Full trace
- * **Toggle 2:** Track from beginning (Default)
+<img src="../../assets/TutorialFullInputs.png" alt="Tutorial Full Inputs" width="400px"> 
 
 Click the "Generate Trace" button and wait for the trace to finish generating.
 
@@ -71,7 +64,7 @@ A bit difficult, right? All the other memory accesses are cluttering the plot!
 
 Since we only care about vector memory accesses, we will need to tag the trace to filter out the addresses.
 
-On the topmost navbar, select `File > Open` again and go to the `tutorial` folder. In addition to your `example.cpp` file and `example` executable, you should also see a `pin_tag.h` file. This file includes the following tagging functions:
+On the topmost navbar, select `File > Open` again. You should see a `pin_tag.h` file. This file includes the following tagging functions:
 ```c++
 DUMP_START_SINGLE(const char* tag, const void* begin, const void* end)
 DUMP_START_MULTI(const char* tag, const void* begin, const void* end)
@@ -81,21 +74,21 @@ FLUSH_CACHE()
 
 Let's use these tagging functions to filter the memory addresses accessed in `example.cpp` so Moneta only record the vectors. To use the functions, open up `example.cpp` and `#include` the `pin_tags.h` file in `example.cpp`:
 ```c++
-#include "pin_tags.h"
+#include "../pin_tags.h"
 ```
 
 You can use `DUMP_START_SINGLE()` or `DUMP_START_MULTI()` to specify an address range to trace. Since we only need to trace the vector regions once, we will use `DUMP_START_SINGLE()` here. 
 
 For `DUMP_START_SINGLE()`, include a tag name/label, and the beginning and ending addresses of the memory range to trace. 
 
-For this example, we will use the vectors' variable names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector[0]` and `&vector[SIZE-1]` respectively.
+For this example, we will use the vectors' variable names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector.front()` and `&vector.back()` respectively. `&vector[0]` and `&vector[SIZE-1]` works as well.
 
 Surround each vector's accesses with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag:
 ```c++
-DUMP_START_SINGLE("A", &A[0], &A[SIZE-1])
+DUMP_START_SINGLE("A", &A.front(), &A.back())
 mystery_a(A)
 DUMP_STOP("A")
-DUMP_START_SINGLE("B", &B[0], &B[SIZE-1])
+DUMP_START_SINGLE("B", &B.front(), &B.back())
 mystery_b(B)
 DUMP_STOP("B")
 //And so on...
@@ -108,14 +101,7 @@ g++ example.cpp -O0 -o example_tagged
 ```
 
 Return to Moneta and generate a new trace with the following options:
- * **Cache Lines:** 4096 (Default)
- * **Block Size:** 64 (Default)
- * **Lines to Output:** 10000000 (Default)
- * **Working Directory:** tutorial
- * **Executable Path:** example_tagged
- * **Name of Trace:** example_tagged_trace
- * **Toggle 1:** Tagged trace (Now that we have tags, we can use this option)
- * **Toggle 2:** Track from beginning (Default)
+<img src="../../assets/TutorialTaggedInputs.png" alt="Tutorial Tagged Inputs" width="400px"> 
 
 Click the "Generate Trace" button and wait for the trace to finish generating.
 

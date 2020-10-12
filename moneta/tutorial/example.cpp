@@ -2,7 +2,7 @@
 #include <vector>
 #include <random>
 #include <algorithm>
-#include "pin_tags.h"
+#include "../pin_tags.h"
 
 constexpr int SIZE {1000};
 
