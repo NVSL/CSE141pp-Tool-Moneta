@@ -44,6 +44,7 @@ For the "Name for Trace", you can enter any name you want. We will use the name 
 For the toggles, switch the first toggle from "Tagged trace" (we haven't tagged anything, so nothing will be recorded) to "Full trace". Leave the second toggle as is.
 
 The inputs should be as follows:
+
 <img src="../../../assets/TutorialFullInputs.png" alt="Tutorial Full Inputs" width="400px"> 
 
 Click the "Generate Trace" button and wait for the trace to finish generating.
@@ -99,6 +100,7 @@ g++ example.cpp -04 -o example_tagged
 ```
 
 Return to Moneta and generate a new trace with the following options:
+
 <img src="../../../assets/TutorialTaggedInputs.png" alt="Tutorial Tagged Inputs" width="400px"> 
 
 Click the "Generate Trace" button and wait for the trace to finish generating.
