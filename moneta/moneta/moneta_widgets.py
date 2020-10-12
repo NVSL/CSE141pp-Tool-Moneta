@@ -1,4 +1,4 @@
-from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, Label
+from ipywidgets import VBox, HBox, Layout, Checkbox, SelectMultiple, Combobox, Label, Box
 from moneta.utils import (
     int_text_factory as int_field, 
     text_factory as text_field,
@@ -28,48 +28,38 @@ class MonetaWidgets():
         self.to = text_field(settings.TRACE_NAME_DEF, settings.TRACE_NAME_DESC)
 
         self.vh = v.Html(tag='style', children=[".v-input__slot .v-label{color: black!important}"])
+        self.vh2 = v.Html(tag='style', children=[".vuetify-styles .v-messages {min-height: 0px!important}"])
         self.ft = v.Switch(v_model=False, label=settings.NORMAL_TRACE_DESC, inset=True, style_="color: black; background: white; margin-top: 0; padding-top: 10px; padding-left: 50px")
-        self.ft.on_event("change", self.switch_handler)
-        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.vh], layout=Layout(width='100%'))
+        self.ft.on_event("change", self.handle_full_trace)
+        self.tm = v.Switch(v_model=False, label=settings.TRACK_NORMAL, inset=True, style_="color: black; background: white; margin-top: 0; padding-left: 50px")
+        self.tm.on_event("change", self.handle_track_main)
+        self.gt_in = VBox([self.cl, self.cb, self.ml, self.cwd, self.ex, self.to, self.ft, self.tm, self.vh, self.vh2], layout=Layout(width='50%'))
+
         self.gb = button(settings.GENERATE_DESC, color=settings.GENERATE_COLOR)
         self.lb = button(settings.LOAD_DESC, color=settings.LOAD_COLOR)
         self.db = button(settings.DELETE_DESC, color=settings.DELETE_COLOR)
 
         self.sw = SelectMultiple(
-                options=[], value=[], description=settings.SELECT_MULTIPLE_DESC, layout=settings.WIDGET_LAYOUT, rows=10)
-        self.tw = HBox([self.gt_in, self.sw], layout=Layout(justify_content='space-around'))
-        self.bs = HBox([self.gb, self.lb, self.db])
-        self.widgets = VBox([self.tw, self.bs], layout=Layout(justify_content='space-around'))
+                options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
+        self.sw2 = SelectMultiple (
+                options=[], value=[],layout=settings.TW_LAYOUT, rows=10)
 
-    def switch_handler(self, switch, _, new):
+        self.tt = Label(value = "Tagged Trace" )
+        self.tf = Label(value = "Full Trace" )
+
+        self.tBox = Box(children=[self.tt, self.tf], layout=Layout(justify_content = "space-around"))
+        self.swBox = Box(children=[self.sw, self.sw2], layout=settings.TW_BOX_LAYOUT)
+        self.traces = VBox([self.tBox, self.swBox], layout = Layout(flex='1 1 0%', width = 'auto'))
+        self.tw = HBox([self.gt_in, self.traces], layout = Layout(flex='1 1 0%'))
+        self.bs = HBox([self.gb, self.lb, self.db])
+        self.widgets = VBox([self.tw, self.bs], layout=Layout(flex='1 1 0%'))
+
+    def handle_full_trace(self, switch, _, new):
         switch.label = settings.FULL_TRACE_DESC if new else settings.NORMAL_TRACE_DESC
 
-        self.total_stat_title = Label(
-                           value='Total Stats:',
-                           layout=settings.WIDGET_LAYOUT
-                           )
-        self.total_hits = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.total_stats = VBox(
-                           [self.total_stat_title, self.total_hits, self.total_cap_misses, self.total_comp_misses],
-                           layout=Layout(width='500px')
-                           )
-
-        self.curr_stat_title = Label(
-                           value='Current View Stats:',
-                           layout=settings.WIDGET_LAYOUT
-                           )
-        self.curr_hits = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_cap_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_comp_misses = Label(layout=settings.WIDGET_LAYOUT)
-        self.curr_stats = VBox(
-                          [self.curr_stat_title, self.curr_hits, self.curr_cap_misses, self.curr_comp_misses],
-                          layout=Layout(width='500px')
-                          )
-
-        self.stats = HBox([self.total_stats, self.curr_stats])
-
+    def handle_track_main(self, switch, _, new):
+        switch.label = settings.TRACK_MAIN if new else settings.TRACK_NORMAL
+ 
     def get_widget_values(self):
         e_file, e_args = parse_exec_input(self.ex.value)
 
@@ -81,6 +71,7 @@ class MonetaWidgets():
             'e_file': e_file,
             'e_args': e_args,
             'o_name': self.to.value,
-            'is_full_trace': self.ft.v_model
+            'is_full_trace': self.ft.v_model,
+            'track_main': self.tm.v_model
         }
         return w_vals

@@ -9,11 +9,12 @@ class Model():
         log.info("__init__")
         self.curr_trace = None
         self.output_traces = None
+        self.output_traces_full = None
         self.trace_map = None
 
     def update_trace_list(self):
-        self.output_traces, self.trace_map = collect_traces()
-        return sorted(self.output_traces, key=str.casefold)
+        self.output_traces, self.output_traces_full, self.trace_map = collect_traces()
+        return sorted(self.output_traces, key=str.casefold), sorted(self.output_traces_full, key=str.casefold)
 
     def ready_next_trace(self):
         if self.curr_trace is not None:
@@ -22,15 +23,19 @@ class Model():
         return True
 
     def load_trace(self, trace_name):
-        log.info("Loading trace")
-        trace_path, tag_path, meta_path = self.trace_map[trace_name]
+        trace_path, tag_path, meta_path = self.trace_map[trace_name]      
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         return self.curr_trace.err_message
 
 
-    def delete_traces(self, traces):
-        delete_traces(map(lambda x: self.trace_map[x], traces))
+    def delete_traces(self, traces, lastChanged):
+        if(lastChanged==1):
+            delete_traces(map(lambda x: self.trace_map[x], traces))
+        if(lastChanged==0):
+            delete_traces(map(lambda x: self.trace_map["(Full) " + x], traces))
+        
         if self.curr_trace is not None and self.curr_trace.name in traces:
             self.curr_trace = None
             return False
         return True
+    
