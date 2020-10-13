@@ -132,7 +132,7 @@ class View():
                     backend='moneta_backend', 
                     type='vaextended', 
                     legend=legend,
-                    default_title=curr_trace.name, 
+                    default_title=curr_trace.name + f" - Cache: {curr_trace.cache_block}-byte block, {curr_trace.cache_lines} Lines ", 
                     x_col=INDEX,
                     y_col=ADDRESS,
                     x_label=INDEX_LABEL, 
