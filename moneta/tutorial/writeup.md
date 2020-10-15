@@ -87,7 +87,7 @@ You can use `DUMP_START_SINGLE()` or `DUMP_START_MULTI()` to specify an address 
 
 For this tutorial, we will use the vectors' variable names as tag names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector.front()` and `&vector.back()` respectively. `&vector[0]` and `&vector[SIZE-1]` works as well.
 
-In `main`, surround each mystery function with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
+Go to the _Terminal_ tab and open `intro.cpp`. In `main`, surround each mystery function with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
 ```c++
 DUMP_START_SINGLE("A", &A.front(), &A.back())
 mystery_a(A)
@@ -99,7 +99,7 @@ DUMP_STOP("B")
 //And so on...
 ```
 
-Save, go to the _Terminal_ tab, compile `intro.cpp` with `04`, and save the executable as `intro_tagged`.
+Save and exit, compile `intro.cpp` with `04`, and save the executable as `intro_tagged`.
 ```bash
 g++ intro.cpp -04 -o intro_tagged
 ```
