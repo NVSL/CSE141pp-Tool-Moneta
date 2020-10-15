@@ -61,9 +61,7 @@ Once the trace finishes generating, you should see `intro_trace` appear under th
 
 You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot For this part, disregard all the Legend dropdowns except _Click Zoom_. If you want to use _Click Zoom_, a small zoomed graph will be displayed in the _Click Zoom_ dropdown when you use the corresponding navbar tool.
 
-For this tutorial, we want to look at the memory accesses of all the vectors, but we especially want to find the hidden `X` in the accesses. Using the navbar zoom tools, try to locate and zoom into the area where the vectors are (it will be obvious when you find this area). Spend at **most** one minute. This is just to familiarize yourself with the zoom/navigation options.
-
-If you were able to find this area, use the remianing time to find the `X`.
+For this tutorial, we want to look at the memory accesses of all the vectors, but we especially want to find the hidden `X` in the accesses. Using the navbar zoom tools, try to locate and zoom into the area where the vectors are (it will be obvious when you find this area). Spend at **most** one minute. This is just to familiarize yourself with the zoom/navigation options. If you were able to find this area, use the remaining time to find the `X`.
 
 A bit difficult, right? All the other memory accesses are cluttering the plot!
 
