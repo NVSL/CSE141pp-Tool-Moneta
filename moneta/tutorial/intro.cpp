@@ -9,6 +9,77 @@ constexpr int SIZE {1000};
 std::uniform_int_distribution<int> distribution(0, SIZE-1);
 std::default_random_engine engine;
 
+//Defined after main
+void mystery_a(std::vector<int> & a);
+void mystery_b(std::vector<int> & b);
+void mystery_c(std::vector<int> & c);
+void mystery_d(std::vector<int> & d);
+void mystery_e(std::vector<int> & e);
+void mystery_f(std::vector<int> & f);
+void mystery_g(std::vector<int> & g);
+void mystery_h(std::vector<int> & h);
+void fill_v(std::vector<int> & v);
+void heapify(std::vector<int> & data, int n, int i);
+
+int main() {
+  std::vector<int> H (SIZE, 0);
+  std::vector<int> B (SIZE, 0);
+  std::vector<int> F (SIZE, 0);
+  std::vector<int> D (SIZE, 0);
+  std::vector<int> G (SIZE, 0);
+  std::vector<int> C (SIZE, 0);
+  std::vector<int> E (SIZE, 0);
+  std::vector<int> A (SIZE, 0);
+
+  fill_v(A);
+  fill_v(B);
+  fill_v(C);
+  fill_v(D);
+  fill_v(E);
+  fill_v(F);
+  fill_v(G);
+  fill_v(H);
+
+  DUMP_START_SINGLE("vectors", &H.front(), &A.back());
+
+  // A
+  DUMP_START_SINGLE("A", &A.front(), &A.back());
+  mystery_a(A);
+  DUMP_STOP("A");
+
+  // B
+  DUMP_START_SINGLE("B", &B.front(), &B.back());
+  mystery_b(B);
+  DUMP_STOP("B");
+
+  // C
+  DUMP_START_SINGLE("C", &C.front(), &C.back());
+  mystery_c(C);
+  DUMP_STOP("C");
+
+  // D
+  DUMP_START_SINGLE("D", &D.front(), &D.back());
+  mystery_d(D);
+  DUMP_STOP("D");
+
+  // E
+  mystery_e(E);
+
+  // F
+  mystery_f(F);
+
+  // G
+  mystery_g(G);
+
+  // H
+  mystery_h(H);
+
+
+  DUMP_STOP("vectors");
+  return 0;
+}
+
+
 void heapify(std::vector<int> & data, int n, int i){
   int largest = i;
   int l = 2*i +1;
@@ -142,67 +213,4 @@ void fill_v(std::vector<int> & v) {
   for (int i = 0; i < SIZE; i++) {
     v[i] = distribution(engine);
   }
-}
-
-int main() {
-  std::vector<int> H (SIZE, 0);
-  std::vector<int> B (SIZE, 0);
-  std::vector<int> F (SIZE, 0);
-  std::vector<int> D (SIZE, 0);
-  std::vector<int> G (SIZE, 0);
-  std::vector<int> C (SIZE, 0);
-  std::vector<int> E (SIZE, 0);
-  std::vector<int> A (SIZE, 0);
-
-  fill_v(A);
-  fill_v(B);
-  fill_v(C);
-  fill_v(D);
-  fill_v(E);
-  fill_v(F);
-  fill_v(G);
-  fill_v(H);
-
-  DUMP_START_SINGLE("vectors", &H.front(), &A.back());
-
-  // A
-  DUMP_START_SINGLE("A", &A.front(), &A.back());
-  mystery_a(A);
-  DUMP_STOP("A");
-
-  // B
-  DUMP_START_SINGLE("B", &B.front(), &B.back());
-  mystery_b(B);
-  DUMP_STOP("B");
-
-  // C
-  mystery_c(C);
-
-  // D
-  DUMP_START_SINGLE("D", &D.front(), &D.back());
-  mystery_d(D);
-  DUMP_STOP("D");
-
-
-  // E
-  mystery_e(E);
-
-  // F
-  DUMP_START_SINGLE("F", &F.front(), &F.back());
-  mystery_f(F);
-  DUMP_STOP("F");
-
-  // G
-  DUMP_START_SINGLE("G", &G.front(), &G.back());
-  mystery_g(G);
-  DUMP_STOP("G");
-
-  // H
-  DUMP_START_SINGLE("H", &H.front(), &H.back());
-  mystery_h(H);
-  DUMP_STOP("H");
-  
-
-  DUMP_STOP("vectors");
-  return 0;
 }
