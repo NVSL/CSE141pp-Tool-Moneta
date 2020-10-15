@@ -32,7 +32,7 @@ Throughout this tutorial, you will complete the following 3 tasks based off `int
 
 ### Generating Your Trace
 
-Exit the file and compile `intro.cpp` with `04` and save the executable as `intro`.
+Exit the file, compile `intro.cpp` with `04`, and save the executable as `intro`.
 ```bash
 g++ intro.cpp -04 -o intro
 ```
