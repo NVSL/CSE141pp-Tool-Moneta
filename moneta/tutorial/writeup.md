@@ -78,7 +78,7 @@ DUMP_STOP(const char* tag)
 FLUSH_CACHE()
 ```
 
-To use the functions, you will need to `#include` the `pin_tags.h`(this is done for you in `intro.cpp`). This file is in the `moneta` directory:
+To use the functions, you will need to `#include` the `pin_tags.h` (this is done for you in `intro.cpp`). This file is in the `moneta` directory:
 ```c++
 #include "../pin_tags.h" // intro.cpp is in "tutorial", ".." brings you to "moneta"
 ```
