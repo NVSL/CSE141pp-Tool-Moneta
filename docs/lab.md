@@ -53,6 +53,6 @@ The UI contains features to access these tags.
 
 ### Other
 - Feel free to create lots of traces with meaningful names to keep track of your modifications
-- Start with a full trace and track from main to find the arrays manually, if the tags don't work
+- If tags haven't been added or don't work, start with a full trace and track from main to find the arrays manually
 - When changing cache parameters, think about how much space the arrays take (`int`s are 4 bytes)
 
