@@ -28,8 +28,6 @@ class Click_Zoom():
 
     def set_plot(self, plot):
         self.plot = plot
-        indices = [1, 2, 4, 5, 6, 8]
-        self.colors = np.take(self.plot.colormap.colors, indices)
         self.click_zoom_obj = self.click_zoom_observer(self.plot, self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
 
     def create_click_zoom(self):
