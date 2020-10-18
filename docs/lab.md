@@ -1,11 +1,6 @@
 # Analyzing Cache Hit Rate
 
-In this lab, you will be analyzing and eventually optimizing a transpose sum operation using Moneta to guide you.
-
-### Software and Environment
-
-1. If you haven't already, check the Getting Started guide in this project and ensure the environment is working by following the tutorial.
-2. For this lab, `lab.cpp` provides the code for a pair-wise sum of a square matrix and another transposed square matrix.
+In this lab, you will be analyzing and eventually optimizing `lab.cpp`, a transpose sum operation, using Moneta to guide you.
 
 ## Tasks to Perform
 
@@ -14,12 +9,11 @@ You will be answering the following questions, as you work through this lab.
 ### Questions
 
 1. What is the baseline hit rate for the entire operation (the outermost loop)?
-2. What is the miss rate for one iteration of the outer loop?
-3. Does doubling the block size affect the miss rate? Why/why not?
-4. Does doubling the number of cache lines affect the miss rate? Why/why not?
-5. How many cache lines are used by the array `A` during one iteration of the row loop?
-6. What about `B`?
-7. How would you modify the code to minimize the total miss rate?
+2. Does doubling the block size affect the miss rate? Why/why not?
+3. Does doubling the number of cache lines affect the miss rate? Why/why not?
+4. How many cache lines are used by the array `A` during one iteration of the row loop?
+5. What about `B`?
+6. How would you modify the code to minimize the total miss rate?
 
 ### Inspect the Code
 
