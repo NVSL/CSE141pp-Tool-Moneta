@@ -4,16 +4,7 @@ In this lab, you will be analyzing and eventually optimizing `lab.cpp`, a transp
 
 ## Tasks to Perform
 
-You will be answering the following questions, as you work through this lab.
 
-### Questions
-
-1. What is the baseline hit rate for the entire operation (the outermost loop)?
-2. Does doubling the block size affect the miss rate? Why/why not?
-3. Does doubling the number of cache lines affect the miss rate? Why/why not?
-4. How many cache lines are used by the array `A` during one iteration of the row loop?
-5. What about `B`?
-6. How would you modify the code to minimize the total miss rate?
 
 ### Inspect the Code
 
@@ -31,6 +22,15 @@ We will use Moneta to gather the answers.
 - Compile the program with `-O4`
 - Make sure to get the rates for just the accesses to `A` and `B`
 - `FLUSH_CACHE` is not needed and using it could result in far worse hit rates
+
+### Questions
+
+1. What is the baseline hit rate for the entire operation (the outermost loop)?
+2. Does doubling the block size affect the miss rate? Why/why not?
+3. Does doubling the number of cache lines affect the miss rate? Why/why not?
+4. How many cache lines are used by the array `A` during one iteration of the row loop?
+5. What about `B`?
+6. How would you modify the code to minimize the total miss rate?
 
 ## Tips and Guidelines
 Several features of Moneta can come in handy while completing this lab.  
