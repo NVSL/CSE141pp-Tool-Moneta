@@ -43,7 +43,8 @@ The _Cache Lines_ and _Block Size_ will change depending on your cache size. For
 
 The _Lines to Output_ determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. For larger and/or longer running programs (i.e. programs with more than 10,000,000 memory accesses), you may need to increase this number so your target memory region is traced before Moneta stops. But, do note that larger values will load slower and can potentially crash Jupyter's notebook kernel.
 
-All paths and directories in Moneta are relative to the `moneta` directory. Since `intro` is located at `moneta/tutorial/intro`, enter `tutorial` as the _Working Directory_ and `intro` as the _Executable Path_ (**Side Note:** Leaving _Working Directory_ empty and putting `tutorial/intro` as the _Executable Path_ also works since `intro` doesn't need to run specifically in the _Working Directory_).
+All paths and directories in Moneta are relative to the `moneta` directory. Since `intro` is located at `moneta/tutorial/intro`, enter `tutorial` as the _Working Directory_ and `intro` as the _Executable Path_ 
+> Side Note: Leaving _Working Directory_ empty and putting `tutorial/intro` as the _Executable Path_ also works since `intro` doesn't need to run specifically in the _Working Directory_
 
 For the _Name for Trace_, you can enter any name you want. We will use the name `intro_trace` for this tutorial.
 
@@ -130,9 +131,9 @@ First, zoom back out so that you can see all the vectors again. This can be done
 
 In the _Tags_, you may have already noticed the checkboxes. These checkboxes allow you to choose whether the tag is displayed on the plot or not. Using these checkboxes, make it so that the plot only displays vectors/tags `A`, `C` and `D`. A few notes:
  * You should not need to touch `Stack` or `Heap` for this
- * For tags with overlapping address ranges, they will be displayed according to the checkbox that last updated it (there should be no overlapping tags in this tutorial)
+ * For tags with overlapping address ranges, disabled checkboxes take priority (there should be no overlapping ranges in this tutorial)
 
-In the _Accesses_ section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task. You can find out what each icon means by hovering over them.
+In the _Accesses_ section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task. You can find out what each icon means by hovering over their corresponding checkbox.
 
 ### Solutions
  - The hidden `X` is in vector `B`.
