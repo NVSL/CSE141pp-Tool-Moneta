@@ -172,8 +172,6 @@ class Click_Zoom():
             df_filter3 = df_filter2[self.df[ADDRESS] > self.y_coormin]
             df_filter4 = df_filter3[self.df[ADDRESS] < self.y_coormax]
             colors = self.colors[df_filter4[ACCESS].values]
-        
-            #print(colors)
             
 	    #df_filter4.evaluate(selection=True)
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
