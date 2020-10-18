@@ -8,12 +8,12 @@ int main() {
   int *B = (int *)malloc(N * N * sizeof(int));
 
   int sum = 0;
-  for (int i = 0; i < 10; i++) {
-    for (int row = 0; row < N; row++) {
-      for (int col = 0; col < N; col++) {
-        sum += (*(A + N*row + col)) + (*(B + N*col + row));
-      }
+  for (int row = 0; row < N; row++) {
+    DUMP_START_MULTI("iteration", A, B + N*N-1);
+    for (int col = 0; col < N; col++) {
+      sum += (*(A + N*row + col)) + (*(B + N*col + row));
     }
+    DUMP_STOP("iteration");
   }
 
   std::cout << "Final sum: " << sum << "\n";
