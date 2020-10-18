@@ -70,11 +70,14 @@ def parse_exec_input(e_input):
 
 
 def load_cwd_file():
+    if not os.path.isdir(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
+        log.debug(f"Making output dir")
     try:
         with open(CWD_HISTORY_PATH, "a+") as history:
             history.seek(0)
             cwd_history = history.read().split()
-            logging.debug(f"Reading history from file: {cwd_history}")
+            log.debug(f"Reading history from file: {cwd_history}")
             return cwd_history
     except Exception as e: 
         # Allows tool to still work, just no history, if there is a problem with the file
