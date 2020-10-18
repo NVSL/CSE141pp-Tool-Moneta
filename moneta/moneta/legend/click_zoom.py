@@ -33,9 +33,9 @@ class Click_Zoom():
         self.click_zoom_obj = self.click_zoom_observer(self.plot, self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
 
     def create_click_zoom(self):
-        czoom_xaxis = widgets.IntSlider(value=50, min=20, max=500, step=10, description='Access Range', disabled=False, 
+        czoom_xaxis = widgets.IntSlider(value=50, min=20, max=5000, step=10, description='Access Range', disabled=False, 
                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
-        czoom_yaxis = widgets.IntSlider(value=100, min=50, max=1000, step=10, description='Bytes Range', disabled=False, 
+        czoom_yaxis = widgets.IntSlider(value=100, min=50, max=10000, step=10, description='Bytes Range', disabled=False, 
                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
         #czoom_xaxis.layout.visibility = "hidden"
         #czoom_yaxis.layout.visibility = "hidden"
