@@ -2,8 +2,8 @@ from ipywidgets import Button, HBox, Label, Layout, VBox
 import ipyvuetify as v
 from moneta.settings import (
         vdiv, lvdiv, hdiv, lhdiv,
-        LEGEND_CLICK_ZOOM, newc, INDEX, ADDRESS, ACCESS,
-        TextStyle, WARNING_LABEL, INDEX_LABEL, ADDRESS_LABEL
+        LEGEND_CLICK_ZOOM, newc, CUSTOM_CMAP, INDEX, ADDRESS, 
+        ACCESS, TextStyle, WARNING_LABEL, INDEX_LABEL, ADDRESS_LABEL
 )
 from vaex.jupyter.utils import debounced
 import vaex
@@ -20,7 +20,7 @@ class Click_Zoom():
     def __init__(self, model, accesses, tags):
         mpl_plt.ioff()
         self.model = model
-        self.colormap = np.copy(newc)
+        self.colors = np.copy(newc)
         self.click_zoom_widget = widgets.Output()
         self.widgets = self.create_click_zoom()
         self.accesses = accesses
@@ -28,12 +28,12 @@ class Click_Zoom():
 
     def set_plot(self, plot):
         self.plot = plot
-        self.click_zoom_obj = self.click_zoom_observer(self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
+        self.click_zoom_obj = self.click_zoom_observer(self.plot, self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
 
     def create_click_zoom(self):
-        czoom_xaxis = widgets.IntSlider(value=50, min=20, max=500, step=10, description='Index Range', disabled=False, 
+        czoom_xaxis = widgets.IntSlider(value=50, min=20, max=5000, step=10, description='Access Range', disabled=False, 
                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
-        czoom_yaxis = widgets.IntSlider(value=100, min=50, max=1000, step=10, description='Address Range', disabled=False, 
+        czoom_yaxis = widgets.IntSlider(value=100, min=50, max=10000, step=10, description='Bytes Range', disabled=False, 
                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
         #czoom_xaxis.layout.visibility = "hidden"
         #czoom_yaxis.layout.visibility = "hidden"
@@ -78,11 +78,12 @@ class Click_Zoom():
         return czoom_box
 
     class click_zoom_observer:
-        def __init__(self, observable, widget, button, model, accesses, tags):
+        def __init__(self, plot, observable, widget, button, model, accesses, tags):
             self.observable = observable
             self.model = model
             self.accesses = accesses
             self.tags = tags
+            self.plot = plot
             self.df = self.model.curr_trace.df
             #self.selections = 
             self.widget = widget
@@ -122,10 +123,23 @@ class Click_Zoom():
                     selections.add('((%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop))
             return '&'.join(selections)
 
+        def update_color_map(self):
+            newc = np.ones((7, 4))
+            newc[1] = self.plot.colormap.colors[1]
+            newc[2] = self.plot.colormap.colors[2]
+            newc[3] = self.plot.colormap.colors[4]
+            newc[4] = self.plot.colormap.colors[5]
+            newc[5] = self.plot.colormap.colors[6]
+            newc[6] = self.plot.colormap.colors[8]
+            self.colors = newc
+            #indices = [1, 2, 4, 5, 6, 8]
+            #self.colors = np.take(self.plot.colormap.colors, indices)
+
         @debounced(0.5, method=True)
         def update_click_zoom_coords(self, data, updating):
 
             self.update_selection()
+            self.update_color_map()
             #first check if there is no data to zoom into
             if updating is not True:
               print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
@@ -157,9 +171,7 @@ class Click_Zoom():
             df_filter2 = df_filter1[self.df[INDEX] > self.x_coormin]
             df_filter3 = df_filter2[self.df[ADDRESS] > self.y_coormin]
             df_filter4 = df_filter3[self.df[ADDRESS] < self.y_coormax]
-            colors = newc[df_filter4[ACCESS].values]
-
-
+            colors = self.colors[df_filter4[ACCESS].values]
             
 	    #df_filter4.evaluate(selection=True)
             self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
@@ -174,7 +186,7 @@ class Click_Zoom():
                 self.button.layout.display = "block"
             with self.widget:
                 #filter for indices and addresses and their access type that are currently displayed in main widget
-                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5)
+                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5, cmap=self.plot.colormap)
                 mpl_plt.title('Mini Zoom')
                 mpl_plt.xlabel(INDEX_LABEL)
                 mpl_plt.ylabel(ADDRESS_LABEL)
