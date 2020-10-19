@@ -105,7 +105,7 @@ Save and exit, compile `intro.cpp` with `04`, and save the executable as `intro_
 g++ intro.cpp -04 -o intro_tagged
 ```
 
-Return to the **Moneta** tab and generate a new trace with the following options. Make sure to toggle **Full trace** to **Tagged trace**:
+Return to the **Moneta** tab and generate a new trace with the following options. Make sure to toggle from **Full trace** to **Tagged trace**:
 
 <img src="../../../assets/TutorialTaggedInputs.png" alt="Tutorial Tagged Inputs" width="750px"> 
 
