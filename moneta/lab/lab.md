@@ -55,4 +55,5 @@ The UI contains features to access these tags.
 - Feel free to create lots of traces with meaningful names to keep track of your modifications
 - If tags haven't been added or don't work, start with a full trace and track from main to find the arrays manually
 - When changing cache parameters, think about how much space the arrays take (`int`s are 4 bytes)
+- Recompile the program whenever you make changes
 

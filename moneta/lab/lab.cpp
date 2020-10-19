@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../../pin_tags.h"
+#include "../pin_tags.h"
 
 constexpr int N = 128;
 
