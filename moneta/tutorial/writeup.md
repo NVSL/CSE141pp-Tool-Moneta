@@ -5,7 +5,7 @@ Moneta is a tool that takes executables and records all accesses to memory as th
 
 ## Starting Moneta
 
-To start off, first open the link to Moneta in your preferred web browser. You should a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open, which we will refer to as the **Home**, **Terminal**, and **Moneta** tabs respectively.
+To start off, first open the link to Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open, which we will refer to as the **Home**, **Terminal**, and **Moneta** tabs respectively.
 
 In the **Moneta** tab, you will see a cell with the following text:
 ```
@@ -60,7 +60,7 @@ Click the **Generate Trace** button and wait for the trace to finish generating.
 
 Once the trace finishes generating, you should see `intro_trace` appear under the **Full Trace** box on the right. Select the `intro_trace` and click **Load Trace**. You should see a plot appear. 
 
-You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot For this part, disregard all the Legend dropdowns except **Click Zoom**. If you want to use **Click Zoom**, a small zoomed graph will be displayed in the **Click Zoom** dropdown when you use the corresponding navbar tool.
+You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot. For this part, disregard all the Legend dropdowns except **Click Zoom**. If you want to use **Click Zoom**, a small zoomed graph will be displayed in the **Click Zoom** dropdown when you use the corresponding navbar tool.
 
 For this tutorial, we want to look at the memory accesses of all the vectors, but we especially want to find the hidden `X` in the accesses. Using the navbar zoom tools, try to locate and zoom into the area where the vectors are (it will be obvious when you find this area). Spend at **most** one minute. This is just to familiarize yourself with the zoom/navigation options. If you were able to find this area, use the remaining time to find the `X`.
 
@@ -88,7 +88,7 @@ You can use `DUMP_START_SINGLE()` or `DUMP_START_MULTI()` to specify an address 
 
 For this tutorial, we will use the vectors' variable names as tag names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector.front()` and `&vector.back()` respectively. `&vector[0]` and `&vector[SIZE-1]` works as well.
 
-Go to the **Terminal** tab and open `intro.cpp`. In `main`, surround each mystery function with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
+Go to the **Terminal** tab and open `intro.cpp`. In `main`, surround mystery functions `A` to `H` with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
 ```c++
 DUMP_START_SINGLE("A", &A.front(), &A.back())
 mystery_a(A)
@@ -105,7 +105,7 @@ Save and exit, compile `intro.cpp` with `04`, and save the executable as `intro_
 g++ intro.cpp -04 -o intro_tagged
 ```
 
-Return to the **Moneta** tab and generate a new trace with the following options:
+Return to the **Moneta** tab and generate a new trace with the following options. Make sure to toggle **Full trace** to **Tagged trace**:
 
 <img src="../../../assets/TutorialTaggedInputs.png" alt="Tutorial Tagged Inputs" width="750px"> 
 
