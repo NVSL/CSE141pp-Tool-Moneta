@@ -5,7 +5,7 @@ Moneta is a tool that takes executables and records all accesses to memory as th
 
 ## Starting Moneta
 
-To start off, first open the link to Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open, which we will refer to as the **Home**, **Terminal**, and **Moneta** tabs respectively.
+To start off, first open the link to Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open (not including this README), which we will refer to as the **Home**, **Terminal**, and **Moneta** tabs respectively.
 
 In the **Moneta** tab, you will see a cell with the following text:
 ```
@@ -54,17 +54,21 @@ The inputs should be as follows:
 
 <img src="../../../assets/TutorialFullInputs.png" alt="Tutorial Full Inputs" width="750px"> 
 
-Click the **Generate Trace** button and wait for the trace to finish generating.
+Click the **Generate Trace** button and wait for the trace to finish generating. You should see `intro_trace` appear under the **Full Trace** box on the right. Select the `intro_trace` and click **Load Trace**. You should see a plot appear. 
 
 ### Exploring the Memory Access Plot
 
-Once the trace finishes generating, you should see `intro_trace` appear under the **Full Trace** box on the right. Select the `intro_trace` and click **Load Trace**. You should see a plot appear. 
+You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot. For now, disregard all the sidebar dropdowns except **Click Zoom**.
 
-You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot. For this part, disregard all the Legend dropdowns except **Click Zoom**. If you want to use **Click Zoom**, a small zoomed graph will be displayed in the **Click Zoom** dropdown when you use the corresponding navbar tool.
+ * **Pan/Zoom:** Click & drag to move and scroll to zoom
+ * **Zoom to Selection:** Click & drag a square area to zoom into
+ * **Click Zoom:** Click & drag a square area, creates a zoomed mini-plot under the **Click Zoom** sidebar dropdown using the bottom right corner of the square
+ * **Reset Zoom:** Resets zoom to show everything
+ * **Undo/Redo:** Undo/redo last move/zoom
 
-For this tutorial, we want to look at the memory accesses of all the vectors, but we especially want to find the hidden `X` in the accesses. Using the navbar zoom tools, try to locate and zoom into the area where the vectors are (it will be obvious when you find this area). Spend at **most** one minute. This is just to familiarize yourself with the zoom/navigation options. If you were able to find this area, use the remaining time to find the `X`.
+Spend at **most** minute or two to test and familiarize yourself with the zoom/navigation options. As an added challenge, try to locate/zoom into the vector region and find the `X` (it will be obvious when you find these areas), but don't spend too long on this.
 
-A bit difficult, right? All the other memory accesses are cluttering the plot!
+You've probably noticed quite quickly that all the other memory accesses are cluttering the plot!
 
 
 ## Tagging the Trace
@@ -109,11 +113,11 @@ Return to the **Moneta** tab and generate a new trace with the following options
 
 <img src="../../../assets/TutorialTaggedInputs.png" alt="Tutorial Tagged Inputs" width="750px"> 
 
-Click the "Generate Trace" button and wait for the trace to finish generating.
+Click the "Generate Trace" button and wait for the trace to finish generating. Once generated, you should see `intro_tagged_trace` appear under the **Tagged Trace** box on the right. Select and load this trace. 
 
 ## Exploring the Memory Access Plot, But Better This Time
 
-Once generated, you should see `intro_tagged_trace` appear under the **Tagged Trace** box on the right. Select and load this trace. There's a lot fewer data points cluttering our vectors!
+Once loaded, you can see that there's a lot fewer data points cluttering our vectors!
 
 ### Finding the Vector Region
 
@@ -121,21 +125,21 @@ As you can see from the plot, you are already zoomed into the vector region and 
 
 ### X Marks the Spot
 
-Now, you need to find the `X` access pattern hidden in one of the vectors. Since you tagged memory regions of interest, you can zoom directly to these regions through the **Tags** dropdown in the Legend. Open **Tags** and zoom to the various vectors using the zoom button next to each tag until you find the `X` and complete the second goal.
+Now, you need to find the `X` access pattern hidden in one of the vectors. Since you tagged memory regions of interest, you can zoom directly to these regions through the **Tags** dropdown in the sidebar. Open **Tags** and zoom to the various vectors using the zoom button next to each tag until you find the `X` and complete the second goal.
 
 ### Display Specific Accesses
 
-For your final goal, you need to display only the writes and read-hits of `A`, `C` and `D`. For this task, you will need the **Accesses** and **Tags** section of the Legend.
+For your final goal, you need to display only the writes and read-hits of `A`, `C` and `D`. For this task, you will need the **Accesses** and **Tags** section of the sidebar.
 
 First, zoom back out so that you can see all the vectors again. This can be done using the **Reset Zoom** button in the navbar.
 
 In the **Tags**, you may have already noticed the checkboxes. These checkboxes allow you to choose whether the tag is displayed on the plot or not. Using these checkboxes, make it so that the plot only displays vectors/tags `A`, `C` and `D`. A few notes:
- * You should not need to touch `Stack` or `Heap` for this
- * For tags with overlapping address ranges, disabled checkboxes take priority (there should be no overlapping ranges in this tutorial)
+ * You should not need to touch `Stack` or `Heap` (if they appear) for this
+ * For tags with overlapping address ranges, disabled checkboxes take priority (there is an overlapping tag in this program)
 
 In the **Accesses** section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task. You can find out what each icon means by hovering over their corresponding checkbox.
 
 ### Solutions
  - The hidden `X` is in vector `B`.
- - In **Tags**, everything should be unchecked except `Stack`, `Heap`, `A`, `C` and `D`.
+ - In **Tags**, everything should be unchecked except `Stack`, `Heap`, `vectors`, `A`, `C` and `D`.
  - In **Accesses**, everything in the **Writes** columns should be checked, and only the checkbox intersecting **Reads** and **Hits** should be checked.
