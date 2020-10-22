@@ -115,15 +115,13 @@ struct Tag {
 
 struct TagData {
   const int id;
-  const bool single;
   const std::string tag_name;
   const std::pair<ADDRINT, ADDRINT> addr_range;
 
   std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool single) : 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi) : 
 	  id(curr_id++),
-	  single {single},
 	  tag_name {tag_name},
 	  addr_range({low, hi})
   {
@@ -454,8 +452,7 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   }
 }
 
-VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool add_to_last) {
-std::cerr << "dump start called\n";
+VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
 
@@ -474,14 +471,13 @@ std::cerr << "dump start called\n";
       std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    all_tags[str_tag] = new TagData(str_tag, low, hi, single);
+    all_tags[str_tag] = new TagData(str_tag, low, hi);
 
   } else { // Reuse tag
     if (DEBUG) {
       std::cerr << "Dump define called - Old tag\n";
     }
 
-    // TODO - make sure single is not different value
     // Exit program if redefining tag
     TagData* old_tag = all_tags[str_tag];
     if (old_tag->addr_range.first != low || // Must be same range
@@ -490,16 +486,15 @@ std::cerr << "dump start called\n";
               "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
     }
-    if (old_tag->single) {
-      old_tag->tags.front()->active = true;
-    } else {
+    if (create_new) {
       old_tag->create_new_tag();
+    } else {
+      old_tag->tags.back()->active = true;
     }
   }
 }
 
-VOID dump_called(VOID * tag_name, bool single) {
-std::cerr << "dump called\n" << single;
+VOID dump_called(VOID * tag_name, bool create_new) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
   if (str_tag == HEAP || str_tag == STACK) {
@@ -508,20 +503,19 @@ std::cerr << "dump called\n" << single;
       PIN_ExitApplication(0);
   }
   if (all_tags.find(str_tag) == all_tags.end()) {
-    std::cerr << "Error: Can't use define new tags with this call. Try DUMP_START_SINGLE or MULTI\n"
+    std::cerr << "Error: Can't use define new tags with this call. Try DUMP_START\n"
               "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
   }
   TagData* old_tag = all_tags[str_tag];
-  if (old_tag->single) {
-    old_tag->tags.front()->active = true;
-  } else {
+  if (create_new) {
     old_tag->create_new_tag();
+  } else {
+    old_tag->tags.back()->active = true;
   }
 }
 
 VOID dump_stop_called(VOID * tag_name) {
-std::cerr << "dump stop called\n";
   char *s = (char *)tag_name;
   std::string str_tag (s);
   if (DEBUG) {
@@ -546,10 +540,6 @@ std::cerr << "dump stop called\n";
       break;
     }
   }
-
-    /*if (DEBUG) { // Could iterate through all_tags and print if none are active
-        std::cerr << "End TAG - Deactivated analysis\n";
-    }*/
 }
 
 VOID signal_main() {
@@ -708,11 +698,7 @@ VOID Fini(INT32 code, VOID *v) {
   tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
   for (Tag* t : tags) {
     if (t->x_range.first != -1) {
-      /*if (t->x_range.first == t->x_range.second) { // Minimum of 2 for x_range for easier plotting
-        t->x_range.second++;
-      }*/
-      //tag_file << t->to_string() << "\n";
-      tag_file << t->parent->tag_name << (t->parent->single ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
+      tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
 	      << t->addr_range.second << "," << t->x_range.first << ","
 	      << t->x_range.second << "\n";
     }
@@ -908,8 +894,8 @@ int main(int argc, char *argv[]) {
   if (DEBUG) {
     std::cerr << "Starting now\n";
   }
-  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, true);
-  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT, true);
+  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
+  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
   PIN_StartProgram();
   
   return 0;
