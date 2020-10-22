@@ -66,11 +66,10 @@ static std::string output_tagfile_path;
 static std::string output_metadata_path;
 
 // Macros to track
-const std::string M_DUMP_START_SINGLE {"DUMP_START_SINGLE"};
-const std::string M_DUMP_START_MULTI  {"_DUMP_START_MULTI"};
-const std::string M_DUMP_START        {"DUMP_START"};
-const std::string M_DUMP_STOP         {"_DUMP_STOP"};
-const std::string FLUSH_CACHE         {"FLUSH_CACHE"};
+const std::string M_DUMP_START {"DUMP_START"};
+const std::string M_DUMP       {"DUMP"};
+const std::string M_DUMP_STOP  {"DUMP_STOP"};
+const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 
 // Stack/Heap
 const std::string STACK {"Stack"};
@@ -455,7 +454,8 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   }
 }
 
-VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
+VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool add_to_last) {
+std::cerr << "dump start called\n";
   char* s = (char *)tag_name;
   std::string str_tag (s);
 
@@ -498,7 +498,8 @@ VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
   }
 }
 
-VOID dump_start_called(VOID * tag_name) {
+VOID dump_called(VOID * tag_name, bool single) {
+std::cerr << "dump called\n" << single;
   char* s = (char *)tag_name;
   std::string str_tag (s);
   if (str_tag == HEAP || str_tag == STACK) {
@@ -520,6 +521,7 @@ VOID dump_start_called(VOID * tag_name) {
 }
 
 VOID dump_stop_called(VOID * tag_name) {
+std::cerr << "dump stop called\n";
   char *s = (char *)tag_name;
   std::string str_tag (s);
   if (DEBUG) {
@@ -766,33 +768,23 @@ VOID Instruction(INS ins, VOID *v)
 
 // Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
-	RTN rtn = RTN_FindByName(img, M_DUMP_START_SINGLE.c_str());
-	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
-				IARG_BOOL, true,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, M_DUMP_START_MULTI.c_str());
-	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
-				IARG_BOOL, false,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, M_DUMP_START.c_str());
+	RTN rtn = RTN_FindByName(img, M_DUMP_START.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_start_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
+				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, M_DUMP.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_called,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -801,7 +793,6 @@ VOID FindFunc(IMG img, VOID *v) {
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_stop_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_BOOL, true,
 				IARG_END);
 		RTN_Close(rtn);
 	}
