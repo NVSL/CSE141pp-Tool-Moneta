@@ -1,0 +1,11 @@
+Questions:
+1. What is the miss rate for one iteration of the outer loop?
+2. Is the miss rate of the first iteration of the loop different from the second?
+3. Does doubling the block size affect the miss rate? Why/why not?
+4. Does doubling the number of cache lines affect the miss rate? Why/why not?
+5. How many cache lines are used by A during one iteration of the row loop?
+6. What about B?
+7. How could you modify the code to minimize the total miss rate with 128 lines and a block size of 64?
+
+transpose pair-wise sum
+A+=B.T
