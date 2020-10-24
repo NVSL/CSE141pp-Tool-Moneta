@@ -41,7 +41,7 @@ Go back to the **Moneta** tab. You will see a few customization options for gene
 
 The **Cache Lines** and **Block Size** will change depending on your cache size. For this tutorial, you can leave these values as the defaults. 
 
-The **Lines to Output** determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. For larger and/or longer running programs (i.e. programs with more than 10,000,000 memory accesses), you may need to increase this number so your target memory region is traced before Moneta stops. But, do note that larger values will load slower and can potentially crash Jupyter's notebook kernel.
+The **Max Accesses** determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. For larger and/or longer running programs (i.e. programs with more than 10,000,000 memory accesses), you may need to increase this number so your target memory region is traced before Moneta stops. But, do note that larger values will load slower and can potentially crash Jupyter's notebook kernel.
 
 All paths and directories in Moneta are relative to the `moneta` directory. Since `intro` is located at `moneta/tutorial/intro`, enter `tutorial` as the **Working Directory** and `intro` as the **Executable Path** 
 > Side Note: Leaving **Working Directory** empty and putting `tutorial/intro` as the **Executable Path** also works since `intro` doesn't need to run specifically in the **Working Directory**
