@@ -58,7 +58,7 @@ Click the **Generate Trace** button and wait for the trace to finish generating.
 
 ### Exploring the Memory Access Plot
 
-You can use the navigation features in the plot's top navbar to move around and zoom in/out of the plot. For now, disregard all the sidebar dropdowns except **Click Zoom**.
+You can use the navigation features in the plot's top toolbar to move around and zoom in/out of the plot. For now, disregard all the sidebar dropdowns except **Click Zoom**.
 
  * **Pan/Zoom:** Click & drag to move and scroll to zoom
  * **Zoom to Selection:** Click & drag a square area to zoom into
@@ -131,7 +131,7 @@ Now, you need to find the `X` access pattern hidden in one of the vectors. Since
 
 For your final goal, you need to display only the writes and read-hits of `A`, `C` and `D`. For this task, you will need the **Accesses** and **Tags** section of the sidebar.
 
-First, zoom back out so that you can see all the vectors again. This can be done using the **Reset Zoom** button in the navbar.
+First, zoom back out so that you can see all the vectors again. This can be done using the **Reset Zoom** button in the toolbar.
 
 In the **Tags**, you may have already noticed the checkboxes. These checkboxes allow you to choose whether the tag is displayed on the plot or not. Using these checkboxes, make it so that the plot only displays vectors/tags `A`, `C` and `D`. A few notes:
  * You should not need to touch `Stack` or `Heap` (if they appear) for this
