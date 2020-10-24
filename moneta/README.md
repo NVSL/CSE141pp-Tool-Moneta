@@ -106,7 +106,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
 
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
+**Max Accesses:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower Max Accesses and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
 
 **Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
 
@@ -136,7 +136,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 If the trace generated successfully, you should see `trace_sorting` appear in the Trace box to the right of the input boxes. Select `trace_sorting` and then click `Load Trace`.
 
-If you find that the trace is taking a very long time to load, or the kernel is consistently dying, try reducing `Lines to Output`.
+If you find that the trace is taking a very long time to load, or the kernel is consistently dying, try reducing `Max Accesses`.
 
 ### Analyzing a Trace
 
