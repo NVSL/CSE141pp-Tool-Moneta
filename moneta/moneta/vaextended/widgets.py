@@ -45,7 +45,7 @@ class PlotTemplate(v.VuetifyTemplate):
       <v-spacer />
       <toolbar />
       <v-spacer />
-      Legend
+      Sidebar
       <legend-control/>
      </v-btn>
     </v-app-bar>
