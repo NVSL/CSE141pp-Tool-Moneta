@@ -41,10 +41,10 @@ Go back to the **Moneta** tab. You will see a few customization options for gene
 
 The **Cache Lines** and **Block Size** will change depending on your cache size. For this tutorial, you can leave these values as the defaults. 
 
-The **Max Accesses** determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. For larger and/or longer running programs (i.e. programs with more than 10,000,000 memory accesses), you may need to increase this number so your target memory region is traced before Moneta stops. But, do note that larger values will load slower and can potentially crash Jupyter's notebook kernel.
+The **Max Accesses** determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. 
 
 All paths and directories in Moneta are relative to the `moneta` directory. Since `intro` is located at `moneta/tutorial/intro`, enter `tutorial` as the **Working Directory** and `intro` as the **Executable Path** 
-> Side Note: Leaving **Working Directory** empty and putting `tutorial/intro` as the **Executable Path** also works since `intro` doesn't need to run specifically in the **Working Directory**
+
 
 For the **Name for Trace**, you can enter any name you want. We will use the name `intro_trace` for this tutorial.
 
@@ -56,6 +56,12 @@ The inputs should be as follows:
 
 Click the **Generate Trace** button and wait for the trace to finish generating. You should see `intro_trace` appear under the **Full Trace** box on the right. Select the `intro_trace` and click **Load Trace**. You should see a plot appear. 
 
+>Some Side Notes:
+>
+>For larger and/or longer running programs (i.e. programs with more than 10,000,000 memory accesses), you may need to increase **Max Accesses** so your target memory region is traced before Moneta stops. But, do note that larger values will load slower and can potentially crash Jupyter's notebook kernel. 
+>
+>Leaving **Working Directory** empty and putting `tutorial/intro` as the **Executable Path** also works since `intro` doesn't need to run specifically in the **Working Directory**
+
 ### Exploring the Memory Access Plot
 
 You can use the navigation features in the plot's top toolbar to move around and zoom in/out of the plot. For now, disregard all the sidebar dropdowns except **Click Zoom**.
@@ -66,7 +72,7 @@ You can use the navigation features in the plot's top toolbar to move around and
  * **Reset Zoom:** Resets zoom to show everything
  * **Undo/Redo:** Undo/redo last move/zoom
 
-Spend at **most** minute or two to test and familiarize yourself with the zoom/navigation options. As an added challenge, try to locate/zoom into the vector region and find the `X` (it will be obvious when you find these areas), but don't spend too long on this.
+Spend at **most** minute or two to test and familiarize yourself with the zoom/navigation options. As an added challenge, try to locate/zoom into the vector region and find the `X` (it will be obvious when you find these areas), but don't get too caught up on this.
 
 You've probably noticed quite quickly that all the other memory accesses are cluttering the plot!
 
@@ -141,5 +147,5 @@ In the **Accesses** section, you also have the ability to show/hide certain acce
 
 ### Solutions
  - The hidden `X` is in vector `B`.
- - In **Tags**, everything should be unchecked except `Stack`, `Heap`, `vectors`, `A`, `C` and `D`.
+ - In **Tags**, everything should be unchecked except `Stack` (if it appears), `Heap`, `vectors`, `A`, `C` and `D`.
  - In **Accesses**, everything in the **Writes** columns should be checked, and only the checkbox intersecting **Reads** and **Hits** should be checked.
