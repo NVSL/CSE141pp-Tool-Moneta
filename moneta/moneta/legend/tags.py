@@ -48,11 +48,11 @@ class Tags():
               'children': [{'id': i+2, 'name': stat} for i, stat in enumerate(statss)],
             }]
             treeview = v.Treeview(items=items, dense=True)
-            tag_rows.append(v.Container(row=False, class_="d-flex justify-start align-start ma-0 pa-0",children=[
+            tag_rows.append(v.Container(row=False, class_="d-flex justify-start ma-0 pa-0",children=[
                     v.Col(cols=1, children=[treeview], class_="ma-0 pa-0"),
-                    v.Col(cols=12, children=[tag_row]),
-                    treenodelabel
+                    v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
                     ]))
+        tag_rows.append(v.Container(row=False, children=[treenodelabel]))
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
 
     def create_zoom_button(self, tag): #TODO move constants out
