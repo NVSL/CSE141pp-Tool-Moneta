@@ -15,25 +15,51 @@ class Tags():
         self.all_check_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self.all_check}],
                 children=["Select all tags"])
         self.all_check.on_event('change', self.check_all)
-
-
-        all_row = [v.Row(children=[self.all_check_tp], class_='ml-1')]
+        all_row = [v.Row(children=[self.all_check_tp], class_='ml-7')]
 
         tag_rows = []
+        treenodelabel = v.Html(tag='style', children=[(".vuetify-styles .v-treeview-node__label {"
+            "margin-left: 0px;"
+            "overflow: visible;"
+            "}"
+            ".vuetify-styles .v-treeview-node--leaf {"
+            "margin-left: 0px;"
+            "}"
+            ".vuetify-styles .v-treeview-node--leaf>.v-treeview-node__root {"
+            "padding-left: 0px;"
+            "}"
+            ".vuetify-styles .v-treeview--dense .v-treeview-node__root {"
+            "min-height: 30px;"
+            "}"
+        )]) 
         for tag in self.model.curr_trace.tags:
             chk = Checkbox(tag)
             self.checkboxes.append(chk)
             chk.widget.on_event('change', self.update_all_checkbox)
-            tag_rows.append(v.Row(children=[
-                self.create_zoom_button(tag),
+            btn, stats = self.create_zoom_button(tag)
+            statss = stats.splitlines()
+            tag_row = v.Row(children=[
+                btn,
                 chk.widget
-                ], class_='ml-0'))
-        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="240px", max_width="200px")])
+                ], class_='ml-0')
+            items = [{
+              'id': 1,
+              'name': '',
+              'children': [{'id': i+2, 'name': stat} for i, stat in enumerate(statss)],
+            }]
+            treeview = v.Treeview(items=items, dense=True)
+            tag_rows.append(v.Container(row=False, class_="d-flex justify-start ma-0 pa-0",children=[
+                    v.Col(cols=1, children=[treeview], class_="ma-0 pa-0"),
+                    v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
+                    ]))
+        tag_rows.append(v.Container(row=False, children=[treenodelabel]))
+        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
 
     def create_zoom_button(self, tag): #TODO move constants out
         df = self.model.curr_trace.df
         stats = df[df[int(tag.access[0]):int(tag.access[1])+1][f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
 
+        tooltip = self.tag_tooltip(tag, stats)
         btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
@@ -43,7 +69,7 @@ class Tags():
             self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1])+1,
                                     float(tag.address[0]), float(tag.address[1])+1)
         btn.on_click(zoom_to_selection)
-        return btn
+        return btn, tooltip
 
     def set_zoom_sel_handler(self, f):
         self.zoom_sel_handler = f
@@ -52,8 +78,8 @@ class Tags():
         total = sum(stats)
         final_tooltip = (
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: {tag.address[0]}, {tag.address[1]}\n\n'
-                f'Total: {total}\n\n'
+                f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
+                f'Total: {total}\n'
                 f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
                 f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
                 f'Capacity Read Misses: {stats[2]} ({stats_percent(stats[2],total)}) \n'
