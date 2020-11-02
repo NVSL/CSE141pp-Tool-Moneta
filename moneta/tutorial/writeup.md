@@ -72,9 +72,7 @@ You can use the navigation features in the plot's top toolbar to move around and
  * **Reset Zoom:** Resets zoom to show everything
  * **Undo/Redo:** Undo/redo last move/zoom
 
-Spend at **most** minute or two to test and familiarize yourself with the zoom/navigation options. As an added challenge, try to locate/zoom into the vector region and find the `X` (it will be obvious when you find these areas), but don't get too caught up on this.
-
-You've probably noticed quite quickly that all the other memory accesses are cluttering the plot!
+Spend at **most** minute or two to test and familiarize yourself with the zoom/navigation options. You've probably noticed quite quickly that many memory accesses are cluttering the plot!
 
 
 ## Tagging the Trace
@@ -123,7 +121,7 @@ Click the "Generate Trace" button and wait for the trace to finish generating. O
 
 ## Exploring the Memory Access Plot, But Better This Time
 
-Once loaded, you can see that there's a lot fewer data points cluttering our vectors!
+Once loaded, you can see that there's much less data points cluttering our vectors!
 
 ### Finding the Vector Region
 
