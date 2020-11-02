@@ -81,8 +81,8 @@ Since we only care about vector memory accesses, we will need to tag the program
 
 Moneta uses the following tagging functions to determine what, where, when, and how to trace:
 ```c++
-DUMP_START_SINGLE(const char* tag, const void* begin, const void* end)
-DUMP_START_MULTI(const char* tag, const void* begin, const void* end)
+DUMP_START(const char* tag, const void* begin, const void* end, bool create_new)
+DUMP(const char* tag, bool create_new) //Shorthand for DUMP_START if tag already exists
 DUMP_STOP(const char* tag)
 FLUSH_CACHE()
 ```
@@ -92,19 +92,19 @@ To use the functions, you will need to `#include` the `pin_tags.h` (this is done
 #include "../pin_tags.h" // intro.cpp is in "tutorial", ".." brings you to "moneta"
 ```
 
-You can use `DUMP_START_SINGLE()` or `DUMP_START_MULTI()` to specify an address range to trace. Since we only need to trace the vector regions once, we will use `DUMP_START_SINGLE()` here. For `DUMP_START_SINGLE()`, you will need to include a tag name/label, and the beginning and ending addresses of the memory range to trace. 
+You can use `DUMP_START` to specify an address range to trace. For this, you will need to include a tag name/label, the beginning and ending addresses of the memory range to trace, and a boolean flag appending an index counter to the tag. 
 
-For this tutorial, we will use the vectors' variable names as tag names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector.front()` and `&vector.back()` respectively. `&vector[0]` and `&vector[SIZE-1]` works as well.
+For this tutorial, we will use the vectors' variable names as tag names: `A`, `B`, etc. Since vectors are contiguous, the start and end memory addresses are simply the addresses of the first and last elements of the vector: `&vector.front()` and `&vector.back()` respectively. `&vector[0]` and `&vector[SIZE-1]` works as well. We do not need the tags to be indexed by when they are called, so we can set the flag as `false`.
 
-Go to the **Terminal** tab and open `intro.cpp`. In `main`, surround mystery functions `A` to `H` with a `DUMP_START_SINGLE()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
+Go to the **Terminal** tab and open `intro.cpp`. In `main`, surround mystery functions `A` to `H` with a `DUMP_START()` call and a corresponding `DUMP_STOP()` call with the same tag. The first few have been done for you in `intro.cpp`:
 ```c++
-DUMP_START_SINGLE("A", &A.front(), &A.back())
-mystery_a(A)
-DUMP_STOP("A")
+DUMP_START("A", &A.front(), &A.back(), false);
+mystery_a(A);
+DUMP_STOP("A");
 
-DUMP_START_SINGLE("B", &B.front(), &B.back())
-mystery_b(B)
-DUMP_STOP("B")
+DUMP_START("B", &B.front(), &B.back(), false);
+mystery_b(B);
+DUMP_STOP("B");
 //And so on...
 ```
 
