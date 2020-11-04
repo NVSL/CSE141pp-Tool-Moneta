@@ -25,13 +25,9 @@ EXEC_PATH_DESC = "Executable Path:"
 TRACE_NAME_DEF = "e.g. baseline"
 TRACE_NAME_DESC = "Name for Trace:"
 
-# Full Trace
-FULL_TRACE_DESC = "Full trace"
-NORMAL_TRACE_DESC = "Tagged trace"
-
-# Track Main
-TRACK_MAIN = "Track main"
-TRACK_NORMAL = "Track from beginning"
+# Start Function
+START_FUN_DEF = "main"
+START_FUN_DESC = "Function to start trace at:"
 
 # Select Multiple
 SELECT_MULTIPLE_DESC = "Trace:"
