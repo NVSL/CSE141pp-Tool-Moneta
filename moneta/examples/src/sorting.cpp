@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
 	}
 	//cout<<"\n";
 	DUMP_START("start", 0, 0, false);
-	DUMP("start", true);
+	DUMP_START("start", 0, 0, true);
 	DUMP_STOP("start");
 		
 	//BUBBLE
