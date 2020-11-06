@@ -15,6 +15,7 @@ Generate and visualize billions of memory accesses with this project built on PI
          * [Generating a Trace](#generating-a-trace)
          * [Loading a Trace](#loading-a-trace)
          * [Analyzing a Trace](#analyzing-a-program)
+         * [Moneta Plot Features](#moneta-plot-features)
          * [Deleting a Trace](#deleting-a-trace)
    * **Developers**
       * [View](#Developers)
@@ -203,7 +204,7 @@ Now to visualize those accesses for your program. We need to run the pintool and
 
 
 After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, or click the `Run` button on the top menu bar.  
-You should see input boxes appear like below:
+If the trace loaded successfully, you should see input boxes appear like below:
 ![Start Cell](../assets/StartCell.png?raw=true)
 
 **Inputs:**  
@@ -221,7 +222,17 @@ Let's go with the defaults for now and enter the path to your executable. Name i
 On success, `hello_world` shows up in the trace list. Select it and hit `Load Trace`  
 ![Load Trace](../assets/Load.png?raw=true)
 
-With Access Number on the x-axis and the addresses on the y-axis, you can notice the 10 diagonals each with 10 points or 5 unique accesses that our nested loop iterates through. The green line on the left shows how large the cache is. Right now, it's larger than the address range of the array!
+### Moneta Plot Features
+
+### Axes, Plot Points, and Cache Line
+
+The x-axis is the access number. The memory addresses are plotted in the order in which they are accessed.
+The y-axis is bytes. It is always fixed to start at 0 and shows the number of bytes from one point to another.
+You can notice the 10 diagonals each with 10 points or 5 unique accesses that our nested loop iterates through.
+
+The plot point colors show the general memory access pattern in that region. Since there are a large number of plot points, multiple plot points are aggregated into a small area of the plot and displayed based on a weighting. Each memory access type (hit, miss, read, write) is given an internal weighting, with misses being weighted higher than the other access types, and the plot displays the point of the highest weight. For the most accurate display of memory access type, we recommend zooming in more.
+
+The plot displays a cache line on the left side of the plot (the lime green line by default). The cache line size is based off the cache lines and block size inputs and is used as a scale bar to visualize how the plotted accesses fit in the cache. Right now, it's larger than the address range of the array!
 
 ### Toolbar
 <img src="../assets/Toolbar.png" alt="Toolbar" width="400px">  
