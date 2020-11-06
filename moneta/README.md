@@ -1,6 +1,19 @@
 # Using Moneta
 
-Instructions on how to run and use Moneta
+Instructions on how to run and use Moneta.
+
+## Table of Contents
+
+   * **Important Notes**
+   * **How to Use Moneta**
+      * [Tagging Programs](#tagging-programs)
+      * [Running Moneta](#running-moneta)
+      * [Tracing a Program with Moneta](#tracing-a-program-with-moneta)
+         * [Generating a Trace](#generating-a-trace)
+         * [Loading a Trace](#loading-a-trace)
+         * [Analyzing a Trace](#analyzing-a-trace)
+         * [Deleting a Trace](#deleting-a-trace)
+
 
 ## Important Notes
 

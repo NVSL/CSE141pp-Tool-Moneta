@@ -14,9 +14,10 @@ Generate and visualize billions of memory accesses with this project built on PI
       * [Tracing a Program with Moneta](#tracing-a-program-with-moneta)
          * [Generating a Trace](#generating-a-trace)
          * [Loading a Trace](#loading-a-trace)
-         * [Analyzing a Trace](#analyzing-a-trace)
+         * [Analyzing a Trace](#analyzing-a-program)
          * [Deleting a Trace](#deleting-a-trace)
    * **Developers**
+      * [View](#Developers)
 
 ## Getting Started
 
