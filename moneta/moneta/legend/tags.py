@@ -81,7 +81,8 @@ class Tags():
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
-        return df[df[int(tag.access[0]):int(tag.access[1])+1][f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
+        rows = df[int(tag.access[0]):int(tag.access[1])+1]
+        return rows[rows[f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
 
     def dropdown_str(self, tag, stats):
         total = sum(stats)
