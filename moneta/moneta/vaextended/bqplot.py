@@ -69,7 +69,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
-            self.base_address.value = f"Base address: {self.limits[1][0]}"
+            self.base_address.value = f"Base address: {self.limits[1][0]} 0x{int(self.limits[1][0]):X}"
             self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
@@ -109,7 +109,7 @@ class BqplotBackend(BackendBase):
         self.figure.axes[1].label = plot.y_label
         self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
 
-        self.base_address = widgets.Label(value=f"Base address: {self.limits[1][0]}")
+        self.base_address = widgets.Label(value=f"Base address: {self.limits[1][0]} 0x{int(self.limits[1][0]):X}")
 
         self.curr_action = Action.other
         self.undo_actions = list()
