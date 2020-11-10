@@ -90,21 +90,10 @@ class Tags():
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
                 f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
                 f'Total: {total}\n'
-                f'Hits: {stats[0]:10d} ({stats_percent(stats[0],total)}), {stats[1]:10d} ({stats_percent(stats[1],total)}) \n'
-                f'Cap Miss: {stats[2]:10d} ({stats_percent(stats[2],total)}), {stats[3]:10d} ({stats_percent(stats[3],total)}) \n'
-                f'Comp Miss: {stats[4]:10d} ({stats_percent(stats[4],total)}), {stats[5]:10d} ({stats_percent(stats[5],total)}) \n'
-        )
-        print("bef")
-        print(len(final_str))
-        final_str = (
-                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
-                f'Total: {total}\n'
                 f'{stats[0]:0{m}} ({stats_percent(stats[0],total)}), {stats[1]:0{m}} ({stats_percent(stats[1],total)}) Hits\n'
                 f'{stats[2]:0{m}} ({stats_percent(stats[2],total)}), {stats[3]:0{m}} ({stats_percent(stats[3],total)}) Caps\n'
                 f'{stats[4]:0{m}} ({stats_percent(stats[4],total)}), {stats[5]:0{m}} ({stats_percent(stats[5],total)}) Comp\n'
         )
-        print(len(final_str))
         return final_str
 
     def tag_tooltip(self, tag, stats):
