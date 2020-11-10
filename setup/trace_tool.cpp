@@ -65,10 +65,11 @@ static std::string output_tagfile_path;
 static std::string output_metadata_path;
 
 // Macros to track
-const std::string M_DUMP_START {"DUMP_START"};
-const std::string M_DUMP       {"DUMP"};
-const std::string M_DUMP_STOP  {"DUMP_STOP"};
+const std::string DUMP_START {"DUMP_START"};
+const std::string DUMP       {"DUMP"};
+const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
+const std::string M_START_TRACE  {"M_START_TRACE"};
 
 // Stack/Heap
 const std::string STACK {"Stack"};
@@ -746,7 +747,7 @@ VOID Instruction(INS ins, VOID *v)
 
 // Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
-	RTN rtn = RTN_FindByName(img, M_DUMP_START.c_str());
+	RTN rtn = RTN_FindByName(img, DUMP_START.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_start_called,
@@ -757,7 +758,7 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, M_DUMP.c_str());
+	rtn = RTN_FindByName(img, DUMP.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_called,
@@ -766,7 +767,7 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, M_DUMP_STOP.c_str());
+	rtn = RTN_FindByName(img, DUMP_STOP.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_stop_called,
@@ -778,6 +779,13 @@ VOID FindFunc(IMG img, VOID *v) {
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
+				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, M_START_TRACE.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
 				IARG_END);
 		RTN_Close(rtn);
 	}

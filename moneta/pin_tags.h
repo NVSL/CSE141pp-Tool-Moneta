@@ -6,7 +6,12 @@ extern "C" {
   __attribute__ ((optimize("O0"))) void DUMP(const char* tag, bool create_new) {}
   __attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
 
+  __attribute__ ((optimize("O0"))) void M_START_TRACE(bool one, bool two) {}
+
   __attribute__ ((optimize("O0"))) void FLUSH_CACHE() {}
+  void START_TRACE() {
+    M_START_TRACE(true, true);
+  }
 }
 constexpr void* LIMIT {0};
 
