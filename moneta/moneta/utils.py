@@ -182,8 +182,8 @@ def verify_input(w_vals):
         print(f"{ERROR_LABEL} {TextStyle.RED}Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
         return False
 
-    if not (re.search("^[a-zA-Z0-9_]*$", w_vals['s_fun'])):
-        print(f"{ERROR_LABEL} {TextStyle.RED}Function name can only contain alphanumeric characters and underscore{TextStyle.END}")
+    if not (re.search("^[a-zA-Z0-9_:~]*$", w_vals['s_fun'])):
+        print(f"{ERROR_LABEL} {TextStyle.RED}Function name can only contain alphanumeric characters, underscores, tildes, and colons{TextStyle.END}")
         return False
   
     if (not os.path.isdir(w_vals['cwd_path'])):
