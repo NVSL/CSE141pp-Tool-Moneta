@@ -745,6 +745,16 @@ VOID Instruction(INS ins, VOID *v)
     }
 }
 
+VOID FindStartFunc(RTN rtn, VOID *v) {
+  if (!RTN_Valid(rtn)) return;
+  RTN_Open(rtn);
+  const std::string function_name = PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY);
+  if (function_name == start_function) {
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start, IARG_END);
+  }
+  RTN_Close(rtn);
+}
+
 // Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
 	RTN rtn = RTN_FindByName(img, DUMP_START.c_str());
@@ -784,13 +794,6 @@ VOID FindFunc(IMG img, VOID *v) {
 	}
 	rtn = RTN_FindByName(img, M_START_TRACE.c_str());
 	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, start_function.c_str());
-	if (RTN_Valid(rtn)) {
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
 				IARG_END);
@@ -893,6 +896,7 @@ int main(int argc, char *argv[]) {
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
+  RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
