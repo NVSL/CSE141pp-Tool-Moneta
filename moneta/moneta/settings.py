@@ -103,8 +103,8 @@ ERROR_LABEL = f"{TextStyle.RED}{TextStyle.BOLD}Error:{TextStyle.END}"
 WARNING_LABEL = f"{TextStyle.YELLOW}{TextStyle.BOLD}Warning:{TextStyle.END}"
 
 NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
-           f"If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
-           f"If there are no tags, you will need to tag the file or use a full trace.{TextStyle.END}")
+           f"This means that either the start function does not exist, was inlined, or unable to be demangled"
+           f"Try using the START_TRACE() call in your program"
 
 ## Vaex
 
