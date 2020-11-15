@@ -10,7 +10,7 @@ int main() {
 
   DUMP_START("loop_array", arr, arr+4, false); // new tag to indicate different part of the program, multi so shows up as loop_array0
   for (int i = 0; i < 10; i++) {
-    DUMP("loop_array", true); // using shorthand, same address range of [arr, arr+4]
+    DUMP_START("loop_array", arr, arr+4, true); // same address range of [arr, arr+4]
     for (int j = 0; j < 5; j++) { // being a multi tag, each inner loop will fall into `loop_array1`, `loop_array2`, ..., `loop_array10`
       arr[j]+=i;
     }
