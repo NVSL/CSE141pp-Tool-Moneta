@@ -78,7 +78,7 @@ class Tags():
         total = sum(stats)
         final_tooltip = (
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
+                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
                 f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
                 f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'

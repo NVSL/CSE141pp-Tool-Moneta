@@ -120,7 +120,7 @@ TAG = "Tag"
 
 ### Axis Labels
 INDEX_LABEL = "Access Number"
-ADDRESS_LABEL = "Scaled Address (Byte Offset)"
+ADDRESS_LABEL = "Address Offset (Bytes)"
 
 # Pintool Enumerations
 COMP_W_MISS = 6

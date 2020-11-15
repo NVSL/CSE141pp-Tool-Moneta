@@ -69,6 +69,7 @@ class BqplotBackend(BackendBase):
             self.image.x = (self.scale_x.min, self.scale_x.max)
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
+            self.base_address.value = f"Base address: 0x{int(self.limits[1][0]):X}"
             self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
@@ -108,13 +109,15 @@ class BqplotBackend(BackendBase):
         self.figure.axes[1].label = plot.y_label
         self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
 
+        self.base_address = widgets.Label(value=f"Base address: 0x{int(self.limits[1][0]):X}")
+
         self.curr_action = Action.other
         self.undo_actions = list()
         self.redo_actions = list()
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
-        self.widget = widgets.VBox([self.figure])
+        self.widget = widgets.VBox([self.figure, self.base_address])
         self.create_tools()
 
     @debounced(0.2, method=True)
