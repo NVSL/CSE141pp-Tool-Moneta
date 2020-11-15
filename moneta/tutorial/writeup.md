@@ -82,7 +82,6 @@ Since we only care about vector memory accesses, we will need to tag the program
 Moneta uses the following tagging functions to determine what, where, when, and how to trace:
 ```c++
 DUMP_START(const char* tag, const void* begin, const void* end, bool create_new)
-DUMP(const char* tag, bool create_new) //Shorthand for DUMP_START if tag already exists
 DUMP_STOP(const char* tag)
 FLUSH_CACHE()
 ```
@@ -141,7 +140,7 @@ In the **Tags**, you may have already noticed the checkboxes. These checkboxes a
  * You should not need to touch `Stack` or `Heap` (if they appear) for this
  * For tags with overlapping address ranges, disabled checkboxes take priority (there is an overlapping tag in this program)
 
-In the **Accesses** section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task. You can find out what each icon means by hovering over their corresponding checkbox.
+In the **Accesses** section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task.
 
 ### Solutions
  - The hidden `X` is in vector `B`.
