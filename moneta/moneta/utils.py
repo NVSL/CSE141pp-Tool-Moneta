@@ -90,7 +90,7 @@ def update_cwd_file(cwd_history):
             history_file.write(path + "\n")
 
 
-def get_curr_stats(plot):
+def get_curr_stats(plot, selection):
     
     df = plot.dataset
     
@@ -98,9 +98,10 @@ def get_curr_stats(plot):
     x_max = f'({INDEX} <= {int(plot.limits[0][1])})'
     y_min = f'({ADDRESS} >= {int(plot.limits[1][0])})'
     y_max = f'({ADDRESS} <= {int(plot.limits[1][1])})'
-    
+
     # Inner df returns an expression, doesn't actually create the new dataframe
-    df = df[df[f'{x_min} & {x_max} & {y_min} & {y_max}']]
+    selection += " &" if selection else ""
+    df = df[df[f'{selection} {x_min} & {x_max} & {y_min} & {y_max}']]
     
     # Limit min/max is min/max value of Access enum, shape is number of types of access
     stats = df.count(binby=['Access'], limits=[1,7], shape=6)
@@ -112,8 +113,8 @@ def get_curr_stats(plot):
 
     return total_count, hit_count, cap_miss_count, comp_miss_count
 
-def update_legend_view_stats(plot_stats, plot, is_init):
-    total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot)
+def update_legend_view_stats(plot_stats, plot, selection, is_init):
+    total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot, selection)
 
     if(is_init):
         plot_stats.total_hits.value = stats_hit_string(hit_count, total_count)
