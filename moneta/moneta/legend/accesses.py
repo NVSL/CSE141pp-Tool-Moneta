@@ -31,13 +31,17 @@ class Accesses():
 
 
         # Parent checkboxes
-        self.all_check = ParentCheckbox(chks, self.compute_all, prepend_icon='fa-globe', tooltip="All")
-        self.read_check = ParentCheckbox([read_hit, read_capmiss, read_compmiss], self.compute_all, append_icon="fa-book", tooltip="Reads")
-        self.write_check = ParentCheckbox([write_hit, write_capmiss, write_compmiss], self.compute_all, append_icon="fa-pencil", tooltip="Writes")
-
-        self.hit_check = ParentCheckbox([read_hit, write_hit], self.compute_all, prepend_icon="fa-dot-circle-o", tooltip="Hits")
-        self.capmiss_check = ParentCheckbox([read_capmiss, write_capmiss], self.compute_all, prepend_icon="fa-battery", tooltip="Capacity Misses")
-        self.compmiss_check = ParentCheckbox([read_compmiss, write_compmiss], self.compute_all, prepend_icon="fa-legal", tooltip="Compulsory Misses")
+        self.all_check = ParentCheckbox(chks, self.compute_all, label = 'All', tooltip="Show All")
+        self.read_check = ParentCheckbox([read_hit, read_capmiss, read_compmiss], self.compute_all, 
+                                         label='Reads', tooltip="Reads")
+        self.write_check = ParentCheckbox([write_hit, write_capmiss, write_compmiss], self.compute_all, 
+                                          label='Writes', tooltip="Writes")
+        self.hit_check = ParentCheckbox([read_hit, write_hit], self.compute_all, 
+                                          label='Hits', tooltip="Hits")
+        self.capmiss_check = ParentCheckbox([read_capmiss, write_capmiss], self.compute_all, 
+                                             label='Capacity Misses', tooltip="Capacity Misses")
+        self.compmiss_check = ParentCheckbox([read_compmiss, write_compmiss], self.compute_all, 
+                                              label='Compuls Misses', tooltip="Compulsory Misses")
         self.parentcheckboxes = [self.all_check, self.read_check, self.write_check, 
                 self.hit_check, self.capmiss_check, self.compmiss_check]
 
@@ -76,13 +80,13 @@ class Accesses():
 
         # Add pseudo grid and wrap primary boxes in ipywidget
         gridbox = HBox([GridBox([alls, vdiv, read, vdiv, write,
-            hdiv, hdiv, hdiv, hdiv, hdiv,
-            hits, vdiv, primbox(read_hit), lvdiv, primbox(write_hit),
-            hdiv, hdiv, lhdiv, lhdiv, lhdiv,
-            capmisses, vdiv, primbox(read_capmiss), lvdiv, primbox(write_capmiss),
-            hdiv, hdiv, lhdiv, lhdiv, lhdiv,
-            compmisses, vdiv, primbox(read_compmiss), lvdiv, primbox(write_compmiss)],
-            layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="100px 5px 100px 5px 100px"))], layout=Layout(padding="0 0 0 14px"))
+                                 hdiv, hdiv, hdiv, hdiv, hdiv,
+                                 hits, vdiv, primbox(read_hit), lvdiv, primbox(write_hit),
+                                 hdiv, hdiv, lhdiv, lhdiv, lhdiv,
+                                 capmisses, vdiv, primbox(read_capmiss), lvdiv, primbox(write_capmiss),
+                                 hdiv, hdiv, lhdiv, lhdiv, lhdiv,
+                                 compmisses, vdiv, primbox(read_compmiss), lvdiv, primbox(write_compmiss)],
+                                layout=Layout(grid_template_rows="50px 2px 50px 2px 50px 2px 50px", grid_template_columns="100px 5px 100px 5px 100px"))], layout=Layout(padding="0 0 0 14px"))
 
         cache_icon = v.Icon(children=['fa-database'], v_on='tooltip.on')
         cache_icon_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': cache_icon}], children=["Cache"])
@@ -115,14 +119,18 @@ class Accesses():
         self.plot.backend.plot._update_image()
 
 class ParentCheckbox:
-    def __init__(self, children, compute_all, append_icon=None, prepend_icon=None, tooltip=""):
-        if append_icon is None and prepend_icon is None:
-            print("Must provide at least one icon")
-            raise SystemError
-        if append_icon: # _widget for v_model, widget for display
-            self._widget = v.Checkbox(v_on='tooltip.on', append_icon=append_icon, v_model=True)
+    def __init__(self, children, compute_all, label="", append_icon=None, prepend_icon=None, tooltip=""):
+        # _widget for v_model, widget for display
+        if append_icon:  
+            self._widget = v.Checkbox(
+                v_on='tooltip.on', append_icon=append_icon, v_model=True)
+        elif prepend_icon:
+            self._widget = v.Checkbox(
+                v_on='tooltip.on', prepend_icon=prepend_icon, v_model=True)
         else:
-            self._widget = v.Checkbox(v_on='tooltip.on', prepend_icon=prepend_icon, v_model=True)
+            self._widget = v.Checkbox(
+                v_on='tooltip.on', label=label, v_model=True)
+
         self.widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self._widget}],
                 children=[tooltip])
         self._widget.on_event('change', self.handler)
