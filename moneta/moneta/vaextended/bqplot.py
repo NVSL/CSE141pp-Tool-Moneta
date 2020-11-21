@@ -336,6 +336,9 @@ class BqplotBackend(BackendBase):
             self.scale_y.min, self.scale_y.max = y1, y2
 
     def update_click_brush(self, *args):
+        ''' 
+            Here
+        '''
         if not self.click_brush.brushing:
             with self.output:
                 self.figure.interaction = None
