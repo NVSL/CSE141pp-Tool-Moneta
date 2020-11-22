@@ -90,7 +90,7 @@ def update_cwd_file(cwd_history):
             history_file.write(path + "\n")
 
 
-def get_curr_stats(plot, selection):
+def get_curr_stats(plot, selection): #TODO - could be moved to stats
     
     df = plot.dataset
     
@@ -113,18 +113,6 @@ def get_curr_stats(plot, selection):
 
     return total_count, hit_count, cap_miss_count, comp_miss_count
 
-def update_legend_view_stats(plot_stats, plot, selection, is_init):
-    total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot, selection)
-
-    if(is_init):
-        plot_stats.total_hits.value = stats_hit_string(hit_count, total_count)
-        plot_stats.total_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-        plot_stats.total_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
-    plot_stats.curr_hits.value = stats_hit_string(hit_count, total_count)
-    plot_stats.curr_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-    plot_stats.curr_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
 def stats_percent(count, total):
     return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
 def stats_hit_string(count, total):
@@ -133,11 +121,6 @@ def stats_cap_miss_string(count, total):
     return 'Cap. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_comp_miss_string(count, total):
     return 'Comp. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
-    
-
-
-
-
 
 
 def parse_cwd(path):

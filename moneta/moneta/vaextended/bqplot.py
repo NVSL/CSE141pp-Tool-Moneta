@@ -322,7 +322,6 @@ class BqplotBackend(BackendBase):
                     self.scale_y.min, self.scale_y.max = y1, y2
                 with self.scale_x.hold_trait_notifications():
                     self.scale_x.min, self.scale_x.max = x1, x2
-                self.plot.update_grid()
             if not self.zoom_brush.brushing: # Update on mouse up
                 self.figure.interaction = self.zoom_brush
             with self.zoom_brush.hold_trait_notifications(): # Delete selection

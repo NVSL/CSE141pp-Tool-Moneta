@@ -1,5 +1,5 @@
 from moneta.settings import CUSTOM_CMAP, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS
-from moneta.utils import collect_traces, delete_traces, update_legend_view_stats
+from moneta.utils import collect_traces, delete_traces 
 from moneta.legend.legend import Legend
 from moneta.trace import Trace
 

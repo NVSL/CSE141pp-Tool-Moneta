@@ -32,7 +32,6 @@ class PlotStats():
         self.widgets = VBox([self.total_stats, self.curr_stats])
 
     def update(self, init=False):
-        print("udpate")
         total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(self.model.plot, self.model.legend.get_select_string())
 
         if(init):

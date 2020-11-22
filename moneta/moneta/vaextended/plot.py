@@ -29,38 +29,15 @@ class PlotBase(widgets.Widget):
     grid_limits_max = traitlets.CFloat(None, allow_none=True)
 
     def __init__(
-                self, 
-                backend, 
-                dataset, 
-                x, 
-                y=None, 
-                z=None, 
-                w=None, 
-                grid=None, 
-                limits=None, 
-                shape=128, 
-                what="count(*)", 
-                f=None,
-                vshape=16,
-                selection=None, 
-                grid_limits=None, 
-                normalize=None, 
-                colormap="afmhot",
-                figure_key=None, 
-                fig=None, 
-                what_kwargs={}, 
-                grid_before=None, 
-                vcount_limits=None, 
-                show_drawer=False,
-                controls_selection=True, 
-                model=None,
-                #legend=None,
-                x_col=None,
-                y_col=None,
+                self, backend, dataset, x, y=None, z=None, w=None, 
+                grid=None, limits=None, shape=128, what="count(*)", 
+                f=None, vshape=16, selection=None, grid_limits=None, 
+                normalize=None, colormap="afmhot", figure_key=None, 
+                fig=None, what_kwargs={}, grid_before=None, 
+                vcount_limits=None, show_drawer=False, controls_selection=True, 
+                model=None, x_col=None, y_col=None,
                 x_label='Access Number',
                 y_label='Address',
-                #default_title='Moneta',
-                #cache_size=None,
                 update_stats=None,
                 **kwargs
                 ):
@@ -113,7 +90,6 @@ class PlotBase(widgets.Widget):
             self.y_label = y_label
             self.cache_size = self.model.cache_size()
             self.update_stats = update_stats
-
 
 
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
