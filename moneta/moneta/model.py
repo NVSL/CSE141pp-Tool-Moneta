@@ -13,7 +13,6 @@ class Model():
         self.output_traces_full = None
         self.trace_map = None
 
-
         self.curr_trace = None
         self.legend = None
         self.plot = None
@@ -26,6 +25,7 @@ class Model():
         self.curr_trace = None
         self.legend = None
         self.plot = None
+
     def ready_next_trace(self):
         if self.curr_trace is not None:
             self.clear_trace_state()
@@ -48,20 +48,14 @@ class Model():
             )
 
     def create_plot(self):
-        cache_size = self.curr_trace.cache_lines*self.curr_trace.cache_block
         self.legend = Legend(self)
         self.plot = self.curr_trace.df.plot_widget(
                     self.curr_trace.df[INDEX], self.curr_trace.df[ADDRESS], 
                     what='max(Access)', colormap=CUSTOM_CMAP, 
                     selection=[True], limits=[self.curr_trace.x_lim, self.curr_trace.y_lim],
-                    backend='moneta_backend', type='vaextended', 
-                    model=self,
-                    #legend=self.legend,
-                    #default_title = self.plot_title(),
-                    x_col=INDEX, y_col=ADDRESS,
-                    x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, 
-                    #cache_size=cache_size,
-                    update_stats=lambda *ignore: update_legend_view_stats(self.legend.stats, self.plot, self.legend.get_select_string(), False),
+                    backend='moneta_backend', type='vaextended', model=self,
+                    x_col=INDEX, y_col=ADDRESS, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, 
+                    update_stats=self.legend.stats.update,
                     show=False
                  )
 

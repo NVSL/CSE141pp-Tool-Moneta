@@ -1,10 +1,9 @@
 from IPython.display import clear_output, display
-from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.settings import HISTORY_MAX 
 from moneta.utils import (
     generate_trace, 
     delete_traces, 
-    update_cwd_file,
-    update_legend_view_stats
+    update_cwd_file
 )
 from moneta.moneta_widgets import MonetaWidgets
 from moneta.legend.legend import Legend
@@ -69,7 +68,6 @@ class View():
             update_cwd_file(self.m_widget.cwd.options)
             log.debug(f"New History: {self.m_widget.cwd.options}")
             
-
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
         
@@ -116,15 +114,13 @@ class View():
 
         log.info(self.lastChanged)
         self.model.create_plot()
+
         if self.model.plot is None:
             print("Couldn't load plot")
             return
 
         self.model.plot.show()
-
-        update_legend_view_stats(self.model.legend.stats, self.model.plot, self.model.legend.get_select_string(), True)
-
-        pass
+        self.model.legend.stats.update(init=True)
     
     def handle_delete_trace(self, _):
         log.info("Delete Trace clicked")

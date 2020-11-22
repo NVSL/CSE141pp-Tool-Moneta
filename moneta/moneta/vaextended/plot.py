@@ -112,7 +112,6 @@ class PlotBase(widgets.Widget):
             self.x_label = x_label
             self.y_label = y_label
             self.cache_size = self.model.cache_size()
-            #self.default_title = default_title
             self.update_stats = update_stats
 
 
@@ -123,7 +122,7 @@ class PlotBase(widgets.Widget):
                         'main-widget': widgets.VBox([self.backend.widget, self.progress, self.output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
-                        'default_title': self.model.plot_title(), #self.default_title,
+                        'default_title': self.model.plot_title(), 
                         'main-legend': self.model.legend.widgets,
                         'legend-control': self.model.legend.legend_button
                     },
