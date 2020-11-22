@@ -71,10 +71,3 @@ class Legend():
             ])
         self.panels.children = self.panels.children + [acc]
 
-    def set_zoom_sel_handler(self, f):
-        self.tags.set_zoom_sel_handler(f)
-
-    def set_plot(self, plot):
-        self.accesses.set_plot(plot)
-        self.click_zoom.set_plot(plot)
-

@@ -37,6 +37,16 @@ class Model():
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         return self.curr_trace.err_message
 
+    def cache_size(self):
+        return self.curr_trace.cache_lines*self.curr_trace.cache_block
+
+    def plot_title(self):
+        return (
+                f"{self.curr_trace.name} - "
+                f"Cache: {self.curr_trace.cache_block}-byte block, "
+                f"{self.curr_trace.cache_lines} Lines "
+            )
+
     def create_plot(self):
         cache_size = self.curr_trace.cache_lines*self.curr_trace.cache_block
         self.legend = Legend(self)
@@ -45,18 +55,15 @@ class Model():
                     what='max(Access)', colormap=CUSTOM_CMAP, 
                     selection=[True], limits=[self.curr_trace.x_lim, self.curr_trace.y_lim],
                     backend='moneta_backend', type='vaextended', 
-                    legend=self.legend,
-                    default_title=self.curr_trace.name + f" - Cache: {self.curr_trace.cache_block}-byte block, {self.curr_trace.cache_lines} Lines ", 
+                    model=self,
+                    #legend=self.legend,
+                    #default_title = self.plot_title(),
                     x_col=INDEX, y_col=ADDRESS,
                     x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, 
-                    cache_size=cache_size,
+                    #cache_size=cache_size,
                     update_stats=lambda *ignore: update_legend_view_stats(self.legend.stats, self.plot, self.legend.get_select_string(), False),
                     show=False
                  )
-        self.legend.set_plot(self.plot)
-        self.legend.set_zoom_sel_handler(self.plot.backend.zoom_sel)
-
-
 
     def delete_traces(self, traces, lastChanged):
         if(lastChanged==1):

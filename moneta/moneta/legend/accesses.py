@@ -58,8 +58,8 @@ class Accesses():
             clr_picker.observing = True
             def handle_color_picker(change):
                 self.colormap[clr] = to_rgba(change.new, 1)
-                self.plot.colormap = ListedColormap(self.colormap)
-                self.plot.backend.plot._update_image()
+                self.model.plot.colormap = ListedColormap(self.colormap)
+                self.model.plot.backend.plot._update_image()
             clr_picker.observe(handle_color_picker, names='value')
             self.colorpickers[clr] = clr_picker
             return clr_picker
@@ -106,17 +106,14 @@ class Accesses():
             parent.update()
         self.update_selection()
 
-    def set_plot(self, plot):
-        self.plot = plot
-
     def reset_colormap(self, *_):
         self.colormap = np.copy(newc)
         for clr, clr_picker in self.colorpickers.items():
             clr_picker.observing = False
             clr_picker.value = to_hex(self.colormap[clr][0:3])
             clr_picker.observing = True
-        self.plot.colormap = ListedColormap(self.colormap)
-        self.plot.backend.plot._update_image()
+        self.model.plot.colormap = ListedColormap(self.colormap)
+        self.model.plot.backend.plot._update_image()
 
 class ParentCheckbox:
     def __init__(self, children, compute_all, label="", append_icon=None, prepend_icon=None, tooltip=""):
