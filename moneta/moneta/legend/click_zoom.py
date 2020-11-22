@@ -26,6 +26,10 @@ class Click_Zoom():
         self.accesses = accesses
         self.tags = tags
 
+    def init_again(self):
+        self.plot = self.model.plot
+        self.click_zoom_obj = self.click_zoom_observer(self.model.plot, self.model.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
+
     def create_click_zoom(self):
         czoom_xaxis = widgets.IntSlider(value=50, min=20, max=5000, step=10, description='Access Range', disabled=False, 
                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
@@ -60,14 +64,12 @@ class Click_Zoom():
         czoom_yaxis.observe(on_y_value_change, names='value')
 
         def czoom_zoom(b):
-            if self.click_zoom_obj is None:
-                self.click_zoom_obj = self.click_zoom_observer(self.model.plot, self.model.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
 
-            self.model.plot.backend.scale_x.min = self.click_zoom_obj.x_coormin
-            self.model.plot.backend.scale_x.max = self.click_zoom_obj.x_coormax
-            self.model.plot.backend.scale_y.min = self.click_zoom_obj.y_coormin
-            self.model.plot.backend.scale_y.max = self.click_zoom_obj.y_coormax
-            self.model.plot.backend._update_limits()
+            self.plot.backend.scale_x.min = self.click_zoom_obj.x_coormin
+            self.plot.backend.scale_x.max = self.click_zoom_obj.x_coormax
+            self.plot.backend.scale_y.min = self.click_zoom_obj.y_coormin
+            self.plot.backend.scale_y.max = self.click_zoom_obj.y_coormax
+            self.plot.backend._update_limits()
 
         self.czoom_button.on_click(czoom_zoom)
 
@@ -82,7 +84,7 @@ class Click_Zoom():
             self.model = model
             self.accesses = accesses
             self.tags = tags
-            self.model.plot = plot
+            self.plot = plot
             self.df = self.model.curr_trace.df
             #self.selections = 
             self.widget = widget
@@ -124,15 +126,15 @@ class Click_Zoom():
 
         def update_color_map(self):
             newc = np.ones((7, 4))
-            newc[1] = self.model.plot.colormap.colors[1]
-            newc[2] = self.model.plot.colormap.colors[2]
-            newc[3] = self.model.plot.colormap.colors[4]
-            newc[4] = self.model.plot.colormap.colors[5]
-            newc[5] = self.model.plot.colormap.colors[6]
-            newc[6] = self.model.plot.colormap.colors[8]
+            newc[1] = self.plot.colormap.colors[1]
+            newc[2] = self.plot.colormap.colors[2]
+            newc[3] = self.plot.colormap.colors[4]
+            newc[4] = self.plot.colormap.colors[5]
+            newc[5] = self.plot.colormap.colors[6]
+            newc[6] = self.plot.colormap.colors[8]
             self.colors = newc
             #indices = [1, 2, 4, 5, 6, 8]
-            #self.colors = np.take(self.model.plot.colormap.colors, indices)
+            #self.colors = np.take(self.plot.colormap.colors, indices)
 
         @debounced(0.5, method=True)
         def update_click_zoom_coords(self, data, updating):
@@ -173,7 +175,7 @@ class Click_Zoom():
             colors = self.colors[df_filter4[ACCESS].values]
             
 	    #df_filter4.evaluate(selection=True)
-            self.model.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
+            self.plot_click_zoom(df_filter4, colors, self.x_coormin, self.x_coormax, self.y_coormin, self.y_coormax)
  
         def plot_click_zoom(self, dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
             plot_message = "Done plotting click zoom"
@@ -185,7 +187,7 @@ class Click_Zoom():
                 self.button.layout.display = "block"
             with self.widget:
                 #filter for indices and addresses and their access type that are currently displayed in main widget
-                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5, cmap=self.model.plot.colormap)
+                mpl_plt.scatter(dataset[INDEX].values, dataset[ADDRESS].values, c=colors, s=0.5, cmap=self.plot.colormap)
                 mpl_plt.title('Mini Zoom')
                 mpl_plt.xlabel(INDEX_LABEL)
                 mpl_plt.ylabel(ADDRESS_LABEL)

@@ -58,6 +58,7 @@ class Model():
                     update_stats=self.legend.stats.update,
                     show=False
                  )
+        self.legend.init_clickzoom()
 
     def delete_traces(self, traces, lastChanged):
         if(lastChanged==1):

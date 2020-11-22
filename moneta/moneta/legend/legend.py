@@ -71,3 +71,6 @@ class Legend():
             ])
         self.panels.children = self.panels.children + [acc]
 
+    def init_clickzoom(self):
+        self.click_zoom.init_again()
+
