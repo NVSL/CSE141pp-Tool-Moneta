@@ -323,9 +323,9 @@ class BqplotBackend(BackendBase):
             ind = self.plot.x_col
             addr = self.plot.y_col
             x1 = df[ind].values[0]
-            x2 = df[ind].values[-1]
+            x2 = df[ind].values[-1]+1 # To fix resets on single values + to match original limits
             y1 = df[addr].min()[()]
-            y2 = df[addr].max()[()]
+            y2 = df[addr].max()[()]+1
 
 
         if padding: # Fix for plot getting stuck at one value axis
