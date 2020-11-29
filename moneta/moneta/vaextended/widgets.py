@@ -49,7 +49,8 @@ class PlotTemplate(v.VuetifyTemplate):
       <legend-control/>
      </v-btn>
     </v-app-bar>
-    <v-main class="overflow-hidden">
+    <-- style="background:WhiteSmoke" -->
+    <v-main class="overflow-hidden" style="background:Gainsboro" >
       <main-widget/>
       <v-navigation-drawer
         v-model="show_legend"

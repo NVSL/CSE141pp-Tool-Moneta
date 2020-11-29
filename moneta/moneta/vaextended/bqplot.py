@@ -91,13 +91,13 @@ class BqplotBackend(BackendBase):
         self.figure.layout.min_height = '800px'
         
 
-        # only changes color of plot but not the axes?
-        self.figure.background_style = {'fill': 'LightGray'}
-       
+        # only changes color of plot
+        # self.figure.background_style = {'fill': 'WhiteSmoke'}
+        
 
         plt.figure(fig=self.figure)
 
-    
+
         #self.figure.padding_y = 0
         x = np.arange(0, 10)
         y = x ** 2

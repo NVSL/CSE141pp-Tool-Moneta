@@ -61,6 +61,8 @@ import os
 
 # Colormap
 newc = np.ones((11, 4))
+# change color of background
+# newc[0] = [248/255, 248/255, 248/255, 1]
 newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
 newc[2] = [0, 153/255, 204/255, 1] # write_hits - 2, .25
 newc[3] = [0.047, 1, 0, 1] # cache_size
