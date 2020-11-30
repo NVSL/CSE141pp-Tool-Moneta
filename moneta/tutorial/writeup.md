@@ -5,7 +5,7 @@ Moneta is a tool that takes executables and records all accesses to memory as th
 
 ## Starting Moneta
 
-To start off, [click here](http://86.109.1.71:8888) to Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. 
+To start off, [click here](http://86.109.1.71:8888) to open Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. 
 
 <img src="../../../assets/TutorialTerminal.png" alt="Terminal" width="750px"> 
 
@@ -75,7 +75,7 @@ You can use the navigation features in the plot's top toolbar to move around and
 
 For now, disregard all the sidebar dropdowns except **Click Zoom**. These are the zoom tools from left to right:
 
- * **Pan/Zoom:** Click & drag to move and scroll to zoom
+ * **Pan/Zoom + X & Y Checkboxes:** Click & drag to move and scroll to zoom. Check/uncheck the X & Y checkboxes to move and scroll only in that axis
  * **Zoom to Selection:** Click & drag a square area to zoom into
  * **Click Zoom:** Click & drag a square area, creates a zoomed mini-plot under the **Click Zoom** sidebar dropdown using the bottom right corner of the square
  * **Reset Zoom:** Resets zoom to show everything
