@@ -136,13 +136,13 @@ As you can see from the plot, you are already zoomed into the vector region and 
 
 Now, you need to find the `X` access pattern hidden in one of the vectors. Since you tagged memory regions of interest, you can zoom directly to these regions through the **Tags** dropdown in the sidebar. Open **Tags** and zoom to the various vectors using the zoom button next to each tag until you find the `X` and complete the second goal.
 
-<img src="../../../assets/TutorialTagZoom.png" alt="Tag Zoom" width="750px"> 
+<img src="../../../assets/TutorialTagZoom.png" alt="Tag Zoom" width="400px"> 
 
 ### Display Specific Accesses
 
 For your final goal, you need to display only the writes and read-hits of `A`, `C` and `D`. For this task, you will need the **Accesses** and **Tags** section of the sidebar.
 
-<img src="../../../assets/TutorialSidebar.png" alt="Sidebar" width="750px"> 
+<img src="../../../assets/TutorialSidebar.png" alt="Sidebar" width="400px"> 
 
 First, zoom back out so that you can see all the vectors again. This can be done using the **Reset Zoom** button in the toolbar.
 
