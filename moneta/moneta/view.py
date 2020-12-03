@@ -1,10 +1,9 @@
 from IPython.display import clear_output, display
-from moneta.settings import CUSTOM_CMAP, MONETA_BASE_DIR, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, HISTORY_MAX, CWD_HISTORY_PATH
+from moneta.settings import HISTORY_MAX 
 from moneta.utils import (
     generate_trace, 
     delete_traces, 
-    update_cwd_file,
-    update_legend_view_stats
+    update_cwd_file
 )
 from moneta.moneta_widgets import MonetaWidgets
 from moneta.legend.legend import Legend
@@ -41,7 +40,6 @@ class View():
             update_cwd_file(self.m_widget.cwd.options)
             log.debug(f"New History: {self.m_widget.cwd.options}")
             
-
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
         
@@ -72,37 +70,14 @@ class View():
             print(err_message)
             return
 
-        curr_trace = self.model.curr_trace
-        df = curr_trace.df
-        x_lim = curr_trace.x_lim
-        y_lim = curr_trace.y_lim
-        cache_size = curr_trace.cache_lines*curr_trace.cache_block
-        tags = curr_trace.tags
-        legend = Legend(self.model)
-        plot = df.plot_widget(
-                    df[INDEX], 
-                    df[ADDRESS], 
-                    what='max(Access)',
-                    colormap=CUSTOM_CMAP, 
-                    selection=[True], 
-                    limits=[x_lim, y_lim],
-                    backend='moneta_backend', 
-                    type='vaextended', 
-                    legend=legend,
-                    default_title=curr_trace.name + f" - Cache: {curr_trace.cache_block}-byte block, {curr_trace.cache_lines} Lines ", 
-                    x_col=INDEX,
-                    y_col=ADDRESS,
-                    x_label=INDEX_LABEL, 
-                    y_label=ADDRESS_LABEL, 
-                    cache_size=cache_size,
-                    update_stats=lambda *ignore: update_legend_view_stats(legend.stats, plot, legend.get_select_string(), False)
-                 )
+        self.model.create_plot()
 
-        update_legend_view_stats(legend.stats, plot, legend.get_select_string(), True)
+        if self.model.plot is None:
+            print("Couldn't load plot")
+            return
 
-        legend.set_zoom_sel_handler(plot.backend.zoom_sel)
-        legend.set_plot(plot)
-        pass
+        self.model.plot.show()
+        self.model.legend.stats.update(init=True)
     
     def handle_delete_trace(self, _):
         log.info("Delete Trace clicked")

@@ -26,9 +26,9 @@ class Click_Zoom():
         self.accesses = accesses
         self.tags = tags
 
-    def set_plot(self, plot):
-        self.plot = plot
-        self.click_zoom_obj = self.click_zoom_observer(self.plot, self.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
+    def init_again(self):
+        self.plot = self.model.plot
+        self.click_zoom_obj = self.click_zoom_observer(self.model.plot, self.model.plot.backend, self.click_zoom_widget, self.czoom_button, self.model, self.accesses, self.tags)
 
     def create_click_zoom(self):
         czoom_xaxis = widgets.IntSlider(value=50, min=20, max=5000, step=10, description='Access Range', disabled=False, 
@@ -64,6 +64,7 @@ class Click_Zoom():
         czoom_yaxis.observe(on_y_value_change, names='value')
 
         def czoom_zoom(b):
+
             self.plot.backend.scale_x.min = self.click_zoom_obj.x_coormin
             self.plot.backend.scale_x.max = self.click_zoom_obj.x_coormax
             self.plot.backend.scale_y.min = self.click_zoom_obj.y_coormin

@@ -71,13 +71,10 @@ class Tags():
                     borders='none', align_items='center'
                 ))
         def zoom_to_selection(*_):
-            self.zoom_sel_handler(float(tag.access[0]), float(tag.access[1])+1,
+            self.model.plot.backend.zoom_sel(float(tag.access[0]), float(tag.access[1])+1,
                                     float(tag.address[0]), float(tag.address[1])+1)
         btn.on_click(zoom_to_selection)
         return btn, tooltip
-
-    def set_zoom_sel_handler(self, f):
-        self.zoom_sel_handler = f
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
