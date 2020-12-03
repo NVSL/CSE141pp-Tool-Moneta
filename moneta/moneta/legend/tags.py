@@ -22,22 +22,27 @@ class Tags():
             "margin-left: 0px;"
             "overflow: visible;"
             "}"
+            ".vuetify-styles .v-input--selection-controls:not(.v-input--hide-details) .v-input__slot {"
+            "margin-bottom: 0px;"
+            "}"
+            ".vuetify-styles .v-treeview-node__root .v-icon.v-icon.v-icon--link {"
+            "margin-bottom: 10px;"
+            "}"
             ".vuetify-styles .v-treeview-node--leaf {"
             "margin-left: 0px;"
             "}"
-            ".vuetify-styles .v-treeview-node--leaf>.v-treeview-node__root {"
-            "padding-left: 0px;"
-            "}"
             ".vuetify-styles .v-treeview--dense .v-treeview-node__root {"
-            "min-height: 30px;"
+            "min-height: 21px;"
             "}"
         )]) 
         for tag in self.model.curr_trace.tags:
             chk = Checkbox(tag)
             self.checkboxes.append(chk)
             chk.widget.on_event('change', self.update_all_checkbox)
-            btn, stats = self.create_zoom_button(tag)
-            statss = stats.splitlines()
+            stats = self.get_stats(tag)
+            btn, tooltip = self.create_zoom_button(tag, stats=stats)
+            statss = self.dropdown_str(tag, stats).splitlines()
+
             tag_row = v.Row(children=[
                 btn,
                 chk.widget
@@ -55,9 +60,9 @@ class Tags():
         tag_rows.append(v.Container(row=False, children=[treenodelabel]))
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
 
-    def create_zoom_button(self, tag): #TODO move constants out
-        df = self.model.curr_trace.df
-        stats = df[df[int(tag.access[0]):int(tag.access[1])+1][f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
+    def create_zoom_button(self, tag, stats=None): #TODO move constants out
+        if stats is None:
+            stats = self.get_stats(tag)
 
         tooltip = self.tag_tooltip(tag, stats)
         btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
@@ -73,6 +78,24 @@ class Tags():
 
     def set_zoom_sel_handler(self, f):
         self.zoom_sel_handler = f
+
+    def get_stats(self, tag):
+        df = self.model.curr_trace.df
+        rows = df[int(tag.access[0]):int(tag.access[1])+1]
+        return rows[rows[f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
+
+    def dropdown_str(self, tag, stats):
+        total = sum(stats)
+        m = len(str(total))
+        final_str = (
+                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
+                f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
+                f'Total: {total}\n'
+                f'{stats[0]:0{m}} ({stats_percent(stats[0],total)}), {stats[1]:0{m}} ({stats_percent(stats[1],total)}) Hits\n'
+                f'{stats[2]:0{m}} ({stats_percent(stats[2],total)}), {stats[3]:0{m}} ({stats_percent(stats[3],total)}) Caps\n'
+                f'{stats[4]:0{m}} ({stats_percent(stats[4],total)}), {stats[5]:0{m}} ({stats_percent(stats[5],total)}) Comp\n'
+        )
+        return final_str
 
     def tag_tooltip(self, tag, stats):
         total = sum(stats)
