@@ -143,8 +143,10 @@ class Click_Zoom():
             self.update_color_map()
             #first check if there is no data to zoom into
             if updating is not True:
-              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
-              return
+                with self.model.plot.output:
+                    self.model.plot.output.clear_output()
+                    print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
+                return
 
             czoom_df_filter1 = self.df[self.df[INDEX] < self.observable.czoom_xmax]
             czoom_df_filter2 = czoom_df_filter1[self.df[INDEX] > self.observable.czoom_xmin]
@@ -153,10 +155,12 @@ class Click_Zoom():
 
             #second check if there is no data to zoom into
             try: 
-              zoom_x = czoom_df_filter4[INDEX].values[-1]
+                zoom_x = czoom_df_filter4[INDEX].values[-1]
             except:
-              print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
-              return
+                with self.model.plot.output:
+                    self.model.plot.output.clear_output()
+                    print(f"{WARNING_LABEL}{TextStyle.YELLOW} no data for click zoom to zoom in{TextStyle.END}")
+                return
 
             zoom_y = czoom_df_filter4[ADDRESS].values[-1]
             global click_zoom_x
@@ -179,9 +183,11 @@ class Click_Zoom():
  
         def plot_click_zoom(self, dataset, colors, xlim_min, xlim_max, ylim_min, ylim_max):
             plot_message = "Done plotting click zoom"
-            print(f"{TextStyle.GREEN}{TextStyle.BOLD}\n"
-                  f"{plot_message}\n"
-                  f"{TextStyle.END}\n")
+            with self.model.plot.output:
+                self.model.plot.output.clear_output()
+                print(f"{TextStyle.GREEN}{TextStyle.BOLD}\n"
+                      f"{plot_message}\n"
+                      f"{TextStyle.END}\n")
             self.widget.clear_output()
             if self.button.layout.display == "none":
                 self.button.layout.display = "block"
