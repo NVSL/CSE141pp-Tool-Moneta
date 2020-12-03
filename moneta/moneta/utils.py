@@ -114,7 +114,7 @@ def get_curr_stats(plot, selection): #TODO - could be moved to stats
     return total_count, hit_count, cap_miss_count, comp_miss_count
 
 def stats_percent(count, total):
-    return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
+    return 'N/A' if total == 0 else f'{count/total:06.2%}'
 def stats_hit_string(count, total):
     return 'Hits: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_cap_miss_string(count, total):
@@ -165,6 +165,10 @@ def verify_input(w_vals):
     if not (re.search("^[a-zA-Z0-9_]*$", w_vals['o_name'])):
         print(f"{ERROR_LABEL} {TextStyle.RED}Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
         return False
+
+    if not (re.search("^[a-zA-Z0-9_:~]*$", w_vals['s_fun'])):
+        print(f"{ERROR_LABEL} {TextStyle.RED}Function name can only contain alphanumeric characters, underscores, tildes, and colons{TextStyle.END}")
+        return False
   
     if (not os.path.isdir(w_vals['cwd_path'])):
         print(f"{ERROR_LABEL} {TextStyle.RED}Directory '{w_vals['cwd_path']}' not found{TextStyle.END}")
@@ -190,14 +194,11 @@ def verify_input(w_vals):
 def run_pintool(w_vals):
     log.info("Running pintool")
   
-    prefix = "full_trace_" if w_vals['is_full_trace'] else "trace_"
+    prefix = "trace_"
     # Temporary fix until Pintool handles double-open error
     if(os.path.isfile(OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5")):
         subprocess.run(["rm", OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5"]);
       
-    is_full_trace_int = 1 if w_vals['is_full_trace'] else 0
-    track_main_int = 1 if w_vals['track_main'] else 0
-  
     args_string = "" if len(w_vals['e_args']) == 0 else " " + " ".join(w_vals['e_args']) 
 
     args = [
@@ -206,8 +207,7 @@ def run_pintool(w_vals):
         "-cache_lines", str(w_vals['c_lines']),
         "-output_lines", str(w_vals['m_lines']),
         "-block", str(w_vals['c_block']),
-        "-full", str(is_full_trace_int),
-        "-main", str(track_main_int),
+        "-start", str(w_vals['s_fun']),
         "--", w_vals['e_file'], *w_vals['e_args']
     ]
 
@@ -257,11 +257,10 @@ def collect_traces():
     """Reads output directory to fill up select widget with traces"""
     log.info("Reading outfile directory")
     trace_list = []
-    trace_list_full = []
 
     trace_map = {}
     if not os.path.isdir(OUTPUT_DIR):
-        return [], [], {}
+        return [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
@@ -280,19 +279,7 @@ def collect_traces():
             trace_map[trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
-        elif (file_name.startswith("full_trace_") and file_name.endswith(".hdf5")):
-            trace_name = file_name[11:file_name.index(".hdf5")]
-            tag_path = os.path.join(dir_path, "full_tag_map_" + trace_name + ".csv")
-            meta_path = os.path.join(dir_path, "full_meta_data_" + trace_name + ".txt")
-            if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.{TextStyle.END}")
-                continue
-            
-            trace_list_full.append(trace_name)
-            trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
-                                     tag_path, meta_path)
-            log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
-    return trace_list, trace_list_full, trace_map 
+    return trace_list, trace_map 
 
 
 def delete_traces(trace_paths):
