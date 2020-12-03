@@ -10,7 +10,7 @@ CACHE_BLOCK_DESC = "Block Size (Bytes):"
 
 # Output Lines
 OUTPUT_LINES_VAL = 10000000
-OUTPUT_LINES_DESC = "Lines to Output:"
+OUTPUT_LINES_DESC = "Max Accesses:"
 
 # Working Directory Path
 CWD_PATH_DEF = "e.g. ./examples/build"
@@ -116,7 +116,7 @@ TAG = "Tag"
 
 ### Axis Labels
 INDEX_LABEL = "Access Number"
-ADDRESS_LABEL = "Scaled Address (Byte Offset)"
+ADDRESS_LABEL = "Address Offset (Bytes)"
 
 # Pintool Enumerations
 COMP_W_MISS = 6

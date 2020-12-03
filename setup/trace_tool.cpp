@@ -66,7 +66,6 @@ static std::string output_metadata_path;
 
 // Macros to track
 const std::string DUMP_START {"DUMP_START"};
-const std::string DUMP       {"DUMP"};
 const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
@@ -488,27 +487,6 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
   }
 }
 
-VOID dump_called(VOID * tag_name, bool create_new) {
-  char* s = (char *)tag_name;
-  std::string str_tag (s);
-  if (str_tag == HEAP || str_tag == STACK) {
-    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
-              "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
-  }
-  if (all_tags.find(str_tag) == all_tags.end()) {
-    std::cerr << "Error: Can't use define new tags with this call. Try DUMP_START\n"
-              "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
-  }
-  TagData* old_tag = all_tags[str_tag];
-  if (create_new) {
-    old_tag->create_new_tag();
-  } else {
-    old_tag->tags.back()->active = true;
-  }
-}
-
 VOID dump_stop_called(VOID * tag_name) {
   char *s = (char *)tag_name;
   std::string str_tag (s);
@@ -765,15 +743,6 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, DUMP.c_str());
-	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
 	}

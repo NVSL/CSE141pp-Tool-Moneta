@@ -40,25 +40,25 @@ int main() {
   fill_v(G);
   fill_v(H);
 
-  DUMP_START_SINGLE("vectors", &H.front(), &A.back());
+  DUMP_START("vectors", &H.front(), &A.back(), false);
 
   // A
-  DUMP_START_SINGLE("A", &A.front(), &A.back());
+  DUMP_START("A", &A.front(), &A.back(), false);
   mystery_a(A);
   DUMP_STOP("A");
 
   // B
-  DUMP_START_SINGLE("B", &B.front(), &B.back());
+  DUMP_START("B", &B.front(), &B.back(), false);
   mystery_b(B);
   DUMP_STOP("B");
 
   // C
-  DUMP_START_SINGLE("C", &C.front(), &C.back());
+  DUMP_START("C", &C.front(), &C.back(), false);
   mystery_c(C);
   DUMP_STOP("C");
 
   // D
-  DUMP_START_SINGLE("D", &D.front(), &D.back());
+  DUMP_START("D", &D.front(), &D.back(), false);
   mystery_d(D);
   DUMP_STOP("D");
 
