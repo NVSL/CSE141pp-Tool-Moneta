@@ -104,7 +104,7 @@ WARNING_LABEL = f"{TextStyle.YELLOW}{TextStyle.BOLD}Warning:{TextStyle.END}"
 
 NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
            f"This means that either the start function does not exist, was inlined, or unable to be demangled"
-           f"Try using the START_TRACE() call in your program"
+           f"Try using the START_TRACE() call in your program")
 
 ## Vaex
 
