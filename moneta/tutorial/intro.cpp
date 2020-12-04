@@ -63,10 +63,14 @@ int main() {
   DUMP_STOP("D");
 
   // E
+  DUMP_START("E", &E.front(), &E.back(), false);
   mystery_e(E);
+  DUMP_STOP("E");
 
   // F
+  DUMP_START("F", &F.front(), &F.back(), false);
   mystery_f(F);
+  DUMP_STOP("F");
 
   // G
   mystery_g(G);
