@@ -98,6 +98,9 @@ class BqplotBackend(BackendBase):
         self.core_image_fix = widgets.Image(format='png')
 
         self.image = bqplot.Image(scales=self.scales, image=self.core_image)
+        # triggered by regular mouse click not a brush selector
+        self.image.on_element_click(self.click_to_zoom)
+        
         self.figure.marks = self.figure.marks + [self.image]
         self.scatter = s = plt.scatter(x, y, visible=False, rotation=x, scales=self.scales, size=x, marker="arrow")
         self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
@@ -164,8 +167,9 @@ class BqplotBackend(BackendBase):
         if 1:  # tool_select:
             self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
             self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
-            self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="green")
-            self.click_brush.observe(self.update_click_brush, ["brushing"])
+            # self.click_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="green")
+            # self.click_brush.observe(self.update_click_brush, ["brushing"])
+            self.click_brush = None # use regular mouse
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
             tool_actions_map[PAN_ZOOM] = self.panzoom
             tool_actions_map[CLICK_ZOOM] = self.click_brush
@@ -335,10 +339,23 @@ class BqplotBackend(BackendBase):
         with self.scale_y.hold_trait_notifications():
             self.scale_y.min, self.scale_y.max = y1, y2
 
-    def update_click_brush(self, *args):
-        ''' 
-            Here
+    def click_to_zoom(self, _, target):
         '''
+            click to zoom call back 
+            target contains mouse coordinates
+        '''
+        print(target)
+        print('hello')
+
+        self.coor_x = target['data']['click_x']
+        self.coor_y = target['data']['click_y']
+
+        print(self.coor_x, self.coor_y)
+
+
+
+
+    def update_click_brush(self, *args):
         if not self.click_brush.brushing:
             with self.output:
                 self.figure.interaction = None
