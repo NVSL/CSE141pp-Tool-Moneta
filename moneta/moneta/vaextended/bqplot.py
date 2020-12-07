@@ -347,11 +347,33 @@ class BqplotBackend(BackendBase):
         print(target)
         print('hello')
 
-        self.coor_x = target['data']['click_x']
-        self.coor_y = target['data']['click_y']
+        x = target['data']['click_x']
+        y = target['data']['click_y']
 
-        print(self.coor_x, self.coor_y)
+        print(x, y)
 
+        x1 = x - 500
+        x2 = x + 500
+
+        y1 = y - 1000
+        y2 = y + 1000
+
+        with self.scale_x.hold_trait_notifications():
+            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+        with self.scale_y.hold_trait_notifications():
+            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+        
+        
+        df = self.dataset
+        ind = self.plot.x_col
+        addr = self.plot.y_col
+        res = df[(df[ind] >= x1) & (df[ind] <= x2) & (
+            df[addr] >= y1) & (df[addr] <= y2)]
+
+        #if there are values selected within the region
+
+        self.click_zoom_update_coords_x(x1, True)
+        self.click_zoom_update_coords_y(y1, True)
 
 
 
