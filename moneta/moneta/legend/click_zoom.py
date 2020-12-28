@@ -137,6 +137,13 @@ class Click_Zoom():
 
         @debounced(0.5, method=True)
         def update_click_zoom_coords(self, data, updating):
+            print('update_click_zoom_coords')
+
+
+
+
+
+
 
             self.update_selection()
             self.update_color_map()

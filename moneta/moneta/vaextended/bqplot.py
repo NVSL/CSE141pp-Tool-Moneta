@@ -46,8 +46,8 @@ class BqplotBackend(BackendBase):
         self.signal_limits = vaex.events.Signal()
 
         self._cleanups = []
-        self.coor_x = 0
-        self.coor_y = 0
+        # self.coor_x = 0
+        # self.coor_y = 0
         self.czoom_xmin = 0
         self.czoom_xmax = 0
         self.czoom_ymin = 0
@@ -352,29 +352,41 @@ class BqplotBackend(BackendBase):
 
         print(x, y)
 
-        x1 = x - 500
-        x2 = x + 500
+        x1 = x - 5000
+        x2 = x + 5000
 
-        y1 = y - 1000
-        y2 = y + 1000
+        y1 = y - 10000
+        y2 = y + 10000
 
-        with self.scale_x.hold_trait_notifications():
-            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
-        with self.scale_y.hold_trait_notifications():
-            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
+        self.czoom_xmin = min(x1, x2)
+        self.czoom_xmax = max(x1, x2)
+        self.czoom_ymin = min(y1, y2)
+        self.czoom_ymax = max(y1, y2)
+
+        # with self.scale_x.hold_trait_notifications():
+        #     self.scale_x.min, self.scale_x.max = float(x1), float(x2)
+        # with self.scale_y.hold_trait_notifications():
+        #     self.scale_y.min, self.scale_y.max = float(y1), float(y2)
         
-        
-        df = self.dataset
-        ind = self.plot.x_col
-        addr = self.plot.y_col
-        res = df[(df[ind] >= x1) & (df[ind] <= x2) & (
-            df[addr] >= y1) & (df[addr] <= y2)]
+        with self.output:
+            df = self.dataset
+            ind = self.plot.x_col
+            addr = self.plot.y_col
+            res = df[(df[ind] >= self.czoom_xmin) & (df[ind] <= self.czoom_xmax)
+                     & (df[addr] >= self.czoom_ymin) & (df[addr] <= self.czoom_ymax)]
 
-        #if there are values selected within the region
+            # self.click_zoom_update_coords_x(x1, True)
+            # self.click_zoom_update_coords_y(y1, True)
 
-        self.click_zoom_update_coords_x(x1, True)
-        self.click_zoom_update_coords_y(y1, True)
-
+            #if there are values selected within the region
+            if res.count() != 0:
+                self.click_zoom_update_coords_x(self.czoom_xmin, True)
+                self.click_zoom_update_coords_y(self.czoom_ymin, True)
+            else:
+                #no data within highlighted region, do not update coords
+                self.click_zoom_update_coords_x(x2, False)
+                self.click_zoom_update_coords_y(y1, False)
+            self.figure.interaction = self.click_brush
 
 
     def update_click_brush(self, *args):
