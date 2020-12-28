@@ -344,40 +344,36 @@ class BqplotBackend(BackendBase):
             click to zoom call back 
             target contains mouse coordinates
         '''
-        print(target)
-        print('hello')
-
+        # get the mouse coordinates
         x = target['data']['click_x']
         y = target['data']['click_y']
 
-        print(x, y)
 
-        x1 = x - 5000
-        x2 = x + 5000
-
-        y1 = y - 10000
-        y2 = y + 10000
+        # magic number not sure what to put here 
+        # original selector drew a box producing 2 coordinates but not that mouse click only produces
+        # 1 coord we need to create a fake box around the mouse click but how big should it be?  
+        x1 = x - 100
+        x2 = x + 100
+        y1 = y - 100
+        y2 = y + 100
 
         self.czoom_xmin = min(x1, x2)
         self.czoom_xmax = max(x1, x2)
         self.czoom_ymin = min(y1, y2)
         self.czoom_ymax = max(y1, y2)
-
-        # with self.scale_x.hold_trait_notifications():
-        #     self.scale_x.min, self.scale_x.max = float(x1), float(x2)
-        # with self.scale_y.hold_trait_notifications():
-        #     self.scale_y.min, self.scale_y.max = float(y1), float(y2)
         
         with self.output:
             df = self.dataset
             ind = self.plot.x_col
             addr = self.plot.y_col
+
+            # res is a box so we must create 2 sets of coordinates
+
             res = df[(df[ind] >= self.czoom_xmin) & (df[ind] <= self.czoom_xmax)
                      & (df[addr] >= self.czoom_ymin) & (df[addr] <= self.czoom_ymax)]
 
-            # self.click_zoom_update_coords_x(x1, True)
-            # self.click_zoom_update_coords_y(y1, True)
-
+            # click_zoom_update_coords is fine with just one mouse coord 
+            
             #if there are values selected within the region
             if res.count() != 0:
                 self.click_zoom_update_coords_x(self.czoom_xmin, True)
@@ -390,6 +386,9 @@ class BqplotBackend(BackendBase):
 
 
     def update_click_brush(self, *args):
+        '''
+            Depreceated - Old method for click to zoom tool
+        '''
         if not self.click_brush.brushing:
             with self.output:
                 self.figure.interaction = None
