@@ -349,41 +349,18 @@ class BqplotBackend(BackendBase):
         y = target['data']['click_y']
 
 
-        # magic number not sure what to put here 
-        # original selector drew a box producing 2 coordinates but not that mouse click only produces
-        # 1 coord we need to create a fake box around the mouse click but how big should it be?  
-        x1 = x - 100
-        x2 = x + 100
-        y1 = y - 100
-        y2 = y + 100
+        # need to explain this 
+        # difference smallest and largest value on each axis
+        x_diff = self.scale_x.max - self.scale_x.min
+        y_diff = self.scale_y.max - self.scale_y.min
+        # multiply diff by 0.1 for 10x zoom, and by 0.5 since we want to
+        # create a box around the x y mouse coord.
+        x1 = x - (0.5 * 0.1 * x_diff)
+        x2 = x + (0.5 * 0.1 * x_diff)
+        y1 = y - (0.5 * 0.1 * y_diff)
+        y2 = y + (0.5 * 0.1 * y_diff)
 
-        self.czoom_xmin = min(x1, x2)
-        self.czoom_xmax = max(x1, x2)
-        self.czoom_ymin = min(y1, y2)
-        self.czoom_ymax = max(y1, y2)
-        
-        with self.output:
-            df = self.dataset
-            ind = self.plot.x_col
-            addr = self.plot.y_col
-
-            # res is a box so we must create 2 sets of coordinates
-
-            res = df[(df[ind] >= self.czoom_xmin) & (df[ind] <= self.czoom_xmax)
-                     & (df[addr] >= self.czoom_ymin) & (df[addr] <= self.czoom_ymax)]
-
-            # click_zoom_update_coords is fine with just one mouse coord 
-            
-            #if there are values selected within the region
-            if res.count() != 0:
-                self.click_zoom_update_coords_x(self.czoom_xmin, True)
-                self.click_zoom_update_coords_y(self.czoom_ymin, True)
-            else:
-                #no data within highlighted region, do not update coords
-                self.click_zoom_update_coords_x(x2, False)
-                self.click_zoom_update_coords_y(y1, False)
-            self.figure.interaction = self.click_brush
-
+        self.zoom_sel(float(x1), float(x2), float(y1), float(y2))
 
     def update_click_brush(self, *args):
         '''

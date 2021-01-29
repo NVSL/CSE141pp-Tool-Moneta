@@ -28,10 +28,10 @@ class Legend():
         self.accesses = Accesses(model, self.update_selection)
         self.stats = PlotStats()
         self.tags = Tags(model, self.update_selection)
-        self.click_zoom = Click_Zoom(model, self.accesses, self.tags)
+        # self.click_zoom = Click_Zoom(model, self.accesses, self.tags)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
-        self.add_panel(LEGEND_CLICK_ZOOM, self.click_zoom.widgets)
+        # self.add_panel(LEGEND_CLICK_ZOOM, self.click_zoom.widgets)
         self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
@@ -74,7 +74,7 @@ class Legend():
     def set_zoom_sel_handler(self, f):
         self.tags.set_zoom_sel_handler(f)
 
-    def set_plot(self, plot):
-        self.accesses.set_plot(plot)
-        self.click_zoom.set_plot(plot)
+    # def set_plot(self, plot):
+    #     self.accesses.set_plot(plot)
+    #     self.click_zoom.set_plot(plot)
 
