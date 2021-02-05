@@ -136,7 +136,6 @@ TAG_NAME = "Tag_Name"
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
-LEGEND_CLICK_ZOOM = 'Click Zoom'
 LEGEND_STATS_TITLE = 'Stats'
 
 # Legend grid box

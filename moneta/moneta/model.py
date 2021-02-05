@@ -57,7 +57,7 @@ class Model():
                     update_stats=self.legend.stats.update,
                     show=False
                  )
-        self.legend.init_clickzoom()
+
 
     def delete_traces(self, traces):
         delete_traces(map(lambda x: self.trace_map[x], traces))
