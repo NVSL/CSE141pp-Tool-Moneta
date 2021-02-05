@@ -17,6 +17,7 @@ import bqplot.pyplot as plt
 import ipywidgets as widgets
 import ipyvuetify as v
 import copy
+from moneta.settings import TextStyle, WARNING_LABEL
 
 blackish = '#666'
 
@@ -57,7 +58,6 @@ class BqplotBackend(BackendBase):
 
 
     def update_image(self, rgb_image):
-        
         with self.output:
             rgb_image = (rgb_image * 255.).astype(np.uint8)
             pil_image = vaex.image.rgba_2_pil(rgb_image)
@@ -111,6 +111,7 @@ class BqplotBackend(BackendBase):
         self.figure.axes[0].label = plot.x_label
         self.figure.axes[1].label = plot.y_label
         self.figure.axes[1].scale = bqplot.LinearScale(min = 0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
+        self.stuck_ctr = 0
 
         self.base_address = widgets.Label(value=f"Base address: 0x{int(self.limits[1][0]):X}")
 
@@ -131,6 +132,8 @@ class BqplotBackend(BackendBase):
             self.figure.axes[1].scale=bqplot.LinearScale(min=0, max=self.scale_y.max-self.scale_y.min, allow_padding=False)
             self.figure.axes[0].scale=bqplot.LinearScale(min=self.scale_x.min, max=self.scale_x.max, allow_padding=False)
             if self.counter == 2:
+                self.output.clear_output() # Disable when debugging
+                self.stuck_ctr = 0
                 if self.curr_action in [Action.redo, Action.other]:
                     self.undo_btn.disabled = False
                     self.undo_actions.append(self.limits)
@@ -210,10 +213,7 @@ class BqplotBackend(BackendBase):
 
             def reset(*args):
                 (x1, x2), (y1, y2) = self.start_limits
-                with self.scale_x.hold_trait_notifications():
-                    with self.scale_y.hold_trait_notifications():
-                        self.scale_x.min, self.scale_x.max = x1, x2
-                        self.scale_y.min, self.scale_y.max = y1, y2
+                self.zoom_sel(x1, x2, y1, y2, smart_zoom=True)
                 with self.zoom_brush.hold_trait_notifications():
                     self.zoom_brush.selected_x = None
                     self.zoom_brush.selected_y = None
@@ -287,6 +287,11 @@ class BqplotBackend(BackendBase):
                 ], align='center', justify='center')
             self.plot.add_to_toolbar(self.tooltips)
 
+    def get_df_selection(self, x1, x2, y1, y2):
+        ind = self.plot.x_col
+        addr = self.plot.y_col
+        df = self.dataset
+        return df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
 
     def update_zoom_brush(self, *args):
         with self.output:
@@ -294,50 +299,61 @@ class BqplotBackend(BackendBase):
                 self.figure.interaction = None
             if self.zoom_brush.selected is not None:
                 (x1, y1), (x2, y2) = self.zoom_brush.selected
-                df = self.dataset
-                ind = self.plot.x_col
-                addr = self.plot.y_col
-                res = df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
-                if res.count() != 0:
-                    x1 = res[ind].values[0]
-                    x2 = res[ind].values[-1]
-                    y1 = res[addr].min()[()]
-                    y2 = res[addr].max()[()]
+                if not self.zoom_brush.brushing: # Update on mouse up
+                    self.figure.interaction = self.zoom_brush
+                with self.zoom_brush.hold_trait_notifications(): # Delete selection
+                    self.zoom_brush.selected_x = None
+                    self.zoom_brush.selected_y = None
 
-                # Fix for plot getting stuck at one value axis
-                if (x2 - x1 < 128):
-                    x1 -= (128 + x1 - x2) / 2
-                    x2 = x1 + 128
+                self.zoom_sel(x1, x2, y1, y2, smart_zoom=True, padding=True)
 
-                if (y2 - y1 < 128):
-                    y1 -= (128 + y1 - y2) / 2
-                    y2 = y1 + 128
-                
-                # Add a 5% padding so points are directly on edge
-                padding_x = (x2 - x1) * 0.05
-                padding_y = (y2 - y1) * 0.05
 
-                x1 = x1 - padding_x
-                x2 = x2 + padding_x
-                y1 = y1 - padding_y
-                y2 = y2 + padding_y
+    def zoom_sel(self, x1, x2, y1, y2, smart_zoom=False, padding=False):
+        df = self.get_df_selection(x1, x2, y1, y2)
 
-                with self.scale_y.hold_trait_notifications():
-                    self.scale_y.min, self.scale_y.max = y1, y2
-                with self.scale_x.hold_trait_notifications():
-                    self.scale_x.min, self.scale_x.max = x1, x2
-                self.plot.update_grid()
-            if not self.zoom_brush.brushing: # Update on mouse up
-                self.figure.interaction = self.zoom_brush
-            with self.zoom_brush.hold_trait_notifications(): # Delete selection
-                self.zoom_brush.selected_x = None
-                self.zoom_brush.selected_y = None
+        if df.count() != 0:
+            selection = self.plot.model.legend.get_select_string()
+            if selection != "":
+                df = df[df[selection]]
 
-    def zoom_sel(self, x1, x2, y1, y2):
+        if df.count() == 0:
+            self.stuck_ctr+=1
+            with self.output:
+                self.output.clear_output()
+                print(f"{WARNING_LABEL} {TextStyle.YELLOW}No accesses in selection{'!'*self.stuck_ctr}{TextStyle.END}")
+            return
+
+        if smart_zoom: # For reset and zoom to selection
+            ind = self.plot.x_col
+            addr = self.plot.y_col
+            x1 = df[ind].values[0]
+            x2 = df[ind].values[-1]+1 # To fix resets on single values + to match original limits
+            y1 = df[addr].min()[()]
+            y2 = df[addr].max()[()]+1
+
+
+        if padding: # Fix for plot getting stuck at one value axis
+            if (x2 - x1 < 128):
+                x1 -= (128 + x1 - x2) / 2
+                x2 = x1 + 128
+
+            if (y2 - y1 < 128):
+                y1 -= (128 + y1 - y2) / 2
+                y2 = y1 + 128
+            
+            # Add a 5% padding so points are not directly on edge
+            padding_x = (x2 - x1) * 0.05
+            padding_y = (y2 - y1) * 0.05
+
+            x1 = x1 - padding_x
+            x2 = x2 + padding_x
+            y1 = y1 - padding_y
+            y2 = y2 + padding_y
+
         with self.scale_x.hold_trait_notifications():
-            self.scale_x.min, self.scale_x.max = x1, x2
+            self.scale_x.min, self.scale_x.max = float(x1), float(x2)
         with self.scale_y.hold_trait_notifications():
-            self.scale_y.min, self.scale_y.max = y1, y2
+            self.scale_y.min, self.scale_y.max = float(y1), float(y2)
 
     def click_to_zoom(self, _, target):
         '''

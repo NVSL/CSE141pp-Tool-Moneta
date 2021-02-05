@@ -26,7 +26,7 @@ class Legend():
         panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.accesses = Accesses(model, self.update_selection)
-        self.stats = PlotStats()
+        self.stats = PlotStats(model)
         self.tags = Tags(model, self.update_selection)
         # self.click_zoom = Click_Zoom(model, self.accesses, self.tags)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
@@ -71,10 +71,6 @@ class Legend():
             ])
         self.panels.children = self.panels.children + [acc]
 
-    def set_zoom_sel_handler(self, f):
-        self.tags.set_zoom_sel_handler(f)
-
-    # def set_plot(self, plot):
-    #     self.accesses.set_plot(plot)
-    #     self.click_zoom.set_plot(plot)
+    def init_clickzoom(self):
+        self.click_zoom.init_again()
 

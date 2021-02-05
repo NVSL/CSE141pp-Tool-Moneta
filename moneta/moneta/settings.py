@@ -25,13 +25,9 @@ EXEC_PATH_DESC = "Executable Path:"
 TRACE_NAME_DEF = "e.g. baseline"
 TRACE_NAME_DESC = "Name for Trace:"
 
-# Full Trace
-FULL_TRACE_DESC = "Full trace"
-NORMAL_TRACE_DESC = "Tagged trace"
-
-# Track Main
-TRACK_MAIN = "Track main"
-TRACK_NORMAL = "Track from beginning"
+# Start Function
+START_FUN_DEF = "main"
+START_FUN_DESC = "Function to start trace at:"
 
 # Select Multiple
 SELECT_MULTIPLE_DESC = "Trace:"
@@ -107,8 +103,8 @@ ERROR_LABEL = f"{TextStyle.RED}{TextStyle.BOLD}Error:{TextStyle.END}"
 WARNING_LABEL = f"{TextStyle.YELLOW}{TextStyle.BOLD}Warning:{TextStyle.END}"
 
 NO_TAGS = (f"{ERROR_LABEL} {TextStyle.RED}No tags were traced\n\n"
-           f"If there are tags, there were no memory accesses in the specified start/end ranges. You will need to increase the start/end ranges or use the \"LIMIT\" range tag.\n\n"
-           f"If there are no tags, you will need to tag the file or use a full trace.{TextStyle.END}")
+           f"This means that either the start function does not exist, was inlined, or unable to be demangled"
+           f"Try using the START_TRACE() call in your program")
 
 ## Vaex
 

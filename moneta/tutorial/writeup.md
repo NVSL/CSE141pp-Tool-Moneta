@@ -5,7 +5,15 @@ Moneta is a tool that takes executables and records all accesses to memory as th
 
 ## Starting Moneta
 
-To start off, first open the link to Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open (not including this README), which we will refer to as the **Home**, **Terminal**, and **Moneta** tabs respectively.
+To start off, [click here](http://86.109.1.71:8888) to open Moneta in your preferred web browser. You should see a list of files in your browser. Then, on the top-right, choose `New > Terminal` to open a Terminal in a new tab. 
+
+<img src="../../../assets/TutorialTerminal.png" alt="Terminal" width="750px"> 
+
+After this, go back to the previous tab with all the files and select `Moneta.ipynb`. A new tab will open for Moneta. You should have 3 tabs open (not including this README).
+
+<img src="../../../assets/TutorialTabs.png" alt="Tabs" width="750px"> 
+
+We will refer these as, from left to right, **Home**, **Terminal**, and **Moneta** tabs.
 
 In the **Moneta** tab, you will see a cell with the following text:
 ```
@@ -18,12 +26,13 @@ Click on the cell and either press `SHIFT + ENTER` on your keyboard, or click th
 Now that Moneta has started up, let's run your first memory trace. Switch to the **Terminal** tab. You should be in the `~/work/moneta` directory (`cd` if you are not). This is also the directory you see in the **Home** tab. We will refer to this as the `moneta` directory.
 
 In the `moneta` directory, you should see a folder called `tutorial`. `cd` to this folder and you should see a file called `intro.cpp` inside. You will use this program for your first trace. Open `intro.cpp` and take a look at the code (Don't worry if you don't fully understand what the code does. Just know that each `mystery` function accesses the parameter vector in a certain pattern).
+
 ```bash
 cd tutorial # Alternate: cd ~/work/moneta/tutorial
 vim intro.cpp
 ```
 
-Throughout this tutorial, you will complete the following 3 tasks based off `intro.cpp`:
+In the next parts of this tutorial, you will work to complete the following 3 tasks based off `intro.cpp`:
  1. Find the region in the plot containing all the vectors
  2. Find the region in the plot containing the `X`
  3. Display only the writes and read-misses of `A`, `C`, and `D`.
@@ -32,10 +41,7 @@ Throughout this tutorial, you will complete the following 3 tasks based off `int
 
 ### Generating Your Trace
 
-Exit the file, compile `intro.cpp` with `04`, and save the executable as `intro`.
-```bash
-g++ intro.cpp -04 -o intro
-```
+Exit the file, and run `make intro`. This will compile `intro.cpp` with `O4`, and save the executable as `intro`.
 
 Go back to the **Moneta** tab. You will see a few customization options for generating a trace.
 
@@ -44,7 +50,6 @@ The **Cache Lines** and **Block Size** will change depending on your cache size.
 The **Max Accesses** determines the maximum memory accesses Moneta will trace before stopping. `intro.cpp` should have fewer than 10,000,000 memory accesses, so you can leave this value as the default as well. 
 
 All paths and directories in Moneta are relative to the `moneta` directory. Since `intro` is located at `moneta/tutorial/intro`, enter `tutorial` as the **Working Directory** and `intro` as the **Executable Path** 
-
 
 For the **Name for Trace**, you can enter any name you want. We will use the name `intro_trace` for this tutorial.
 
@@ -64,9 +69,13 @@ Click the **Generate Trace** button and wait for the trace to finish generating.
 
 ### Exploring the Memory Access Plot
 
-You can use the navigation features in the plot's top toolbar to move around and zoom in/out of the plot. For now, disregard all the sidebar dropdowns except **Click Zoom**.
+You can use the navigation features in the plot's top toolbar to move around and zoom in/out of the plot. 
 
- * **Pan/Zoom:** Click & drag to move and scroll to zoom
+<img src="../../../assets/TutorialToolbar.png" alt="Toolbar" width="750px"> 
+
+For now, disregard all the sidebar dropdowns except **Click Zoom**. These are the zoom tools from left to right:
+
+ * **Pan/Zoom + X & Y Checkboxes:** Click & drag to move and scroll to zoom. Check/uncheck the X & Y checkboxes to move and scroll only in that axis
  * **Zoom to Selection:** Click & drag a square area to zoom into
  * **Click Zoom:** Click & drag a square area, creates a zoomed mini-plot under the **Click Zoom** sidebar dropdown using the bottom right corner of the square
  * **Reset Zoom:** Resets zoom to show everything
@@ -107,10 +116,7 @@ DUMP_STOP("B");
 //And so on...
 ```
 
-Save and exit, compile `intro.cpp` with `04`, and save the executable as `intro_tagged`.
-```bash
-g++ intro.cpp -04 -o intro_tagged
-```
+Save and exit. Then run `make intro_tagged` to compile `intro.cpp` with `O4` and save the executable as `intro_tagged`.
 
 Return to the **Moneta** tab and generate a new trace with the following options. Make sure to toggle from **Full trace** to **Tagged trace**:
 
@@ -130,17 +136,21 @@ As you can see from the plot, you are already zoomed into the vector region and 
 
 Now, you need to find the `X` access pattern hidden in one of the vectors. Since you tagged memory regions of interest, you can zoom directly to these regions through the **Tags** dropdown in the sidebar. Open **Tags** and zoom to the various vectors using the zoom button next to each tag until you find the `X` and complete the second goal.
 
+<img src="../../../assets/TutorialTagZoom.png" alt="Tag Zoom" width="400px"> 
+
 ### Display Specific Accesses
 
 For your final goal, you need to display only the writes and read-hits of `A`, `C` and `D`. For this task, you will need the **Accesses** and **Tags** section of the sidebar.
+
+<img src="../../../assets/TutorialSidebar.png" alt="Sidebar" width="400px"> 
 
 First, zoom back out so that you can see all the vectors again. This can be done using the **Reset Zoom** button in the toolbar.
 
 In the **Tags**, you may have already noticed the checkboxes. These checkboxes allow you to choose whether the tag is displayed on the plot or not. Using these checkboxes, make it so that the plot only displays vectors/tags `A`, `C` and `D`. A few notes:
  * You should not need to touch `Stack` or `Heap` (if they appear) for this
- * For tags with overlapping address ranges, disabled checkboxes take priority (there is an overlapping tag in this program)
+ * For tags with overlapping address ranges, disabled checkboxes take priority (i.e. if an access is both in tag A and tag B, and tag A is checked but tag B is unchecked, the access will **not** be shown)
 
-In the **Accesses** section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes, but only the read-hits to finish the last task.
+In the **Accesses** section, you also have the ability to show/hide certain access types. Using these checkboxes, display all writes and only read-hits to finish the last task.
 
 ### Solutions
  - The hidden `X` is in vector `B`.
