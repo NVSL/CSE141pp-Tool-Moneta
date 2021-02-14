@@ -15,9 +15,9 @@ int main(){
 
 
     FLUSH_CACHE();
-    DUMP_START_SINGLE("test1", &test1[0], &test1[SIZE1]);
-    DUMP_START_SINGLE("test2", &test2[0], &test2[SIZE2]);
-    DUMP_START_SINGLE("test3", &test3[0], &test3[SIZE3]);
+    DUMP_START("test1", &test1[0], &test1[SIZE1], false);
+    DUMP_START("test2", &test2[0], &test2[SIZE2], false);
+    DUMP_START("test3", &test3[0], &test3[SIZE3], false);
 
 
     for(int i = 0; i < 3000; i++){
@@ -31,5 +31,8 @@ int main(){
     for(int i = 0; i < 2000; i++){
         test3[i]++;
     }
+    DUMP_STOP("test1");
+    DUMP_STOP("test2");
+    DUMP_STOP("test3");
 
 }

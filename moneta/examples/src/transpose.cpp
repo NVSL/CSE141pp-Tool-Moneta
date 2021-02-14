@@ -17,18 +17,18 @@ int main(int argc, char *argv[]) {
   std::uniform_real_distribution<double> unif (LowerB, UpperB);
   std::default_random_engine re;
 
-  DUMP_START_SINGLE("K", &K[0][0], &K[N-1][M-1]);
+  DUMP_START("K", &K[0][0], &K[N-1][M-1], false);
   // Initialization
   for (int row = 0; row < N; ++row) {
     for (int col = 0; col < M; ++col) {
       K[row][col] = unif(re);
     }
   }
-  DUMP_START_SINGLE("E", &E[0][0], &E[M-1][N-1]);
+  DUMP_START("E", &E[0][0], &E[M-1][N-1], false);
   // Normal transpose - E = K.T
   for (int row = 0; row < M; ++row) {
     if (row >= 20 && row <= 40) {
-      DUMP_START_MULTI("k_t", LIMIT, LIMIT);
+      DUMP_START("k_t", LIMIT, LIMIT, true);
     }
     for (int col = 0; col < N; ++col) {
       E[row][col] = K[col][row];
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   // Normal transpose - K = E.T
   for (int row = 0; row < N; ++row) {
     if (row >= 20 && row <= 40) {
-      DUMP_START_MULTI("e_t", LIMIT, LIMIT);
+      DUMP_START("e_t", LIMIT, LIMIT, true);
     }
     for (int col = 0; col < M; ++col) {
       K[row][col] = E[col][row];
