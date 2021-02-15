@@ -25,8 +25,9 @@ To use `pin_tags.h` you will need to add `#include "PATH_TO_FILE/pin_tags.h"` (D
 ### Pin Tag Functions
 The following three functions can be used to tag your code:
 ```
-DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
-DUMP_ACCESS_STOP_TAG(const char* tag)
+DUMP_START(const char* tag, const void* begin, const void* end, bool create_new)
+DUMP_STOP(const char* tag)
+START_TRACE()
 FLUSH_CACHE()
 ```
 
@@ -37,11 +38,19 @@ FLUSH_CACHE()
 
 **end:** Identifies the memory address upper bound to trace (Array/Vector Example: `&arr[arr.size()-1]`)
 
+**create_new:** 
+- If the tag name has not been used before, then create_new is ignored. 
+
+- If the tag name has been used before then,
+    - If create_new is true, then the tags will start having an index, tag0, tag1, ...
+    - If create_new is false, then the tracing will add the information to the last tag of the same name, so the same tag.
 #### Usage:
 
-`DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` is used to indicate to Pin the lines of code and the memory regions to trace.
+`DUMP_START` and `DUMP_STOP` is used to indicate to Pin the lines of code and the memory regions to trace.
 
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
+
+Optionally, use `START_TRACE` to explicitly specify when tracing begins in a program. Otherwise, tracing will automatically begin when program is executed. 
 
 For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/examples/src`.
 
@@ -72,21 +81,21 @@ We will use `sorting.cpp` to demonstrate how to use Moneta to trace a program. M
 
 This program is pre-tagged with the `pin_tag.h` functions. The code is tagged as follows:
 ```
-DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
+DUMP_START("Bubble", &bubble[0], &bubble[SIZE-1], false);
 bubbleSort(bubble, SIZE);
-DUMP_ACCESS_STOP_TAG("Bubble");
+DUMP_STOP("Bubble");
 	
-DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
+DUMP_START("Insertion", &insertion[0], &insertion[SIZE-1], false);
 insertionSort(insertion, SIZE);
-DUMP_ACCESS_STOP_TAG("Insertion");
+DUMP_STOP("Insertion");
 
-DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
+DUMP_START("Heap sort", &heap[0], &heap[SIZE-1], false);
 heapSort(heap, SIZE);
-DUMP_ACCESS_STOP_TAG("Heap sort");
+DUMP_STOP("Heap sort");
 
-DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
+DUMP_START("Selection", &selection[0], &selection[SIZE-1], false);
 selectionSort(selection, SIZE);
-DUMP_ACCESS_STOP_TAG("Selection");
+DUMP_STOP("Selection");
 ```
 
 More implementation details can be found by viewing the source code (Path: `~/work/moneta/examples/src/sorting.cpp`).
@@ -142,7 +151,7 @@ If you find that the trace is taking a very long time to load, or the kernel is 
 
 If the trace loaded successfully, you should see a memory access plot appear like the one below:
 
-**TODO: UPDATE IMAGE WHEN LEGEND SCROLLBARS ARE FIXED**
+
 ![](https://via.placeholder.com/150 "Sorting Plot")
 
 #### Moneta Plot Features
@@ -166,6 +175,8 @@ The top menubar contains zooming controls. From left to right:
 **Pan & Zoom:** When selected, click and drag to pan the plot and scroll to zoom in/out
 
 **Zoom to Selection:** When selected, click and drag a square area to zoom into
+
+**Click to Zoom:** When selected, click an area to zoom in by 10x.
 
 **Reset Zoom:** When clicked, resets the plot's location and zoom to it's initial load state
 
