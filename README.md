@@ -111,7 +111,7 @@ FLUSH_CACHE()
 
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
 
-Optionally, use `START_TRACE` to explicitly specify when tracing begins in a program. Otherwise, tracing will automatically begin when program is executed. 
+Optionally, use `START_TRACE` if you want to start tracing after the main function, to prevent the recording of garbage values. Otherwise, tracing will automatically begin when a program's main function is executed.  
 
 For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/examples/src`.
 
