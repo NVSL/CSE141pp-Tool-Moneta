@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
 
 
     FLUSH_CACHE();
-    DUMP_START_SINGLE("scale", &scale[0][0], &scale[SIZE-1][SIZE-1]);
+    DUMP_START("scale", &scale[0][0], &scale[SIZE-1][SIZE-1], false);
 
 
     for(int xx = 0; xx < SIZE; xx += TILE_SIZE){

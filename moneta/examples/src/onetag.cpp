@@ -9,7 +9,7 @@ constexpr int SIZE = 100;
 
 int main() {
   int arr [SIZE] = {0};
-  DUMP_START_SINGLE("second_half", arr + SIZE/2, arr + SIZE-1);
+  DUMP_START("second_half", arr + SIZE/2, arr + SIZE-1, false);
 
   // init
   for (int i = 0; i < SIZE; i++) {
