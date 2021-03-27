@@ -23,21 +23,21 @@ int main(){
 
 
     FLUSH_CACHE();
-    DUMP_START_SINGLE("test1", &test1[0], &test1[4]);
-    DUMP_START_SINGLE("test2", &test2[0], &test2[4]);
-    DUMP_START_SINGLE("test3", &test3[0], &test3[4]);
-    DUMP_START_SINGLE("test4", &test4[0], &test4[4]);
-    DUMP_START_SINGLE("test5", &test5[0], &test5[4]);
-    DUMP_START_SINGLE("test6", &test6[0], &test6[4]);
-    DUMP_START_SINGLE("test7", &test7[0], &test7[4]);
-    DUMP_START_SINGLE("test8", &test8[0], &test8[4]);
-    DUMP_START_SINGLE("test9", &test9[0], &test9[4]);
-    DUMP_START_SINGLE("test10", &test10[0], &test10[4]);
-    DUMP_START_SINGLE("test11", &test11[0], &test11[4]);
-    DUMP_START_SINGLE("test12", &test12[0], &test12[4]);
-    DUMP_START_SINGLE("test13", &test13[0], &test13[4]);
-    DUMP_START_SINGLE("test14", &test14[0], &test14[4]);
-    DUMP_START_SINGLE("test15", &test15[0], &test15[4]);
+    DUMP_START("test1", &test1[0], &test1[4], false);
+    DUMP_START("test2", &test2[0], &test2[4], false);
+    DUMP_START("test3", &test3[0], &test3[4], false);
+    DUMP_START("test4", &test4[0], &test4[4], false);
+    DUMP_START("test5", &test5[0], &test5[4], false);
+    DUMP_START("test6", &test6[0], &test6[4], false);
+    DUMP_START("test7", &test7[0], &test7[4], false);
+    DUMP_START("test8", &test8[0], &test8[4], false);
+    DUMP_START("test9", &test9[0], &test9[4], false);
+    DUMP_START("test10", &test10[0], &test10[4], false);
+    DUMP_START("test11", &test11[0], &test11[4], false);
+    DUMP_START("test12", &test12[0], &test12[4], false);
+    DUMP_START("test13", &test13[0], &test13[4], false);
+    DUMP_START("test14", &test14[0], &test14[4], false);
+    DUMP_START("test15", &test15[0], &test15[4], false);
 
     for(int i = 0; i < 5; i++){
         test1[i]++;
@@ -55,7 +55,20 @@ int main(){
         test13[i]++;
         test14[i]++;
         test15[i]++;
-
     }
-
+    DUMP_STOP("test1");
+    DUMP_STOP("test2");
+    DUMP_STOP("test3");
+    DUMP_STOP("test4");
+    DUMP_STOP("test5");
+    DUMP_STOP("test6");
+    DUMP_STOP("test7");
+    DUMP_STOP("test8");
+    DUMP_STOP("test9");
+    DUMP_STOP("test10");
+    DUMP_STOP("test11");
+    DUMP_STOP("test12");
+    DUMP_STOP("test13");
+    DUMP_STOP("test14");
+    DUMP_STOP("test15");
 }

@@ -163,15 +163,15 @@ int main() {
   fill_v(G);
   fill_v(H);
 
-  DUMP_START_SINGLE("vectors", &H.front(), &A.back());
+  DUMP_START("vectors", &H.front(), &A.back(), false);
 
   // A
-  DUMP_START_SINGLE("A", &A.front(), &A.back());
+  DUMP_START("A", &A.front(), &A.back(), false);
   mystery_a(A);
   DUMP_STOP("A");
 
   // B
-  DUMP_START_SINGLE("B", &B.front(), &B.back());
+  DUMP_START("B", &B.front(), &B.back(), false);
   mystery_b(B);
   DUMP_STOP("B");
 
@@ -179,7 +179,7 @@ int main() {
   mystery_c(C);
 
   // D
-  DUMP_START_SINGLE("D", &D.front(), &D.back());
+  DUMP_START("D", &D.front(), &D.back(), false);
   mystery_d(D);
   DUMP_STOP("D");
 
@@ -188,17 +188,17 @@ int main() {
   mystery_e(E);
 
   // F
-  DUMP_START_SINGLE("F", &F.front(), &F.back());
+  DUMP_START("F", &F.front(), &F.back(), false);
   mystery_f(F);
   DUMP_STOP("F");
 
   // G
-  DUMP_START_SINGLE("G", &G.front(), &G.back());
+  DUMP_START("G", &G.front(), &G.back(), false);
   mystery_g(G);
   DUMP_STOP("G");
 
   // H
-  DUMP_START_SINGLE("H", &H.front(), &H.back());
+  DUMP_START("H", &H.front(), &H.back(), false);
   mystery_h(H);
   DUMP_STOP("H");
   
