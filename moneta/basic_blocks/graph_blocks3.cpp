@@ -39,8 +39,13 @@ struct BBLInfo {
   string disas;
   bool post_processed = false;
 
+  int column;
+  int line;
+  string filename;
+
   void to_string() {
     cout << start_addr << ", " << end_addr << "\n";
+    cout << "C: " << column << " L: " << line << " file: " << filename << "\n";
     cout << "next: " << next << " " << instr_strs.size() << "\n";
     cout << "imm_next: " << immediate_next << "\n";
     for (auto& instr_str : instr_strs) {
@@ -73,7 +78,7 @@ unordered_map<ADDRINT, BBLInfo*> bbl_infos;
 
 BBLInfo *cached = nullptr;
 
-VOID trace_bbl(ADDRINT first, ADDRINT last, ADDRINT next, int type, vector<pair<ADDRINT, string>>& instr_strs, const char* debug) {
+VOID trace_bbl(ADDRINT first, ADDRINT last, ADDRINT next, int type, vector<pair<ADDRINT, string>>& instr_strs, const char* debug, int column, int line, string & filename) {
 	if (!reached_main || done) return;
 	if (cached) {
 	  if (cached->type == HAS_CONDITIONAL_JUMP) {
@@ -91,6 +96,9 @@ VOID trace_bbl(ADDRINT first, ADDRINT last, ADDRINT next, int type, vector<pair<
 	  new_bbl->type = type;
 	  new_bbl->debug = debug;
 	  new_bbl->instr_strs = instr_strs;
+	  new_bbl->column = column;
+	  new_bbl->line = line;
+	  new_bbl->filename = filename;
           /*for (auto& bbl : bbl_infos) {
 		
 	    if (bbl->start_addr <= first && first <= bbl->end_addr) {
@@ -132,6 +140,10 @@ VOID Trace(TRACE trace, VOID *v){
 	cout << BBL_Address(bbl) << "\n";
 	int type = HAS_NONE;
 	vector<pair<ADDRINT, string>> instr_strs;
+
+        int column = 0;
+        int line = 0;
+        string filename;
         for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins)){
 
             if (!INS_IsStandardMemop(ins) && !INS_HasMemoryVector(ins)){
@@ -167,12 +179,13 @@ VOID Trace(TRACE trace, VOID *v){
 	    }
             
             ADDRINT addr = INS_Address(ins);
+	    PIN_GetSourceLocation(addr, &column, &line, &filename);
             string disas = INS_Disassemble(ins);
 	    instr_strs.push_back(make_pair(addr, disas));
             result += StringFromAddrint(addr) + "||" + disas + "\n";
         }
 	    cout << "res: " << result << "\n";
-	trace_bbl(first, last, next, type, instr_strs, debug.c_str());
+	trace_bbl(first, last, next, type, instr_strs, debug.c_str(), column, line, filename);
 	/*BBL_InsertCall(bbl, IPOINT_ANYWHERE, (AFUNPTR)trace_bbl,
 			IARG_ADDRINT, first,
 			IARG_ADDRINT, last, 
@@ -254,6 +267,14 @@ bool split(BBLInfo* outer_bbl, BBLInfo* inner_bbl) {
 
     outer_bbl->start_addr = inner_bbl->next;
     outer_bbl->instr_strs.erase(outer_bbl->instr_strs.begin(), outer_bbl->instr_strs.begin()+start_addr_ind);
+    int column = 0;
+    int line = 0;
+    string filename;
+    PIN_GetSourceLocation(outer_bbl->start_addr, &column, &line, &filename);
+    outer_bbl->column = column;
+    outer_bbl->line = line;
+    outer_bbl->filename = filename;
+
     bbl_infos[fragment->start_addr] = fragment;
     bbl_infos[outer_bbl->start_addr] = outer_bbl;
     fragment->to_string();
@@ -327,14 +348,18 @@ VOID Fini(INT32 code, VOID *v){
     for (auto& bbl_iter : bbl_infos) {
       BBLInfo* bbl = bbl_iter.second;
       outfile3 << bbl->start_addr << ", " << bbl->next << "\n";
-      outfile3 << bbl->instr_strs.size() << "\n";
+      outfile3 << bbl->instr_strs.size() + 1 << "\n";
+      outfile3 << "File: " << bbl->filename << "\n";
+      outfile3 << "C: " << bbl->column << " L: " << bbl->line << " ";
       outfile3 << bbl->start_addr << ": ";
       for (auto& instr_str : bbl->instr_strs) {
         outfile3 << instr_str.second << "\n";
       }
       if (bbl->type == HAS_CONDITIONAL_JUMP && bbl->immediate_next != 0) {
         outfile3 << bbl->start_addr << ", " << bbl->immediate_next << "\n";
-        outfile3 << bbl->instr_strs.size() << "\n";
+        outfile3 << bbl->instr_strs.size() + 1 << "\n";
+        outfile3 << "File: " << bbl->filename << "\n";
+        outfile3 << "C: " << bbl->column << " L: " << bbl->line << " ";
         outfile3 << bbl->start_addr << ": ";
         for (auto& instr_str : bbl->instr_strs) {
           outfile3 << instr_str.second << "\n";
