@@ -5,7 +5,7 @@ import os
 
 PIN_DIR = "/pin/source/tools/ManualExamples/"
 OBJ_INTEL = "obj-intel64/"
-TRACE_TOOL = "~/work/setup/trace_tool.cpp"
+TRACE_TOOL = "~/work/setup/moneta_trace_tool.cpp"
 OUTPUT_PATH = "~/work/setup/"
 
 @contextmanager

@@ -2,14 +2,11 @@ FROM jupyter/scipy-notebook:dc9744740e12
 
 USER root
 RUN apt-get update -y
-RUN apt-get install -y vim
-RUN apt-get install -y less
-RUN apt-get install -y curl
-RUN apt-get install -y libhdf5-dev
-RUN apt-get install -y screen
+RUN apt-get install -y vim less curl libhdf5-dev screen
 
 ARG DIR_MONETA=/home/jovyan/work/moneta
 ARG DIR_SETUP=/home/jovyan/work/setup
+ARG DIR_PKG=/home/jovyan/work/moneta/packages
 
 WORKDIR /
 
@@ -26,8 +23,6 @@ RUN pip install -r requirements.txt
 # Create aliases for Pin and Moneta
 COPY setup/bashrc_aliases ${DIR_SETUP}/
 
-COPY moneta/setup.py ${DIR_MONETA}/
-
 # Fix Windows to Linux file endings
 RUN sed -i 's/\r$//' bashrc_aliases 
 RUN cat bashrc_aliases >> ~/.bashrc
@@ -38,6 +33,9 @@ COPY setup/compile_pin.py ${DIR_SETUP}/
 COPY setup/trace_tool.cpp ${DIR_SETUP}/
 RUN python compile_pin.py
 
-WORKDIR ${DIR_MONETA}
 # Make Moneta a package to add path for pytest to locate
+COPY moneta/setup.py ${DIR_PKG}/
+WORKDIR ${DIR_PKG}
 RUN pip install -e .
+
+WORKDIR ${DIR_MONETA}
