@@ -27,6 +27,7 @@ int count_nodes(const Node* head) {
   return count;
 }
 
+// Find minimum and maximum address of linked list
 std::pair<const void*, const void*> min_max(const Node* head) {
   const void* min_addr = (void *)std::numeric_limits<long>::max();
   const void* max_addr = 0;
@@ -85,12 +86,11 @@ void bubble_sort(Node** head, bool pointer) {
   while (unsorted != 1) {
     int last_swap = 1;
     Node* prev = nullptr;
-    std::string s = "Per loop " +std::to_string(i);
-    DUMP_START_SINGLE(s.c_str(), list_limits.first, list_limits.second);
+    std::string s = "Per loop " + std::to_string(i);
+    DUMP_START(s.c_str(), list_limits.first, list_limits.second, true); // true since multiple bubble_sort()'s are called
     for (int j = 1; j < unsorted; j++) {
       if (m_head->val > m_head->next->val) {
         if (pointer) {
-          //std::cerr << "here";
           if (m_head == *head) {
             *head = m_head->next;
             m_head->next = m_head->next->next;
@@ -114,7 +114,7 @@ void bubble_sort(Node** head, bool pointer) {
     i++;
     unsorted = last_swap;
     m_head = *head;
-  }     
+  }
 }
 
 int main() {
@@ -123,74 +123,55 @@ int main() {
   list_limits = min_max(head);
   
   std::cerr << "Check number of nodes\n";
-  DUMP_START_SINGLE("Count nodes", list_limits.first, list_limits.second);
+  DUMP_START("Count nodes", list_limits.first, list_limits.second, false);
   assert(LIST_SIZE == count_nodes(head));
   DUMP_STOP("Count nodes");
 
   std::cerr << "Bubble sort\n";
-  DUMP_START_SINGLE("Before verify", list_limits.first, list_limits.second);
+  DUMP_START("Before verify", list_limits.first, list_limits.second, false);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_STOP("Before verify");
-  //DUMP_START_SINGLE("Bubble sort pointer", list_limits.first, list_limits.second);
+  DUMP_START("Bubble sort pointer", list_limits.first, list_limits.second, false);
   bubble_sort(&head, true);
-  //DUMP_STOP("Bubble sort pointer");
-  DUMP_START_SINGLE("After verify", list_limits.first, list_limits.second);
+  DUMP_STOP("Bubble sort pointer");
+  DUMP_START("After verify", list_limits.first, list_limits.second, false);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_STOP("After verify");
-  DUMP_START_SINGLE("Count nodes", list_limits.first, list_limits.second);
+  DUMP_START("Count nodes", list_limits.first, list_limits.second, false); // false so gets added to previous Count nodes tag
   assert(LIST_SIZE == count_nodes(head));
   DUMP_STOP("Count nodes");
 
-  
-  /*std::cerr << "Insertion sort\n";
-  std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
-  bubble_sort(head);
-  std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
-  */
-  DUMP_START_SINGLE("Free List", list_limits.first, list_limits.second);
+  DUMP_START("Free List", list_limits.first, list_limits.second, false);
   free_list(head);
   DUMP_STOP("Free List");
 
 
-  std::cerr << "Initializing list\n";
+  std::cerr << "Initializing list again\n";
   head = init_list();
   list_limits = min_max(head);
   
   std::cerr << "Check number of nodes\n";
-  DUMP_START_SINGLE("Count nodes2", list_limits.first, list_limits.second);
+  DUMP_START("Count nodes2", list_limits.first, list_limits.second, false);
   assert(LIST_SIZE == count_nodes(head));
   DUMP_STOP("Count nodes2");
 
   std::cerr << "Bubble sort\n";
-  DUMP_START_SINGLE("Before verify2", list_limits.first, list_limits.second);
+  DUMP_START("Before verify2", list_limits.first, list_limits.second, false);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_STOP("Before verify2");
-  //DUMP_START_SINGLE("Bubble sort", list_limits.first, list_limits.second);
-  //bubble_sort(&head, false);
-  //DUMP_STOP("Bubble sort");
-  DUMP_START_SINGLE("After verify2", list_limits.first, list_limits.second);
+  DUMP_START("Bubble sort in place", list_limits.first, list_limits.second, false);
+  bubble_sort(&head, false);
+  DUMP_STOP("Bubble sort in place");
+  DUMP_START("After verify2", list_limits.first, list_limits.second, false);
   std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
   DUMP_STOP("After verify2");
-  DUMP_START_SINGLE("Count nodes2", list_limits.first, list_limits.second);
+  DUMP_START("Count nodes2", list_limits.first, list_limits.second, false);
   assert(LIST_SIZE == count_nodes(head));
   DUMP_STOP("Count nodes2");
 
-  
-  /*std::cerr << "Insertion sort\n";
-  std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
-  bubble_sort(head);
-  std::cerr << "Sorted: " << (verify_order(head) ? "true" : "false") << "\n";
-  */
-  DUMP_START_SINGLE("Free List2", list_limits.first, list_limits.second);
+  DUMP_START("Free List2", list_limits.first, list_limits.second, false);
   free_list(head);
   DUMP_STOP("Free List2");
-
-
-
-
-
-
-
 
   return 0;
 }

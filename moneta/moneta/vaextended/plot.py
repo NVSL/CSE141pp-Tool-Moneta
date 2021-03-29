@@ -29,37 +29,15 @@ class PlotBase(widgets.Widget):
     grid_limits_max = traitlets.CFloat(None, allow_none=True)
 
     def __init__(
-                self, 
-                backend, 
-                dataset, 
-                x, 
-                y=None, 
-                z=None, 
-                w=None, 
-                grid=None, 
-                limits=None, 
-                shape=128, 
-                what="count(*)", 
-                f=None,
-                vshape=16,
-                selection=None, 
-                grid_limits=None, 
-                normalize=None, 
-                colormap="afmhot",
-                figure_key=None, 
-                fig=None, 
-                what_kwargs={}, 
-                grid_before=None, 
-                vcount_limits=None, 
-                show_drawer=False,
-                controls_selection=True, 
-                legend=None,
-                x_col=None,
-                y_col=None,
+                self, backend, dataset, x, y=None, z=None, w=None, 
+                grid=None, limits=None, shape=128, what="count(*)", 
+                f=None, vshape=16, selection=None, grid_limits=None, 
+                normalize=None, colormap="afmhot", figure_key=None, 
+                fig=None, what_kwargs={}, grid_before=None, 
+                vcount_limits=None, show_drawer=False, controls_selection=True, 
+                model=None, x_col=None, y_col=None,
                 x_label='Access Number',
                 y_label='Address',
-                default_title='Moneta',
-                cache_size=None,
                 update_stats=None,
                 **kwargs
                 ):
@@ -102,18 +80,16 @@ class PlotBase(widgets.Widget):
 
 
             # Vaextended arguments
-            if [x for x in (legend, x_col, y_col, cache_size, update_stats) if x == None]:
-                raise Exception('The following arguments are required for using plot_widget() with Vaextended: legend, x_col, y_col, cache_size, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
+            if [x for x in (model, x_col, y_col, update_stats) if x == None]:
+                raise Exception('The following arguments are required for using plot_widget() with Vaextended: model, x_col, y_col, update_stats\n\nSee docs/README_VAEXTENDED.md for more information')
 
-            self.legend = legend
+            self.model = model
             self.x_col = x_col
             self.y_col = y_col
             self.x_label = x_label
             self.y_label = y_label
-            self.cache_size = cache_size
-            self.default_title = default_title
+            self.cache_size = self.model.cache_size()
             self.update_stats = update_stats
-
 
 
             self.backend.create_widget(self.output, self, self.dataset, self.limits)
@@ -122,9 +98,9 @@ class PlotBase(widgets.Widget):
                         'main-widget': widgets.VBox([self.backend.widget, self.progress, self.output]),
                         'output-widget': self.output,
                         'toolbar': self.toolbar,
-                        'default_title': self.default_title,
-                        'main-legend': self.legend.widgets,
-                        'legend-control': self.legend.legend_button
+                        'default_title': self.model.plot_title(), 
+                        'main-legend': self.model.legend.widgets,
+                        'legend-control': self.model.legend.legend_button
                     },
                     model=show_drawer
             )

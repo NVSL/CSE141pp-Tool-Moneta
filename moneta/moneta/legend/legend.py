@@ -2,10 +2,9 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_CLICK_ZOOM, LEGEND_STATS_TITLE, INDEX, ADDRESS
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
-from moneta.legend.click_zoom import Click_Zoom
 from moneta.legend.stats import PlotStats
 
 from enum import Enum
@@ -26,12 +25,10 @@ class Legend():
         panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.accesses = Accesses(model, self.update_selection)
-        self.stats = PlotStats()
+        self.stats = PlotStats(model)
         self.tags = Tags(model, self.update_selection)
-        self.click_zoom = Click_Zoom(model, self.accesses, self.tags)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
-        self.add_panel(LEGEND_CLICK_ZOOM, self.click_zoom.widgets)
         self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
@@ -71,10 +68,4 @@ class Legend():
             ])
         self.panels.children = self.panels.children + [acc]
 
-    def set_zoom_sel_handler(self, f):
-        self.tags.set_zoom_sel_handler(f)
-
-    def set_plot(self, plot):
-        self.accesses.set_plot(plot)
-        self.click_zoom.set_plot(plot)
 

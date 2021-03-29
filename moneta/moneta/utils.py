@@ -90,7 +90,7 @@ def update_cwd_file(cwd_history):
             history_file.write(path + "\n")
 
 
-def get_curr_stats(plot):
+def get_curr_stats(plot, selection): #TODO - could be moved to stats
     
     df = plot.dataset
     
@@ -98,9 +98,10 @@ def get_curr_stats(plot):
     x_max = f'({INDEX} <= {int(plot.limits[0][1])})'
     y_min = f'({ADDRESS} >= {int(plot.limits[1][0])})'
     y_max = f'({ADDRESS} <= {int(plot.limits[1][1])})'
-    
+
     # Inner df returns an expression, doesn't actually create the new dataframe
-    df = df[df[f'{x_min} & {x_max} & {y_min} & {y_max}']]
+    selection += " &" if selection else ""
+    df = df[df[f'{selection} {x_min} & {x_max} & {y_min} & {y_max}']]
     
     # Limit min/max is min/max value of Access enum, shape is number of types of access
     stats = df.count(binby=['Access'], limits=[1,7], shape=6)
@@ -112,31 +113,14 @@ def get_curr_stats(plot):
 
     return total_count, hit_count, cap_miss_count, comp_miss_count
 
-def update_legend_view_stats(plot_stats, plot, is_init):
-    total_count, hit_count, cap_miss_count, comp_miss_count = get_curr_stats(plot)
-
-    if(is_init):
-        plot_stats.total_hits.value = stats_hit_string(hit_count, total_count)
-        plot_stats.total_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-        plot_stats.total_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
-    plot_stats.curr_hits.value = stats_hit_string(hit_count, total_count)
-    plot_stats.curr_cap_misses.value = stats_cap_miss_string(cap_miss_count, total_count)
-    plot_stats.curr_comp_misses.value = stats_comp_miss_string(comp_miss_count, total_count)
-
 def stats_percent(count, total):
-    return 'N/A' if total == 0 else f'{count*100/total:.2f}'+'%'
+    return 'N/A' if total == 0 else f'{count/total:06.2%}'
 def stats_hit_string(count, total):
     return 'Hits: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_cap_miss_string(count, total):
     return 'Cap. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
 def stats_comp_miss_string(count, total):
     return 'Comp. Misses: '+ str(count) + ' (' + stats_percent(count, total) +')'
-    
-
-
-
-
 
 
 def parse_cwd(path):
@@ -181,6 +165,10 @@ def verify_input(w_vals):
     if not (re.search("^[a-zA-Z0-9_]*$", w_vals['o_name'])):
         print(f"{ERROR_LABEL} {TextStyle.RED}Output name can only contain alphanumeric characters and underscore{TextStyle.END}")
         return False
+
+    if not (re.search("^[a-zA-Z0-9_:~]*$", w_vals['s_fun'])):
+        print(f"{ERROR_LABEL} {TextStyle.RED}Function name can only contain alphanumeric characters, underscores, tildes, and colons{TextStyle.END}")
+        return False
   
     if (not os.path.isdir(w_vals['cwd_path'])):
         print(f"{ERROR_LABEL} {TextStyle.RED}Directory '{w_vals['cwd_path']}' not found{TextStyle.END}")
@@ -206,14 +194,11 @@ def verify_input(w_vals):
 def run_pintool(w_vals):
     log.info("Running pintool")
   
-    prefix = "full_trace_" if w_vals['is_full_trace'] else "trace_"
+    prefix = "trace_"
     # Temporary fix until Pintool handles double-open error
     if(os.path.isfile(OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5")):
         subprocess.run(["rm", OUTPUT_DIR + prefix + w_vals['o_name'] + ".hdf5"]);
       
-    is_full_trace_int = 1 if w_vals['is_full_trace'] else 0
-    track_main_int = 1 if w_vals['track_main'] else 0
-  
     args_string = "" if len(w_vals['e_args']) == 0 else " " + " ".join(w_vals['e_args']) 
 
     args = [
@@ -222,8 +207,7 @@ def run_pintool(w_vals):
         "-cache_lines", str(w_vals['c_lines']),
         "-output_lines", str(w_vals['m_lines']),
         "-block", str(w_vals['c_block']),
-        "-full", str(is_full_trace_int),
-        "-main", str(track_main_int),
+        "-start", str(w_vals['s_fun']),
         "--", w_vals['e_file'], *w_vals['e_args']
     ]
 
@@ -242,7 +226,7 @@ def run_pintool(w_vals):
   
     os.chdir(MONETA_TOOL_DIR)
   
-    if sub_stderr:
+    if sub_output.returncode:
         print(f"{TextStyle.RED}An error occurred while running your program. "
               f"This is normally caused by Tag typos and/or stopping invalid Tags. "
               f"Double check your program and Pin tags to make sure they are correct.\n\n"
@@ -273,11 +257,10 @@ def collect_traces():
     """Reads output directory to fill up select widget with traces"""
     log.info("Reading outfile directory")
     trace_list = []
-    trace_list_full = []
 
     trace_map = {}
     if not os.path.isdir(OUTPUT_DIR):
-        return [], [], {}
+        return [], {}
     dir_path, dir_names, file_names = next(os.walk(OUTPUT_DIR))
   
     for file_name in file_names:
@@ -296,19 +279,7 @@ def collect_traces():
             trace_map[trace_name] = (os.path.join(dir_path, file_name),
                                      tag_path, meta_path)
             log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
-        elif (file_name.startswith("full_trace_") and file_name.endswith(".hdf5")):
-            trace_name = file_name[11:file_name.index(".hdf5")]
-            tag_path = os.path.join(dir_path, "full_tag_map_" + trace_name + ".csv")
-            meta_path = os.path.join(dir_path, "full_meta_data_" + trace_name + ".txt")
-            if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
-                print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting full trace.{TextStyle.END}")
-                continue
-            
-            trace_list_full.append(trace_name)
-            trace_map["(Full) " + trace_name] = (os.path.join(dir_path, file_name),
-                                     tag_path, meta_path)
-            log.debug("Trace: {}, Tag: {}".format("(" + trace_name + ")", tag_path))
-    return trace_list, trace_list_full, trace_map 
+    return trace_list, trace_map 
 
 
 def delete_traces(trace_paths):

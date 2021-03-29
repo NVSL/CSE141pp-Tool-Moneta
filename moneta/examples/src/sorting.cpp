@@ -102,12 +102,12 @@ int main(int argc, char *argv[]){
 		//cout<<dat3a[i]<<", ";
 	}
 	//cout<<"\n";
-	DUMP_START_MULTI("start", 0, 0);
-	DUMP_START("start");
+	DUMP_START("start", 0, 0, false);
+	DUMP_START("start", 0, 0, true);
 	DUMP_STOP("start");
 		
 	//BUBBLE
-	DUMP_START_SINGLE("Bubble", &bubble[0], &bubble[SIZE-1]);
+	DUMP_START("Bubble", &bubble[0], &bubble[SIZE-1], false);
 	
 	bubbleSort(bubble, SIZE);
 	DUMP_STOP("start");
@@ -115,21 +115,21 @@ int main(int argc, char *argv[]){
 	DUMP_STOP("Bubble");
 	
 	//INSERTION
-	DUMP_START_SINGLE("Insertion", &insertion[0], &insertion[SIZE-1]);
+	DUMP_START("Insertion", &insertion[0], &insertion[SIZE-1], false);
 	
 	insertionSort(insertion, SIZE);
 	
 	DUMP_STOP("Insertion");
 	
 	//HEAP
-	DUMP_START_SINGLE("Heap sort", &heap[0], &heap[SIZE-1]);
+	DUMP_START("Heap sort", &heap[0], &heap[SIZE-1], false);
 	
 	heapSort(heap, SIZE);
 	
 	DUMP_STOP("Heap sort");
 
 	//SELECTION	
-	DUMP_START_SINGLE("Selection", &selection[0], &selection[SIZE-1]);
+	DUMP_START("Selection", &selection[0], &selection[SIZE-1], false);
 	
 	selectionSort(selection, SIZE);
 	

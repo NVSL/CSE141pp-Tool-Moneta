@@ -7,10 +7,10 @@
 constexpr int SIZE {1000};
 
 int main() {
-  std::vector<int> mem (SIZE, 0);
+  std::vector<int> mem (SIZE, 0); // allocated in heap
 
   std::cerr << "Calibration\n";
-  DUMP_START_SINGLE("calibration", mem.data(), &mem.back());
+  DUMP_START("calibration", mem.data(), &mem.back(), false);
   for (int i = 0; i < SIZE; i++) {
     mem[i]++;
   }
@@ -19,10 +19,10 @@ int main() {
   }
   DUMP_STOP("calibration");
 
-  int stats[5] = {};
+  int stats[5] = {}; // allocated in stack
 
-  DUMP_START_SINGLE("vector_stats", mem.data(), &mem.back());
-  DUMP_START_SINGLE("array_stats", stats, &stats[4]);
+  DUMP_START("vector_stats", mem.data(), &mem.back(), false);
+  DUMP_START("array_stats", stats, &stats[4], false);
   for (int i = 0; i < SIZE; i++) {
     int j = rand()%SIZE;
     mem[j]++;
@@ -30,11 +30,11 @@ int main() {
   }
   stats[1] = stats[0]/SIZE;
 
-  int curr = 0;
+  int count = 0;
   for (int i = 0; i < SIZE; i++) {
-    curr += mem[i];
-    if (curr >= SIZE/2) {
-      stats[2] = i;
+    count += mem[i];
+    if (count >= SIZE/2) {
+      stats[2] = i; // Not always true median, but index next to halfway count
       break;
     }
   }

@@ -43,7 +43,8 @@ constexpr int SkipRate  {10000};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-const std::string DefaultOutputPath {"/home/jovyan/work/moneta/output"};
+const std::string DefaultOutputPath     {"/home/jovyan/work/moneta/output"};
+const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
@@ -53,24 +54,21 @@ const std::string TagFilePrefix  {"tag_map_"};
 const std::string TagFileSuffix  {".csv"};
 const std::string MetaFilePrefix {"meta_data_"};
 const std::string MetaFileSuffix {".txt"};
-const std::string FullPrefix     {"full_"};
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
-static bool full_trace {0};
-static bool track_main {0};
+static std::string start_function;
 static std::string output_trace_path;
 static std::string output_tagfile_path;
 static std::string output_metadata_path;
 
 // Macros to track
-const std::string M_DUMP_START_SINGLE {"DUMP_START_SINGLE"};
-const std::string M_DUMP_START_MULTI  {"_DUMP_START_MULTI"};
-const std::string M_DUMP_START        {"DUMP_START"};
-const std::string M_DUMP_STOP         {"_DUMP_STOP"};
-const std::string FLUSH_CACHE         {"FLUSH_CACHE"};
+const std::string DUMP_START {"DUMP_START"};
+const std::string DUMP_STOP  {"DUMP_STOP"};
+const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
+const std::string M_START_TRACE  {"M_START_TRACE"};
 
 // Stack/Heap
 const std::string STACK {"Stack"};
@@ -116,15 +114,13 @@ struct Tag {
 
 struct TagData {
   const int id;
-  const bool single;
   const std::string tag_name;
   const std::pair<ADDRINT, ADDRINT> addr_range;
 
   std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool single) : 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi) : 
 	  id(curr_id++),
-	  single {single},
 	  tag_name {tag_name},
 	  addr_range({low, hi})
   {
@@ -169,7 +165,7 @@ bool is_prev_acc {0};
 ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
 
-bool reached_main {0};
+bool reached_start {0};
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -395,6 +391,12 @@ static char * buffer2 = new char[BUF_SIZE];
 static char * buffer3 = new char[BUF_SIZE];
 
 // Command line options for pintool
+KNOB<std::string> KnobStartFunctionLong(KNOB_MODE_WRITEONCE, "pintool",
+    "start", "", "specify name of function to start tracing at");
+
+KNOB<std::string> KnobStartFunction(KNOB_MODE_WRITEONCE, "pintool",
+    "s", "", "specify name of function to start tracing at");
+
 KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
     "name", "", "specify name of output trace");
 
@@ -418,18 +420,6 @@ KNOB<UINT64> KnobCacheLineSizeLong(KNOB_MODE_WRITEONCE, "pintool",
 
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
     "b", "64", "specify block size in bytes");
-
-KNOB<BOOL> KnobTrackAllLong(KNOB_MODE_WRITEONCE, "pintool",
-    "full", "", "Track all memory accesses");
-
-KNOB<BOOL> KnobTrackAll(KNOB_MODE_WRITEONCE, "pintool",
-    "f", "0", "Track all memory accesses");
-
-KNOB<BOOL> KnobStartMainLong(KNOB_MODE_WRITEONCE, "pintool",
-    "main", "", "Start trace at main");
-
-KNOB<BOOL> KnobStartMain(KNOB_MODE_WRITEONCE, "pintool",
-    "m", "0", "Start trace at main");
 
 VOID flush_cache() {
   if (CACHE_DEBUG) {
@@ -455,7 +445,7 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   }
 }
 
-VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
+VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
 
@@ -474,14 +464,13 @@ VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
       std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    all_tags[str_tag] = new TagData(str_tag, low, hi, single);
+    all_tags[str_tag] = new TagData(str_tag, low, hi);
 
   } else { // Reuse tag
     if (DEBUG) {
       std::cerr << "Dump define called - Old tag\n";
     }
 
-    // TODO - make sure single is not different value
     // Exit program if redefining tag
     TagData* old_tag = all_tags[str_tag];
     if (old_tag->addr_range.first != low || // Must be same range
@@ -490,32 +479,11 @@ VOID dump_define_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool single) {
               "Exiting Trace Early...\n";
       PIN_ExitApplication(0);
     }
-    if (old_tag->single) {
-      old_tag->tags.front()->active = true;
-    } else {
+    if (create_new) {
       old_tag->create_new_tag();
+    } else {
+      old_tag->tags.back()->active = true;
     }
-  }
-}
-
-VOID dump_start_called(VOID * tag_name) {
-  char* s = (char *)tag_name;
-  std::string str_tag (s);
-  if (str_tag == HEAP || str_tag == STACK) {
-    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
-              "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
-  }
-  if (all_tags.find(str_tag) == all_tags.end()) {
-    std::cerr << "Error: Can't use define new tags with this call. Try DUMP_START_SINGLE or MULTI\n"
-              "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
-  }
-  TagData* old_tag = all_tags[str_tag];
-  if (old_tag->single) {
-    old_tag->tags.front()->active = true;
-  } else {
-    old_tag->create_new_tag();
   }
 }
 
@@ -544,14 +512,10 @@ VOID dump_stop_called(VOID * tag_name) {
       break;
     }
   }
-
-    /*if (DEBUG) { // Could iterate through all_tags and print if none are active
-        std::cerr << "End TAG - Deactivated analysis\n";
-    }*/
 }
 
-VOID signal_main() {
-  reached_main = true;
+VOID signal_start() {
+  reached_start = true;
 }
 
 /*
@@ -630,7 +594,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     is_prev_acc = false;
     write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
   }
-  if (track_main && !reached_main) return;
+  if (!reached_start) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {0};
   for (auto& tag_iter : all_tags) {
@@ -645,8 +609,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
       }
     }
   }
-
-  if (!recorded && full_trace) {
+  if (!recorded) {
     record(addr, access_type);
   }
 }
@@ -706,11 +669,7 @@ VOID Fini(INT32 code, VOID *v) {
   tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
   for (Tag* t : tags) {
     if (t->x_range.first != -1) {
-      /*if (t->x_range.first == t->x_range.second) { // Minimum of 2 for x_range for easier plotting
-        t->x_range.second++;
-      }*/
-      //tag_file << t->to_string() << "\n";
-      tag_file << t->parent->tag_name << (t->parent->single ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
+      tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
 	      << t->addr_range.second << "," << t->x_range.first << ","
 	      << t->x_range.second << "\n";
     }
@@ -764,44 +723,34 @@ VOID Instruction(INS ins, VOID *v)
     }
 }
 
+VOID FindStartFunc(RTN rtn, VOID *v) {
+  if (!RTN_Valid(rtn)) return;
+  RTN_Open(rtn);
+  const std::string function_name = PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY);
+  if (function_name == start_function) {
+    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start, IARG_END);
+  }
+  RTN_Close(rtn);
+}
+
 // Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
-	RTN rtn = RTN_FindByName(img, M_DUMP_START_SINGLE.c_str());
-	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
-				IARG_BOOL, true,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, M_DUMP_START_MULTI.c_str());
-	if(RTN_Valid(rtn)){
-		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_define_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
-				IARG_BOOL, false,
-				IARG_END);
-		RTN_Close(rtn);
-	}
-	rtn = RTN_FindByName(img, M_DUMP_START.c_str());
+	RTN rtn = RTN_FindByName(img, DUMP_START.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_start_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, M_DUMP_STOP.c_str());
+	rtn = RTN_FindByName(img, DUMP_STOP.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_stop_called,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_BOOL, true,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -812,10 +761,10 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
-	rtn = RTN_FindByName(img, "__libc_start_main");
-	if (RTN_Valid(rtn)) {
+	rtn = RTN_FindByName(img, M_START_TRACE.c_str());
+	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_main,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -858,6 +807,17 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  start_function = KnobStartFunctionLong.Value();
+  if (start_function == "") {
+    start_function = KnobStartFunction.Value();
+    if (start_function == "") {
+      start_function = DefaultStartFunction;
+    }
+  }
+  if (start_function == "main") { // Replace main with function that calls main
+    start_function = DefaultStartFunction;
+  }
+
   max_lines = KnobMaxOutputLong.Value();
   if (max_lines == 0) {
     max_lines = KnobMaxOutput.Value();
@@ -882,22 +842,17 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  full_trace = KnobTrackAllLong || KnobTrackAll;
-  track_main = KnobStartMainLong || KnobStartMain;
-
   if (INPUT_DEBUG) {
     std::cerr << "Max lines of trace: "   << max_lines <<
 	    "\n# of cache entries: " << cache_size <<
 	    "\nCache line size in bytes: " << cache_line << 
 	    "\nOutput trace file at: " << output_trace_path << 
-	    "\nFull trace: " << full_trace <<
-	    "\nTracking main: " << track_main << "\n";
+	    "\nStart function: " << start_function << "\n";
   }
 
-  std::string pref = full_trace ? FullPrefix : "";
-  output_tagfile_path = DefaultOutputPath + "/" + pref + TagFilePrefix + output_trace_path + TagFileSuffix;
-  output_metadata_path = DefaultOutputPath + "/" + pref + MetaFilePrefix + output_trace_path + MetaFileSuffix;
-  output_trace_path = DefaultOutputPath + "/" + pref + TracePrefix + output_trace_path + TraceSuffix;
+  output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
+  output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + output_trace_path + MetaFileSuffix;
+  output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
   mkdir(DefaultOutputPath.c_str(), 0755);
 
 
@@ -910,6 +865,7 @@ int main(int argc, char *argv[]) {
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
+  RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   
   PIN_AddFiniFunction(Fini, 0);
@@ -917,8 +873,8 @@ int main(int argc, char *argv[]) {
   if (DEBUG) {
     std::cerr << "Starting now\n";
   }
-  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, true);
-  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT, true);
+  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
+  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
   PIN_StartProgram();
   
   return 0;
