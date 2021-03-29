@@ -111,7 +111,7 @@ FLUSH_CACHE()
 
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
 
-By default tracing will start at the main function, however this can be changed by specifying a new function in `Function to start trace at:`. If Moneta cannot find the function specifed, such as the case of inline functions, than an explicit use of `START_TRACE` is required. Tracing will then begin at this point. In addition you must also set `Function to start trace at:` to gibberish that won't be called, as it has priority over `START_TRACE`. Only use `START_TRACE` if you do not want to rely on `Function to start trace at:`. If you don't fill in `Function to start trace at:` tracing will begin at main by default even if you use `START_TRACE`.
+By default tracing will start at the main function, however this can be changed by specifying a new function in `Function to start trace at:`. If Moneta cannot find the function specifed, such as the case of inline functions, than an explicit use of `START_TRACE` is required. Tracing will then begin at this point. In addition you must also set `Function to start trace at:` to gibberish that won't be called. Only use `START_TRACE` if you do not want to rely on `Function to start trace at:`. If you don't fill in `Function to start trace at:` tracing will begin at main by default even if you use `START_TRACE` because whichever function is reached first triggers the start of the trace.
 
 For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/examples/src`.
 
