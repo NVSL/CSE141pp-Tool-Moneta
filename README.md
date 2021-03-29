@@ -184,7 +184,7 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Name for Trace:** The name to save the trace as
 
-**Function to start trace at:** Specify a function to begin recording of traces. If left blank the default function is main. May be used in conjuntion with `START_TRACE` tag.
+**Function to start trace at:** Specify a function to begin recording of traces. If left blank the default function is main. May be used in conjunction with `START_TRACE` tag.
 
 #### Example Inputs
 
