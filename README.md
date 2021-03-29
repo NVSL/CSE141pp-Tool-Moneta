@@ -176,15 +176,15 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
 
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
+**Max Accesses:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Max Accesses and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
 
 **Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
 
 **Executable Path and Args:** The path to the exectuable (executable name included). Relative paths will be relative to the directory specified in the `Working Directory` input.
 
-**Name for Output:** The name to save the trace as
+**Name for Trace:** The name to save the trace as
 
-**Trace Everything:** Disregard all `pin_tag.h` function specifications and trace the entire program for all memory accesses.
+**Function to start trace at:** Specify a function to begin recording of traces. If left blank the default function is main. May be used in conjuntion with `START_TRACE` tag.
 
 #### Example Inputs
 
@@ -200,7 +200,6 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Name for Output:** trace\_sorting
 
-**Trace Everything:** Unchecked
 
 ### Loading a Trace
 
