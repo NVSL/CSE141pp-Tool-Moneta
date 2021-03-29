@@ -86,8 +86,9 @@ To use `pin_tags.h` you will need to add `#include "PATH_TO_FILE/pin_tags.h"` (D
 ### Pin Tag Functions
 The following three functions can be used to tag your code:
 ```
-DUMP_ACCESS_START_TAG(const char* tag, void* begin, void* end)
-DUMP_ACCESS_STOP_TAG(const char* tag)
+DUMP_START(const char* tag, const void* begin, const void* end, bool create_new)
+DUMP_STOP(const char* tag)
+START_TRACE()
 FLUSH_CACHE()
 ```
 
@@ -98,11 +99,19 @@ FLUSH_CACHE()
 
 **end:** Identifies the memory address upper bound to trace (Array/Vector Example: `&arr[arr.size()-1]`)
 
+**create_new:** 
+- If the tag name has not been used before, then create_new is ignored. 
+
+- If the tag name has been used before then,
+    - If create_new is true, then the tags will start having an index, tag0, tag1, ...
+    - If create_new is false, then the tracing will add the information to the last tag of the same name, so the same tag.
 #### Usage:
 
-`DUMP_ACCESS_START_TAG` and `DUMP_ACCESS_STOP_TAG` is used to indicate to Pin the lines of code and the memory regions to trace.
+`DUMP_START` and `DUMP_STOP` is used to indicate to Pin the lines of code and the memory regions to trace.
 
 Although the Pintool only writes to file where specified, it starts caching memory accesses the moment the program starts running. Use `FLUSH_CACHE` to flush the contents of the tool's simulated cache.
+
+By default tracing will start at the main function, however this can be changed by specifying a new function in `Function to start trace at:`. If Moneta cannot find the function specifed, such as the case of inline functions, than an explicit use of `START_TRACE` is required. Tracing will then begin at this point. In addition you must also set `Function to start trace at:` to gibberish that won't be called. Only use `START_TRACE` if you do not want to rely on `Function to start trace at:`. If you don't fill in `Function to start trace at:` tracing will begin at main by default even if you use `START_TRACE` because whichever function is reached first triggers the start of the trace.
 
 For example usage of these tag functions, open any of the example C++ programs in `~/work/moneta/examples/src`.
 
@@ -133,21 +142,21 @@ We will use `sorting.cpp` to demonstrate how to use Moneta to trace a program. M
 
 This program is pre-tagged with the `pin_tag.h` functions. The code is tagged as follows:
 ```
-DUMP_ACCESS_START_TAG("Bubble", &bubble[0], &bubble[SIZE-1]);
+DUMP_START("Bubble", &bubble[0], &bubble[SIZE-1], false);
 bubbleSort(bubble, SIZE);
-DUMP_ACCESS_STOP_TAG("Bubble");
+DUMP_STOP("Bubble");
 	
-DUMP_ACCESS_START_TAG("Insertion", &insertion[0], &insertion[SIZE-1]);
+DUMP_START("Insertion", &insertion[0], &insertion[SIZE-1], false);
 insertionSort(insertion, SIZE);
-DUMP_ACCESS_STOP_TAG("Insertion");
+DUMP_STOP("Insertion");
 
-DUMP_ACCESS_START_TAG("Heap sort", &heap[0], &heap[SIZE-1]);
+DUMP_START("Heap sort", &heap[0], &heap[SIZE-1], false);
 heapSort(heap, SIZE);
-DUMP_ACCESS_STOP_TAG("Heap sort");
+DUMP_STOP("Heap sort");
 
-DUMP_ACCESS_START_TAG("Selection", &selection[0], &selection[SIZE-1]);
+DUMP_START("Selection", &selection[0], &selection[SIZE-1], false);
 selectionSort(selection, SIZE);
-DUMP_ACCESS_STOP_TAG("Selection");
+DUMP_STOP("Selection");
 ```
 
 More implementation details can be found by viewing the source code (Path: `~/work/moneta/examples/src/sorting.cpp`).
@@ -167,15 +176,15 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Block Size (Bytes):** The size of each cache line in bytes. (Default: 64 Bytes)
 
-**Lines to Output:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Lines of Output and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
+**Max Accesses:** The maximum number of memory accesses to record to the HDF5 file. **Warning: Larger numbers will take longer to run and can potentially crash the kernel.** If this happens, lower the Max Accesses and, if possible, modify the executable accordingly to reduce iterations and execution time. (Default: 10,000,000)
 
 **Working Directory (Optional):** The directory that the exectuable program will run in. If nothing is inputted, it will default to the current directory (Default: `~/work/moneta`)
 
 **Executable Path and Args:** The path to the exectuable (executable name included). Relative paths will be relative to the directory specified in the `Working Directory` input.
 
-**Name for Output:** The name to save the trace as
+**Name for Trace:** The name to save the trace as
 
-**Trace Everything:** Disregard all `pin_tag.h` function specifications and trace the entire program for all memory accesses.
+**Function to start trace at:** Specify a function to begin recording of traces. If left blank the default function is main. May be used in conjunction with `START_TRACE` tag.
 
 #### Example Inputs
 
@@ -191,7 +200,6 @@ Once you have inputted your desired values, click the `Generate Trace` button to
 
 **Name for Output:** trace\_sorting
 
-**Trace Everything:** Unchecked
 
 ### Loading a Trace
 
@@ -236,7 +244,7 @@ The plot displays a cache line on the left side of the plot (the lime green line
 
 ### Toolbar
 <img src="../assets/Toolbar.png" alt="Toolbar" width="400px">  
-At init, we start off with being able to pan and zoom around the plot ("hand"). The middle button enables zoom to selection where dragging and selecting a region moves plot to any points in that region with a hard limit of 128 on each dimension. The right button ("mouse") activates click zoom.
+At init, we start off with being able to pan and zoom around the plot ("hand"). The middle button enables zoom to selection where dragging and selecting a region moves plot to any points in that region with a hard limit of 128 on each dimension. The right button ("mouse") activates click zoom, which zooms in by 10x.
 
 The refresh button resets plot to limits on load. Undo/redo are triggered by any panning and zooming with a history of 50 udpates.
 
