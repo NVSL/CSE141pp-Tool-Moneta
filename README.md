@@ -166,7 +166,7 @@ After opening `Moneta.ipynb`, select the first cell and press `SHIFT + ENTER`, o
 
 You should see input boxes appear like below:
 
-![](https://i.gyazo.com/21ad23f58b629498a9afc96984d3235b.png "Moneta Inputs")
+![Start Cell](../assets/StartCell.png?raw=true)
 
 Once you have inputted your desired values, click the `Generate Trace` button to generate the trace. Trace files can be found in the `~/work/moneta/.output` directory.
 
