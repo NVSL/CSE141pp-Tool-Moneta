@@ -222,8 +222,6 @@ If the trace loaded successfully, you should see input boxes appear like below:
 - `Working Directory (opt)`: Directory the executable is run in (`~/work/moneta/`)  
 - `Executable Path and Args`: Executable to run such as `/usr/bin/ls` and `./add 1 2`  
 - `Name for Output`: Name your trace as it will appear on the right  
-- `Tagged Trace/Full Trace`: Tagged - Only accesses between tag calls are recorded. Otherwise, everything is recorded
-- `Track from Beginning/Track main`: Beginning - Trace from first tagged/normal access. Main - Start recording once main is called
 
 Let's go with the defaults for now and enter the path to your executable. Name it `hello_world`. Then, hit `Generate Trace`  
 ![Generate Trace](../assets/Generate.png?raw=true)
@@ -259,7 +257,8 @@ Each access in the loop has a read hit (dark blue) and write hit (light blue).  
 <img src="../assets/Tags.png" alt="Legend Tags" width="400px">  
 In this panel, we see the tags we added to our program just like we expected! Try (de)selecting each of the tags and see if they update the expected part of the trace.
 
-Each tag comes with a button which on hover shows detailed information of the tag including accesses and hit rate. You can click on the button to zoom in to just the tag you want to see.
+Each tag comes with a button which on hover shows detailed information of the tag including accesses and hit rate. You can click on the button to zoom in to just the tag you want to see. Zoom into `loop_array0` to see the accesses from all 10 iterations of the loop:
+![Zoom to Tag](../assets/Zoomed.png?raw=true)
 
 Lastly, we have the click zoom and stats panels. The click zoom panel shows the result of using the click zoom toggle. The stats panel shows the hit rates of the overall plot and the current view.
 
