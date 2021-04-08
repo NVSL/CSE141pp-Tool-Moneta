@@ -9,6 +9,7 @@
 #include "../../pin_tags.h"
 #include <iostream>
 #include <stdlib.h>
+#include <algorithm>
 
 using namespace std;
 
@@ -93,12 +94,14 @@ int main(int argc, char *argv[]){
 	int heap[SIZE];
 	int selection[SIZE];
 	int insertion[SIZE];
+	int std_sort[SIZE];
 
 	for(int i=0; i<SIZE; i++){
 		bubble[i] = rand();
 		heap[i] = bubble[i];
 		selection[i] = bubble[i];
 		insertion[i] = bubble[i];
+		std_sort[i] = bubble[i];
 		//cout<<dat3a[i]<<", ";
 	}
 	//cout<<"\n";
@@ -134,6 +137,12 @@ int main(int argc, char *argv[]){
 	selectionSort(selection, SIZE);
 	
 	DUMP_STOP("Selection");
+	
+	DUMP_START("sort", &std_sort[0], &std_sort[SIZE-1], false);
+	
+	sort(std_sort, std_sort + SIZE);
+	
+	DUMP_STOP("sort");
 	
 
 	/* Print Sorted array
