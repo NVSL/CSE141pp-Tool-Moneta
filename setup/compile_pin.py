@@ -3,10 +3,10 @@ import subprocess
 import argparse
 import os
 
-PIN_DIR = "/pin/source/tools/ManualExamples/"
+PIN_DIR = "/home/jovyan/pin/source/tools/ManualExamples/"
 OBJ_INTEL = "obj-intel64/"
-TRACE_TOOL = "~/work/setup/trace_tool.cpp"
-OUTPUT_PATH = "~/work/setup/"
+TRACE_TOOL = "/home/jovyan/work/setup/trace_tool.cpp"
+OUTPUT_PATH = "/home/jovyan/work/setup/"
 
 @contextmanager
 def cd(newdir):
