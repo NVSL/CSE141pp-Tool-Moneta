@@ -3,7 +3,7 @@ import subprocess
 import argparse
 import os
 
-PIN_DIR = "/home/jovyan/pin/source/tools/ManualExamples/"
+PIN_DIR = "/pin/source/tools/ManualExamples/"
 OBJ_INTEL = "obj-intel64/"
 TRACE_TOOL = "/home/jovyan/work/setup/trace_tool.cpp"
 OUTPUT_PATH = "/home/jovyan/work/setup/"
