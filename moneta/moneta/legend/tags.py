@@ -86,7 +86,7 @@ class Tags():
         m = len(str(total))
         final_str = (
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: {tag.address[0]}, {tag.address[1]}\n'
+                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
                 f'{stats[0]:0{m}} ({stats_percent(stats[0],total)}), {stats[1]:0{m}} ({stats_percent(stats[1],total)}) Hits\n'
                 f'{stats[2]:0{m}} ({stats_percent(stats[2],total)}), {stats[3]:0{m}} ({stats_percent(stats[3],total)}) Caps\n'
