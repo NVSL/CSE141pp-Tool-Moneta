@@ -4,47 +4,31 @@ import argparse
 import os
 
 PIN_DIR = "/pin/source/tools/ManualExamples/"
+PIN_TOOLS_DIR = "~/work/setup/pin_tools/"
 OBJ_INTEL = "obj-intel64/"
-TRACE_TOOL = "~/work/setup/moneta_trace_tool.cpp"
-OUTPUT_PATH = "~/work/setup/"
+TRACE_TOOLS = [
+    "moneta_trace_tool.cpp",
+    #"cfg_trace_tool.cpp"
+]
 
-@contextmanager
-def cd(newdir):
-    prevdir = os.getcwd()
-    os.chdir(os.path.expanduser(newdir))
+def compile_tool(file_path, pin_path):
+    full_file_path = os.path.expanduser(file_path)
+    
     try:
-        yield
-    finally:
-        os.chdir(prevdir)
+        subprocess.run(["cp", full_file_path, pin_path], check=True)
+    except:
+        raise SystemExit
 
-parser = argparse.ArgumentParser(description="Input and Output for compiling pintool")
-parser.add_argument('input', nargs='?', default=TRACE_TOOL)
-args = parser.parse_args()
-curr_dir = os.getcwd()
-input_path = args.input
+    if not os.path.isdir(pin_path + OBJ_INTEL):
+        os.mkdir(pin_path + OBJ_INTEL)
 
-if input_path.rfind(".cpp") == -1:
-    print(f'Error: Not a cpp file - {input_path}')
-    raise SystemExit
+    curr_dir = os.getcwd()
+    os.chdir(os.path.expanduser(pin_path))
+    
+    pintool_so = full_file_path[full_file_path.rfind("/") + 1:-3] + "so"
 
-full_input_path = os.path.expanduser(input_path)
-print("Using - " + full_input_path)
-
-try:
-    subprocess.run(["cp", full_input_path, PIN_DIR], check=True)
-except:
-    raise SystemExit
-
-if not os.path.isdir(PIN_DIR+OBJ_INTEL):
-    os.mkdir(PIN_DIR+OBJ_INTEL)
-
-print("\n---------------Changing Directories-----------------")
-with cd(PIN_DIR):
-
-    full_input_path.rfind("/")
-    pintool_so = full_input_path[full_input_path.rfind("/")+1:-3] + "so"
     print("--------------------Running Pin---------------------")
-    p = subprocess.run(["make", "obj-intel64/" + pintool_so, "TARGET=intel64"], capture_output=True)
+    p = subprocess.run(["make", OBJ_INTEL + pintool_so, "TARGET=intel64"], capture_output=True)
     print("Stdout: ")
     print(p.stdout.decode())
     print("Stderr: ")
@@ -52,4 +36,25 @@ with cd(PIN_DIR):
     print(stderr_output)
     if len(stderr_output) > 0:
         raise SystemExit
-    print("Success!!")
+
+    os.chdir(curr_dir)
+    print(f"{file_path} done!")
+
+
+
+parser = argparse.ArgumentParser(description="Input and Output for compiling pintool")
+parser.add_argument('input', nargs='?', default=None)
+args = parser.parse_args()
+input_path = args.input
+
+if not input_path:
+    for tool in TRACE_TOOLS:
+        compile_tool(PIN_TOOLS_DIR + tool, PIN_DIR)
+else:
+    if input_path.rfind(".cpp") == -1:
+        print(f'Error: Not a cpp file - {input_path}')
+        raise SystemExit
+
+    compile_tool(input_path, PIN_DIR)
+
+    

@@ -10,7 +10,7 @@ from cse142.moneta.moneta_widgets import MonetaWidgets
 from cse142.moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['moneta_backend'] = ("cse142.moneta.vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
