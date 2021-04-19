@@ -30,7 +30,7 @@ RUN cat bashrc_aliases >> ~/.bashrc
 RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
 COPY setup/compile_pin.py ${DIR_SETUP}/
-COPY setup/pin_tools ${DIR_SETUP}/
+COPY setup/pin_tools/ ${DIR_SETUP}/pin_tools/
 RUN python compile_pin.py
 
 # Make Moneta a package to add path for pytest to locate

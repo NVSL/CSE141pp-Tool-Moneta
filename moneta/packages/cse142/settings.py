@@ -96,6 +96,7 @@ PIN_PATH  = "/pin/pin.sh"
 PIN_SO_PATH = "/pin/source/tools/ManualExamples/obj-intel64/"
 MONETA_TOOL_PATH = PIN_SO_PATH + "moneta_trace_tool.so"
 CFG_TOOL_PATH = PIN_SO_PATH + "cfg_trace_tool.so"
+CFG_TOOL_OUTFILE = "format_graph"
 WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
 

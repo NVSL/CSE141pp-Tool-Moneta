@@ -286,33 +286,45 @@ def generate_trace(w_vals, tool='moneta'):
         return True
     return False
 
+def validate_moneta_trace_files(dir_path, trace_name):
+    tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
+    meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
+    if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
+        return False
+    else:
+        return True
 
-def collect_traces():
+def collect_traces(output_dir):
     """Reads output directory to fill up select widget with traces"""
     log.info("Reading outfile directory")
-    trace_list = []
 
+    trace_list = []
     trace_map = {}
-    if not os.path.isdir(MONETA_OUTPUT_DIR):
+    
+    if not os.path.isdir(output_dir):
         return [], {}
-    dir_path, dir_names, file_names = next(os.walk(MONETA_OUTPUT_DIR))
+
+    dir_path, dir_names, file_names = next(os.walk(output_dir))
   
     for file_name in file_names:
         log.info(f"Checking {file_name}")
         
-        if (file_name.startswith("trace_") and file_name.endswith(".hdf5")):
-            
-            trace_name = file_name[6:file_name.index(".hdf5")]
-            tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
-            meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
-            if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
+        if file_name.startswith("trace_") and file_name.endswith(".hdf5"):
+    
+            trace_name = file_name[len("trace_"):file_name.index(".hdf5")]
+
+            if validate_moneta_trace_files(dir_path, trace_name):
+                trace_list.append(trace_name)
+                trace_map[trace_name] = (os.path.join(dir_path, file_name), tag_path, meta_path)
+                log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
+            else:
                 print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting trace.{TextStyle.END}")
-                continue
-          
+        
+        elif file_name.endswith(".pdf"):
+            trace_name = file_name[:file_name.index(".pdf")]
             trace_list.append(trace_name)
-            trace_map[trace_name] = (os.path.join(dir_path, file_name),
-                                     tag_path, meta_path)
-            log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
+            log.debug(f"Trace: {trace_name}")
+
     return trace_list, trace_map 
 
 

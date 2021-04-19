@@ -3,6 +3,8 @@
 **/*.py[cod]
 moneta/examples/build/*
 moneta/output/*
+moneta/cfg_output/*
+moneta/moneta_output/*
 
 # IPython checkpoints
 .ipynb_checkpoints

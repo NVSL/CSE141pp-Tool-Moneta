@@ -8,7 +8,7 @@ PIN_TOOLS_DIR = "~/work/setup/pin_tools/"
 OBJ_INTEL = "obj-intel64/"
 TRACE_TOOLS = [
     "moneta_trace_tool.cpp",
-    #"cfg_trace_tool.cpp"
+    "cfg_trace_tool.cpp"
 ]
 
 def compile_tool(file_path, pin_path):

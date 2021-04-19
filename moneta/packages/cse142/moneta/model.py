@@ -1,4 +1,5 @@
 from cse142.utils import collect_traces, delete_traces
+from cse142.settings import MONETA_OUTPUT_DIR
 from cse142.moneta.trace import Trace
 
 import logging
@@ -12,7 +13,7 @@ class Model():
         self.trace_map = None
 
     def update_trace_list(self):
-        self.output_traces, self.trace_map = collect_traces()
+        self.output_traces, self.trace_map = collect_traces(MONETA_OUTPUT_DIR)
         return sorted(self.output_traces, key=str.casefold)
 
     def ready_next_trace(self):
