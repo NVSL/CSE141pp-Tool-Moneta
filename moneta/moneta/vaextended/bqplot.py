@@ -87,11 +87,18 @@ class BqplotBackend(BackendBase):
         self.scale_x = bqplot.LinearScale(min=fix(limits[0][0]), max=fix(limits[0][1]), allow_padding=False)
         self.scale_y = bqplot.LinearScale(min=fix(limits[1][0]), max=fix(limits[1][1]), allow_padding=False)
         self.scales = {'x': self.scale_x, 'y': self.scale_y}
-
         self.figure = plt.figure(self.figure_key, fig=self.figure, scales=self.scales)
         self.figure.layout.width = 'calc(100% - 400px)'
         self.figure.layout.min_height = '800px'
+        
+
+        # only changes color of plot
+        # self.figure.background_style = {'fill': 'WhiteSmoke'}
+        
+
         plt.figure(fig=self.figure)
+
+
         #self.figure.padding_y = 0
         x = np.arange(0, 10)
         y = x ** 2
