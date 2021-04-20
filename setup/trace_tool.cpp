@@ -43,7 +43,8 @@ constexpr int SkipRate  {10000};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-const std::string DefaultOutputPath     {"/home/jovyan/work/moneta/output"};
+// const std::string DefaultOutputPath     {"/home/jovyan/work/moneta/output"};
+const std::string DefaultOutputPath     {"."};
 const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
 

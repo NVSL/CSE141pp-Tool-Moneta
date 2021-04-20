@@ -89,9 +89,10 @@ TW_BOX_LAYOUT = Layout(display='flex',
                     width='100%')
 TW_LAYOUT = Layout(flex='1 1 0%', width='100%')
 #MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
-MONETA_BASE_DIR = "/home/jovyan/work/"
-MONETA_TOOL_DIR = MONETA_BASE_DIR + "moneta/"
-OUTPUT_DIR = MONETA_BASE_DIR + "moneta/output/"
+#MONETA_BASE_DIR = "/home/jovyan/work/"
+MONETA_BASE_DIR = "."
+MONETA_TOOL_DIR = MONETA_BASE_DIR #+ "moneta/"
+OUTPUT_DIR = MONETA_BASE_DIR #+ "moneta/output/"
 CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
 #TOOL_PATH = MONETA_BASE_DIR + "setup/trace_tool.so"
