@@ -28,7 +28,7 @@ using unordered_map = std::unordered_map<K, V>;
 // Debug vars
 constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
-constexpr bool INPUT_DEBUG {0};
+constexpr bool INPUT_DEBUG {1};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
 
@@ -43,7 +43,6 @@ constexpr int SkipRate  {10000};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-// const std::string DefaultOutputPath     {"/home/jovyan/work/moneta/output"};
 const std::string DefaultOutputPath     {"."};
 const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
@@ -862,6 +861,7 @@ int main(int argc, char *argv[]) {
   meta_file.flush();
   meta_file.close();
 
+  std::cerr << output_trace_path;
   hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
