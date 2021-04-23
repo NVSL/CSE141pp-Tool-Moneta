@@ -5,8 +5,8 @@ import os
 
 PIN_DIR = "/pin/source/tools/ManualExamples/"
 OBJ_INTEL = "obj-intel64/"
-TRACE_TOOL = "/home/jovyan/work/setup/trace_tool.cpp"
-OUTPUT_PATH = "/home/jovyan/work/setup/"
+TRACE_TOOL = f"{os.getcwd()}/trace_tool.cpp"
+OUTPUT_PATH = f"{os.getcwd()}"
 
 @contextmanager
 def cd(newdir):
@@ -38,7 +38,9 @@ except:
 if not os.path.isdir(PIN_DIR+OBJ_INTEL):
     os.mkdir(PIN_DIR+OBJ_INTEL)
 
-print("\n---------------Changing Directories-----------------")
+os.environ['PIN_ROOT']="/pin"
+
+print(f"\n---------------Changing Directories to {PIN_DIR}-----------------")
 with cd(PIN_DIR):
 
     full_input_path.rfind("/")

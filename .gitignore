@@ -21,3 +21,13 @@ moneta/output/*
 **/pin.log
 
 .DS_Store
+*~
+*.so
+*.gz
+*.hdf5
+*.csv
+*.txt
+*.o
+\#*
+core
+.cwd_history

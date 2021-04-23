@@ -43,6 +43,7 @@ constexpr int SkipRate  {10000};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
+constexpr ADDRINT DefaultStackSize      {1024*32}; // 32 MB
 const std::string DefaultOutputPath     {"."};
 const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
@@ -59,6 +60,7 @@ const std::string MetaFileSuffix {".txt"};
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
+static UINT64 stack_size {DefaultStackSize};
 static std::string start_function;
 static std::string output_trace_path;
 static std::string output_tagfile_path;
@@ -69,6 +71,7 @@ const std::string DUMP_START {"DUMP_START"};
 const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
+const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
 // Stack/Heap
 const std::string STACK {"Stack"};
@@ -406,6 +409,9 @@ KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobMaxOutputLong(KNOB_MODE_WRITEONCE, "pintool",
     "output_lines", "", "specify max lines of output");
 
+KNOB<UINT64> KnobStackSize(KNOB_MODE_WRITEONCE, "pintool",
+			       "stack_size", "", "How big do you think your stack might be in KB?");
+
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "ol", "10000000", "specify max lines of output");
 
@@ -441,6 +447,7 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   curr_lines++; // Afterward, for 0-based indexing
   
   if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
+    std::cerr << "Exiting application early\n";
     PIN_ExitApplication(0);
   }
 }
@@ -449,6 +456,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
   char* s = (char *)tag_name;
   std::string str_tag (s);
 
+  std::cerr << "Tag Started: " << str_tag <<"\n";
   if (DEBUG) {
     std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
   }
@@ -490,6 +498,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
 VOID dump_stop_called(VOID * tag_name) {
   char *s = (char *)tag_name;
   std::string str_tag (s);
+  std::cerr << "Tag stopped: " << str_tag <<"\n";
   if (DEBUG) {
     std::cerr << "End TAG: " << str_tag << "\n";
   }
@@ -515,7 +524,12 @@ VOID dump_stop_called(VOID * tag_name) {
 }
 
 VOID signal_start() {
-  reached_start = true;
+	std::cerr << "Tracing Started\n";
+	reached_start = true;
+}
+VOID signal_stop() {
+	std::cerr << "Tracing Stopped\n";
+	reached_start = false;
 }
 
 /*
@@ -592,7 +606,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
   }
   if (!reached_start) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
@@ -651,7 +665,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= min_rsp);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
     is_prev_acc = false;
   }
   std::vector<Tag*> tags;
@@ -684,6 +698,7 @@ VOID Fini(INT32 code, VOID *v) {
   for (auto& tag_iter : all_tags) {
     delete tag_iter.second;
   }
+  std::cerr << "Collected " << curr_lines << " memory requests\n";
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -768,6 +783,13 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
+	rtn = RTN_FindByName(img, M_STOP_TRACE.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_stop,
+				IARG_END);
+		RTN_Close(rtn);
+	}
 }
 
 INT32 Usage() {
@@ -842,14 +864,20 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (INPUT_DEBUG) {
-    std::cerr << "Max lines of trace: "   << max_lines <<
-	    "\n# of cache entries: " << cache_size <<
-	    "\nCache line size in bytes: " << cache_line << 
-	    "\nOutput trace file at: " << output_trace_path << 
-	    "\nStart function: " << start_function << "\n";
+  stack_size = KnobStackSize.Value();
+  if (stack_size == 0) {
+	  stack_size = DefaultStackSize;
   }
 
+  
+  if (INPUT_DEBUG) {
+	  std::cerr << "Max lines of trace: "   << max_lines <<
+		  "\n# of cache entries: " << cache_size <<
+		  "\nCache line size in bytes: " << cache_line << 
+		  "\nOutput trace file at: " << output_trace_path << 
+		  "\nStart function: " << start_function << "\n";
+  }
+  
   output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
   output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + output_trace_path + MetaFileSuffix;
   output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
@@ -861,7 +889,7 @@ int main(int argc, char *argv[]) {
   meta_file.flush();
   meta_file.close();
 
-  std::cerr << output_trace_path;
+  //std::cerr << output_trace_path;
   hdf_handler = new HandleHdf5(output_trace_path);
 
   // Add instrumentation
@@ -877,6 +905,7 @@ int main(int argc, char *argv[]) {
   all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
   all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
   PIN_StartProgram();
-  
+
+
   return 0;
 }
