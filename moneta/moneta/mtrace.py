@@ -19,6 +19,7 @@ def main() :
     parser.add_argument('--main', default="main", help="Function to start tracing at")
     parser.add_argument('--memops', default=10000000, help="how many accesses to trace")
 
+
     args = parser.parse_args(sys.argv[1:])
 
     if not args.verbose:

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <string.h>
@@ -64,10 +65,12 @@ static UINT64 stack_size {DefaultStackSize};
 static std::string start_function;
 static std::string output_trace_path;
 static std::string output_tagfile_path;
-static std::string output_metadata_path;
+static std::string full_output_trace_path;
+//static std::string output_metadata_path;
 
 // Macros to track
 const std::string DUMP_START {"DUMP_START"};
+const std::string NEW_TRACE {"M_NEW_TRACE"};
 const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
@@ -89,7 +92,8 @@ enum {
   HIT, CAP_MISS, COMP_MISS
 };
 
-static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses
+static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses.  Reset when opening a new file.
+static UINT64 total_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id for every new tag
 static int curr_id {0};
@@ -415,6 +419,10 @@ KNOB<UINT64> KnobStackSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "ol", "10000000", "specify max lines of output");
 
+UINT64 file_count = 0;
+KNOB<UINT64> KnobFileCount(KNOB_MODE_WRITEONCE, "pintool",
+			   "file_count", "1", "How many trace files to generate");
+
 KNOB<UINT64> KnobCacheSizeLong(KNOB_MODE_WRITEONCE, "pintool",
     "cache_lines", "", "specify # of lines in L1 cache");
 
@@ -437,6 +445,68 @@ VOID flush_cache() {
 }
 
 
+void write_tags_and_clear() {
+	std::vector<Tag*> tags;
+	for (auto& tag_iter : all_tags) {
+		TagData* td = tag_iter.second;
+		tags.reserve(tags.size() + distance(td->tags.begin(), td->tags.end()));
+		tags.insert(tags.end(), td->tags.begin(), td->tags.end());
+	}
+	std::sort(tags.begin(), tags.end(), 
+		  []( Tag* left,  Tag* right) {
+			  return left->x_range.first < right->x_range.first;
+		  });
+
+	std::ofstream tag_file (output_tagfile_path);
+	tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+	for (Tag* t : tags) {
+		if (t->x_range.first != -1) {
+			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
+				 << t->addr_range.second << "," << t->x_range.first << ","
+				 << t->x_range.second << "\n";
+		}
+	}
+
+	// Close files
+	tag_file.flush();
+	tag_file.close();
+	for (auto& tag_iter : all_tags) {
+		delete tag_iter.second;
+	}
+	all_tags.clear();
+}
+
+
+void open_trace_files() {
+	std::stringstream s;
+	s << output_trace_path << "_" << file_count;
+	full_output_trace_path = s.str();
+	file_count++;
+	  
+	output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + s.str() + TagFileSuffix;
+	std::string output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + s.str() + MetaFileSuffix;
+	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + TracePrefix + s.str() + TraceSuffix;
+	mkdir(DefaultOutputPath.c_str(), 0755);
+	
+	std::ofstream meta_file (output_metadata_path);
+	meta_file << cache_size << " " << cache_line;
+	meta_file.flush();
+	meta_file.close();
+
+	std::cerr << "Opening trace '" << s.str() << "'.\n";
+	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
+	
+	all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
+	all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
+	curr_lines = 0;
+}
+
+void close_trace_files() {
+	std::cerr << "Collected " << curr_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
+	write_tags_and_clear();
+	delete hdf_handler;
+}
+
 VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   if (is_stack) {
     all_tags[STACK]->update(addr, curr_lines);
@@ -445,11 +515,24 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   }
   hdf_handler->write_data_mem(addr, acc_type);
   curr_lines++; // Afterward, for 0-based indexing
-  
+  total_lines++;
   if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
-    std::cerr << "Exiting application early\n";
-    PIN_ExitApplication(0);
+	  if (file_count >= KnobFileCount.Value()) {
+		  std::cerr << "Exiting application early\n";
+		  PIN_ExitApplication(0);
+	  } else {
+		  std::cerr << "Creating new trace file\n";
+		  close_trace_files();
+		  open_trace_files();
+	  }
   }
+}
+
+VOID new_trace_called(VOID * trace_name) {
+	close_trace_files();
+	file_count = 0;
+	output_trace_path = (char*)trace_name;
+	open_trace_files();
 }
 
 VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
@@ -527,6 +610,7 @@ VOID signal_start() {
 	std::cerr << "Tracing Started\n";
 	reached_start = true;
 }
+
 VOID signal_stop() {
 	std::cerr << "Tracing Stopped\n";
 	reached_start = false;
@@ -628,6 +712,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   }
 }
 
+
 /* Called when tracked program finishes or Pin_ExitApplication is called
  *
  * Fills up tag map file, cache file, closes files, destroys objects
@@ -668,37 +753,10 @@ VOID Fini(INT32 code, VOID *v) {
     write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
     is_prev_acc = false;
   }
-  std::vector<Tag*> tags;
-  for (auto& tag_iter : all_tags) {
-    TagData* td = tag_iter.second;
-    tags.reserve(tags.size() + distance(td->tags.begin(), td->tags.end()));
-    tags.insert(tags.end(), td->tags.begin(), td->tags.end());
-  }
-  std::sort(tags.begin(), tags.end(), 
-    []( Tag* left,  Tag* right) {
-      return left->x_range.first < right->x_range.first;
-  });
 
-  std::ofstream tag_file (output_tagfile_path);
-  tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
-  for (Tag* t : tags) {
-    if (t->x_range.first != -1) {
-      tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
-	      << t->addr_range.second << "," << t->x_range.first << ","
-	      << t->x_range.second << "\n";
-    }
-  }
-
-  // Close files
-  tag_file.flush();
-  tag_file.close();
-
-  //hdf_handler.~HandleHdf5();
-  delete hdf_handler;
-  for (auto& tag_iter : all_tags) {
-    delete tag_iter.second;
-  }
-  std::cerr << "Collected " << curr_lines << " memory requests\n";
+  close_trace_files();
+  
+  std::cerr << "Collected " << total_lines << " memory requests\n";
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -750,6 +808,7 @@ VOID FindStartFunc(RTN rtn, VOID *v) {
 
 // Find the macro routines in the current image and insert a call
 VOID FindFunc(IMG img, VOID *v) {
+	
 	RTN rtn = RTN_FindByName(img, DUMP_START.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
@@ -761,6 +820,15 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_END);
 		RTN_Close(rtn);
 	}
+	rtn = RTN_FindByName(img, NEW_TRACE.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)new_trace_called,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_END);
+		RTN_Close(rtn);
+	}
+
 	rtn = RTN_FindByName(img, DUMP_STOP.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
@@ -780,6 +848,8 @@ VOID FindFunc(IMG img, VOID *v) {
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -787,6 +857,8 @@ VOID FindFunc(IMG img, VOID *v) {
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_stop,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -877,20 +949,9 @@ int main(int argc, char *argv[]) {
 		  "\nOutput trace file at: " << output_trace_path << 
 		  "\nStart function: " << start_function << "\n";
   }
-  
-  output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + output_trace_path + TagFileSuffix;
-  output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + output_trace_path + MetaFileSuffix;
-  output_trace_path = DefaultOutputPath + "/" + TracePrefix + output_trace_path + TraceSuffix;
-  mkdir(DefaultOutputPath.c_str(), 0755);
 
 
-  std::ofstream meta_file (output_metadata_path);
-  meta_file << cache_size << " " << cache_line;
-  meta_file.flush();
-  meta_file.close();
-
-  //std::cerr << output_trace_path;
-  hdf_handler = new HandleHdf5(output_trace_path);
+  open_trace_files();
 
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
@@ -902,8 +963,6 @@ int main(int argc, char *argv[]) {
   if (DEBUG) {
     std::cerr << "Starting now\n";
   }
-  all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
-  all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
   PIN_StartProgram();
 
 

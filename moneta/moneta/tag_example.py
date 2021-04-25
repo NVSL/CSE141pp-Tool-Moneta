@@ -9,7 +9,7 @@ moneta.START_TRACE()
 moneta.DUMP_START_ALL("sort", True);
 s = t.sort()
 moneta.DUMP_STOP("sort")
-
-moneta.DUMP_START_ALL("shuffle", True);
+moneta.NEW_TRACE("shuffle")
+moneta.DUMP_START_ALL("shuffle", True)
 s = random.shuffle(t)
 moneta.DUMP_STOP("shuffle")
