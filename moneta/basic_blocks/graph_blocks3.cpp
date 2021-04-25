@@ -348,23 +348,24 @@ VOID Fini(INT32 code, VOID *v){
     for (auto& bbl_iter : bbl_infos) {
       BBLInfo* bbl = bbl_iter.second;
       outfile3 << bbl->start_addr << ", " << bbl->next << "\n";
-      outfile3 << bbl->instr_strs.size() + 1 << "\n";
+      outfile3 << bbl->instr_strs.size() + 2 << "\n";
       outfile3 << "File: " << bbl->filename << "\n";
       outfile3 << "C: " << bbl->column << " L: " << bbl->line << " ";
-      outfile3 << bbl->start_addr << ": ";
+      outfile3 << bbl->start_addr << "\n";
       for (auto& instr_str : bbl->instr_strs) {
         outfile3 << instr_str.second << "\n";
       }
       if (bbl->type == HAS_CONDITIONAL_JUMP && bbl->immediate_next != 0) {
         outfile3 << bbl->start_addr << ", " << bbl->immediate_next << "\n";
-        outfile3 << bbl->instr_strs.size() + 1 << "\n";
+        outfile3 << bbl->instr_strs.size() + 2 << "\n";
         outfile3 << "File: " << bbl->filename << "\n";
         outfile3 << "C: " << bbl->column << " L: " << bbl->line << " ";
-        outfile3 << bbl->start_addr << ": ";
+        outfile3 << bbl->start_addr << "\n";
         for (auto& instr_str : bbl->instr_strs) {
           outfile3 << instr_str.second << "\n";
         }
       }
+      free(bbl);
     }
     outfile2.flush();
     outfile2.close();
