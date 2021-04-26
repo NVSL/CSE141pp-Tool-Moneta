@@ -701,6 +701,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
       bool updated = td->update(addr, curr_lines);
+      //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
       if (!recorded && updated) {
         record(addr, access_type);
         recorded = true;

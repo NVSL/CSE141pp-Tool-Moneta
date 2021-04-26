@@ -13,8 +13,8 @@ def main() :
 
     parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Be verbose")
     parser.add_argument('--trace', default="trace", help="Trace name")
-    parser.add_argument('--cache-line-size', default="64", help="Cache line size")
-    parser.add_argument('--cache-line-count', default="4096", help="Cache line count")
+    parser.add_argument('--cache-line-size', default=64, help="Cache line size")
+    parser.add_argument('--cache-line-count', default=512, help="Cache line count")
     parser.add_argument('cmd', nargs=argparse.REMAINDER,  help="Command to run")
     parser.add_argument('--main', default="main", help="Function to start tracing at")
     parser.add_argument('--memops', default=10000000, help="how many accesses to trace")
@@ -42,5 +42,7 @@ def main() :
         except:
             pass
 
+    log.info(f"Cache size: {args.cache_line_count} lines * {args.cache_line_size} bytes/Line = {args.cache_line_count * args.cache_line_size} KB")
+        
     print(f"Running: {run_cmd}")
     subprocess.run(run_cmd.split())
