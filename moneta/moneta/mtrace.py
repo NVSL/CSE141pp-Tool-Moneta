@@ -18,6 +18,8 @@ def main() :
     parser.add_argument('cmd', nargs=argparse.REMAINDER,  help="Command to run")
     parser.add_argument('--main', default="main", help="Function to start tracing at")
     parser.add_argument('--memops', default=10000000, help="how many accesses to trace")
+    parser.add_argument('--file-count', default=1, help="How many trace files to create, if needed.")
+    parser.add_argument('--skip', default=1000000000000, help="How many memops to skip")
 
 
     args = parser.parse_args(sys.argv[1:])
@@ -29,7 +31,7 @@ def main() :
                         level=log.DEBUG if args.verbose else log.WARN)
 
 
-    run_cmd=f"/pin/pin.sh -ifeellucky -injection child -t /pin/source/tools/ManualExamples/obj-intel64/trace_tool.so -name {args.trace} -c {args.cache_line_count} -cache_lines {args.cache_line_size} -start {args.main} -ol {args.memops} -stack_size {int(1e12)} -- {' '.join(args.cmd[1:])}"
+    run_cmd=f"/pin/pin.sh -ifeellucky -injection child -t /pin/source/tools/ManualExamples/obj-intel64/trace_tool.so -name {args.trace} -file_count {args.file_count} -c {args.cache_line_count} -cache_lines {args.cache_line_size} -start {args.main} -ol {args.memops} -stack_size {int(1e12)} -skip {args.skip} -- {' '.join(args.cmd[1:])}"
 
     files = [f"meta_data_{args.trace}.txt",
              f"tag_map_{args.trace}.csv",

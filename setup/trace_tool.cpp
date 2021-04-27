@@ -76,6 +76,8 @@ const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
 const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
+UINT64 SkipMemOps = 10000000000000000ull;
+
 // Stack/Heap
 const std::string STACK {"Stack"};
 const std::string HEAP {"Heap"};
@@ -92,8 +94,9 @@ enum {
   HIT, CAP_MISS, COMP_MISS
 };
 
-static UINT64 curr_lines {0}; // Increment for every write to hdf5 for memory accesses.  Reset when opening a new file.
-static UINT64 total_lines {0}; // Increment for every write to hdf5 for memory accesses
+static UINT64 curr_traced_lines {0}; // Increment for every write to hdf5 for memory accesses.  Reset when opening a new file.
+static UINT64 total_traced_lines {0}; // Increment for every write to hdf5 for memory accesses
+static UINT64 all_lines {0}; // Increment for every write to hdf5 for memory accesses
 
 // Increment id for every new tag
 static int curr_id {0};
@@ -407,6 +410,9 @@ KNOB<std::string> KnobStartFunction(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
     "name", "", "specify name of output trace");
 
+KNOB<UINT64> KnobSkipMemOps(KNOB_MODE_WRITEONCE, "pintool",
+			   "skip", "1000000000000000000", "How many memops to skip");
+
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
     "n", "default", "specify name of output trace");
 
@@ -498,25 +504,25 @@ void open_trace_files() {
 	
 	all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
 	all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
-	curr_lines = 0;
+	curr_traced_lines = 0;
 }
 
 void close_trace_files() {
-	std::cerr << "Collected " << curr_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
+	std::cerr << "Collected " << curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
 	write_tags_and_clear();
 	delete hdf_handler;
 }
 
 VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   if (is_stack) {
-    all_tags[STACK]->update(addr, curr_lines);
+    all_tags[STACK]->update(addr, curr_traced_lines);
   } else {
-    all_tags[HEAP]->update(addr, curr_lines);
+    all_tags[HEAP]->update(addr, curr_traced_lines);
   }
   hdf_handler->write_data_mem(addr, acc_type);
-  curr_lines++; // Afterward, for 0-based indexing
-  total_lines++;
-  if(!is_last_acc && curr_lines >= max_lines) { // If reached file size limit, exit
+  curr_traced_lines++; // Afterward, for 0-based indexing
+  total_traced_lines++;
+  if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
 	  if (file_count >= KnobFileCount.Value()) {
 		  std::cerr << "Exiting application early\n";
 		  PIN_ExitApplication(0);
@@ -687,10 +693,16 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   if (DEBUG) {
     read_insts++;
   }
+  all_lines++;
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
     write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
+  }
+  if (all_lines>= SkipMemOps) {
+	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
+	  SkipMemOps = 1000000000000000ull;
+	  signal_start();
   }
   if (!reached_start) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
@@ -700,7 +712,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
     if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
-      bool updated = td->update(addr, curr_lines);
+      bool updated = td->update(addr, curr_traced_lines);
       //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
       if (!recorded && updated) {
         record(addr, access_type);
@@ -757,7 +769,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   close_trace_files();
   
-  std::cerr << "Collected " << total_lines << " memory requests\n";
+  std::cerr << "Collected " << total_traced_lines << " memory requests\n";
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -941,6 +953,8 @@ int main(int argc, char *argv[]) {
   if (stack_size == 0) {
 	  stack_size = DefaultStackSize;
   }
+
+  SkipMemOps = KnobSkipMemOps.Value();
 
   
   if (INPUT_DEBUG) {
