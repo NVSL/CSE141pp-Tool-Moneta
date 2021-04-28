@@ -3,7 +3,7 @@ import ipywidgets as widgets
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 import vaex
-from vaextended.widgets import PlotTemplate
+from moneta.vaextended.widgets import PlotTemplate
 from vaex.delayed import delayed, delayed_list
 from vaex.utils import _ensure_list, _expand, _parse_f, _parse_n, _parse_reduction, _expand_shape
 from IPython.display import display

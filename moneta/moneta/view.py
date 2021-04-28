@@ -9,7 +9,7 @@ from moneta.moneta_widgets import MonetaWidgets
 from moneta.legend.legend import Legend
 import vaex
 import vaex.jupyter.plot
-vaex.jupyter.plot.backends['moneta_backend'] = ("vaextended.bqplot", "BqplotBackend")
+vaex.jupyter.plot.backends['moneta_backend'] = ("moneta.vaextended.bqplot", "BqplotBackend")
 
 import logging
 log = logging.getLogger(__name__)
@@ -42,7 +42,6 @@ class View():
             
     def handle_generate_trace(self, _):
         log.info("Generate Trace clicked")
-        
         w_vals = self.m_widget.get_widget_values()
 
         if generate_trace(w_vals):
