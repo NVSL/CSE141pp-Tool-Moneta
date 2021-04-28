@@ -11,6 +11,7 @@ OUTPUT_PATH = f"{os.getcwd()}"
 @contextmanager
 def cd(newdir):
     prevdir = os.getcwd()
+    print(f"cd {os.path.expanduser(newdir)}")
     os.chdir(os.path.expanduser(newdir))
     try:
         yield
@@ -46,7 +47,9 @@ with cd(PIN_DIR):
     full_input_path.rfind("/")
     pintool_so = full_input_path[full_input_path.rfind("/")+1:-3] + "so"
     print("--------------------Running Pin---------------------")
-    p = subprocess.run(["make", "obj-intel64/" + pintool_so, "TARGET=intel64"], capture_output=True)
+    cmd =["make", "obj-intel64/" + pintool_so, "TARGET=intel64", "DEBUG=0"]
+    print (" ".join(cmd)+ "\n")
+    p = subprocess.run(cmd, capture_output=True)
     print("Stdout: ")
     print(p.stdout.decode())
     print("Stderr: ")

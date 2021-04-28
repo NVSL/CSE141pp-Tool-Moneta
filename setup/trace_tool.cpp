@@ -12,10 +12,10 @@
 #include <algorithm>
 #include <ctype.h>
 #include <sys/stat.h> // mkdir
-
+#include <pthread.h>
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
-
+#include<cassert>
 
 // Pin comes with some old standard libraries.
 namespace pintool {
@@ -389,10 +389,14 @@ public:
 
 
 // Stores all info for cache with pointers to where it is in list
-std::unordered_set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_hash, cache_equal> accesses;
+std::unordered_map<ADDRINT, std::list<ADDRINT>::const_iterator> accesses;
 std::unordered_set<ADDRINT> all_accesses;
+pthread_mutex_t cache_lock;
+
 //std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses; // Try set to see if it's faster than unordered_set
 std::list<ADDRINT> inorder_acc; // Everything in cache right now
+UINT64 hits = 0;
+UINT64 misses = 0;
 
 // Increase the file write buffer to speed up i/o
 const unsigned long long BUF_SIZE = 4ULL * 8ULL* 1024ULL * 1024ULL;
@@ -441,13 +445,20 @@ KNOB<UINT64> KnobCacheLineSizeLong(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
     "b", "64", "specify block size in bytes");
 
+KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
+				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
+
 VOID flush_cache() {
-  if (CACHE_DEBUG) {
-    std::cerr << "Flushing cache\n";
-  }
-  inorder_acc.clear();
-  all_accesses.clear();
-  accesses.clear();
+	pthread_mutex_lock(&cache_lock);
+	if (CACHE_DEBUG) {
+		std::cerr << "Flushing cache\n";
+	}
+	inorder_acc.clear();
+	all_accesses.clear();
+	accesses.clear();
+	hits = 0;
+	misses = 0;
+	pthread_mutex_unlock(&cache_lock);
 }
 
 
@@ -509,6 +520,10 @@ void open_trace_files() {
 
 void close_trace_files() {
 	std::cerr << "Collected " << curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
+	std::cerr << "Cache hit rate: " << (hits+0.0)/(hits+misses+1.0) << "\n"; // +1.0 to avoid div by 0;
+	if (KnobFlushCacheOnNewFile.Value()) {
+		flush_cache();
+	}
 	write_tags_and_clear();
 	delete hdf_handler;
 }
@@ -622,6 +637,29 @@ VOID signal_stop() {
 	reached_start = false;
 }
 
+void dump_cache(std::ostream & out) {
+	out << "Cache Lines\n";
+	for(auto & line: accesses) {
+		out << "addr: 0x" << line.first << " -> " << &(*line.second) <<"\n";
+	}
+	out << "LRU Stack\n";
+	for(auto & lru: inorder_acc) {
+		out << &lru << " " << lru << "\n";
+	}
+}
+
+#if (0)
+#define cache_assert(exp)				\
+	do {						\
+		if(!(exp)) {				\
+			dump_cache(std::cerr);		\
+			assert(exp);			\
+		}					\
+	} while(0)
+#else
+#define cache_assert(exp)
+#endif
+
 /*
  * Returns: a value based on hit, miss, or compulsory miss
  * 0 - hit
@@ -630,47 +668,58 @@ VOID signal_stop() {
  *
  */
 int add_to_simulated_cache(ADDRINT addr) {
-  addr -= addr%cache_line; // Cache line modulus
-  if (CACHE_DEBUG) {
-    cache_writes++;
-  }
-  if (all_accesses.find(addr) == all_accesses.end()) { // Compulsory miss
-    if (CACHE_DEBUG) {
-      comp_misses++;
-    }
-    if (accesses.size() >= cache_size) { // Evict
-      // Second value doesn't matter due to custom equal function
-      accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
-      inorder_acc.pop_back();
-    }
-    inorder_acc.push_front(addr); // Add to list and set
-    accesses.insert(std::make_pair(addr, inorder_acc.begin()));
-    all_accesses.insert(addr);
-    if (CACHE_DEBUG) {
-      std::cerr << cache_writes << "th write (comp miss): " << addr << "\n";
-    }
-    return COMP_MISS;
-  }
+	int r;
+	pthread_mutex_lock(&cache_lock);
+	addr -= addr%cache_line; // Cache line modulus
+	if (CACHE_DEBUG) {
+		cache_writes++;
+	}
 
-  auto iter = accesses.find(std::make_pair(addr,inorder_acc.begin()));
-  if (iter != accesses.end()) { // In cache, move to front - Hit
-    inorder_acc.splice(inorder_acc.begin(), inorder_acc, iter->second);
-    if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
-      std::cerr << cache_writes << "th write (Hit): " << addr << "\n";
-    }
-    return HIT;
-  } // Not in cache, move to front - Capacity miss
-  if (CACHE_DEBUG) {
-    cap_misses++;
-    std::cerr << cache_writes << "th write (cap miss): " << addr << "\n";
-  }
-  if (accesses.size() >= cache_size) { // Evict
-    accesses.erase(std::make_pair(inorder_acc.back(), inorder_acc.begin()));
-    inorder_acc.pop_back();
-  }
-  inorder_acc.push_front(addr); // Add to list and set
-  accesses.insert(std::make_pair(addr, inorder_acc.begin()));
-  return CAP_MISS;
+	// classify access
+	cache_assert(inorder_acc.size() == accesses.size());
+	auto cache_iter = accesses.find(addr);
+	if (all_accesses.find(addr) == all_accesses.end()) {
+		r = COMP_MISS;
+		if (CACHE_DEBUG) {
+			comp_misses++;
+		}
+		misses++;
+		all_accesses.insert(addr);
+	} else if (cache_iter == accesses.end()) {
+		r = CAP_MISS;
+		if (CACHE_DEBUG) {
+			cap_misses++;
+			std::cerr << cache_writes << "th write (cap miss): " << addr << "\n";
+		}
+		misses++;
+	} else {
+		r = HIT;
+		hits++;
+	}
+	cache_assert(inorder_acc.size() == accesses.size());
+
+	if (r == COMP_MISS || r == CAP_MISS) {
+		// on a miss, add the address the LRU stack and the map
+		inorder_acc.push_front(addr);
+		accesses[addr] = inorder_acc.begin();
+		cache_assert(inorder_acc.size() == accesses.size());
+		// if full, evict
+		if (accesses.size() > cache_size) { 
+			cache_assert(accesses.find(inorder_acc.back()) != accesses.end());
+			accesses.erase(inorder_acc.back());
+			inorder_acc.pop_back();
+		}
+		cache_assert(inorder_acc.size() == accesses.size());
+	} else {
+		// on a hit, move the addr to the top of the LRU stack
+		inorder_acc.splice(inorder_acc.begin(), inorder_acc, cache_iter->second);
+		cache_assert(inorder_acc.size() == accesses.size());
+		if (CACHE_DEBUG && cache_writes%SkipRate == 0) {
+			std::cerr << cache_writes << "th write (Hit): " << addr << "\n";
+		}
+	}
+	pthread_mutex_unlock(&cache_lock);
+	return r;
 
 }
 
@@ -896,6 +945,11 @@ int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
   PIN_InitSymbols();
   if (PIN_Init(argc, argv)) return Usage();
+
+  if (pthread_mutex_init(&cache_lock, NULL) != 0) {
+	  std::cerr << "cache_mutex init has failed\n";
+	  return 1;
+  }
   
   if (DEBUG) {
     std::cerr << "Debugging mode\n";
