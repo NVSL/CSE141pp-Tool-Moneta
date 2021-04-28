@@ -45,7 +45,7 @@ def main() :
         except:
             pass
 
-    log.info(f"Cache size: {args.cache_line_count} lines * {args.cache_line_size} bytes/Line = {args.cache_line_count * args.cache_line_size} KB")
+    log.info(f"Cache size: {args.cache_line_count} lines * {int(args.cache_line_size)} bytes/Line = {int(args.cache_line_count) * int(args.cache_line_size)} KB")
         
     print(f"Running: {run_cmd}")
     subprocess.run(run_cmd.split())
