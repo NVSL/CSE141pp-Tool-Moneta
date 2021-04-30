@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 #include <fstream>
 #include <iomanip>
 #include <string.h>
@@ -12,7 +13,7 @@
 #include <algorithm>
 #include <ctype.h>
 #include <sys/stat.h> // mkdir
-#include <pthread.h>
+///#include <pthread.h>
 #include "pin.H"   // Pin
 #include "H5Cpp.h" // Hdf5
 #include<cassert>
@@ -33,6 +34,7 @@ constexpr bool INPUT_DEBUG {1};
 constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
 
+static ADDRINT inst_count = 0;
 static int read_insts = 0;
 // Cache debug
 static int cache_writes {0};
@@ -54,6 +56,7 @@ const std::string TracePrefix    {"trace_"};
 const std::string TraceSuffix    {".hdf5"};
 const std::string TagFilePrefix  {"tag_map_"};
 const std::string TagFileSuffix  {".csv"};
+const std::string StatsFileSuffix  {".stats.csv"};
 const std::string MetaFilePrefix {"meta_data_"};
 const std::string MetaFileSuffix {".txt"};
 
@@ -100,6 +103,20 @@ static UINT64 all_lines {0}; // Increment for every write to hdf5 for memory acc
 
 // Increment id for every new tag
 static int curr_id {0};
+
+class PINMutexGuard {
+	PIN_MUTEX &mutex;
+public:
+	PINMutexGuard(PIN_MUTEX &m) : mutex(m) {
+		PIN_MutexLock(&mutex);
+	}
+	~PINMutexGuard() {
+		PIN_MutexUnlock(&mutex);
+	}
+	
+};
+
+#define BE_THREAD_SAFE() PINMutexGuard _guard(the_big_lock)
 
 struct TagData;
 
@@ -391,7 +408,7 @@ public:
 // Stores all info for cache with pointers to where it is in list
 std::unordered_map<ADDRINT, std::list<ADDRINT>::const_iterator> accesses;
 std::unordered_set<ADDRINT> all_accesses;
-pthread_mutex_t cache_lock;
+PIN_MUTEX the_big_lock;
 
 //std::set<std::pair<ADDRINT, std::list<ADDRINT>::iterator>, cache_compare> accesses; // Try set to see if it's faster than unordered_set
 std::list<ADDRINT> inorder_acc; // Everything in cache right now
@@ -449,7 +466,7 @@ KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
 
 VOID flush_cache() {
-	pthread_mutex_lock(&cache_lock);
+	BE_THREAD_SAFE();
 	if (CACHE_DEBUG) {
 		std::cerr << "Flushing cache\n";
 	}
@@ -458,11 +475,10 @@ VOID flush_cache() {
 	accesses.clear();
 	hits = 0;
 	misses = 0;
-	pthread_mutex_unlock(&cache_lock);
 }
 
 
-void write_tags_and_clear() {
+void write_tags_and_clear(bool clear_tags) {
 	std::vector<Tag*> tags;
 	for (auto& tag_iter : all_tags) {
 		TagData* td = tag_iter.second;
@@ -487,10 +503,13 @@ void write_tags_and_clear() {
 	// Close files
 	tag_file.flush();
 	tag_file.close();
-	for (auto& tag_iter : all_tags) {
-		delete tag_iter.second;
+	if (clear_tags) {
+		for (auto& tag_iter : all_tags) {
+			delete tag_iter.second;
+		}
+		all_tags.clear();
 	}
-	all_tags.clear();
+	
 }
 
 
@@ -511,6 +530,7 @@ void open_trace_files() {
 	meta_file.close();
 
 	std::cerr << "Opening trace '" << s.str() << "'.\n";
+	unlink(output_hdf5_trace_path.c_str());
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
 	
 	all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
@@ -518,13 +538,35 @@ void open_trace_files() {
 	curr_traced_lines = 0;
 }
 
-void close_trace_files() {
-	std::cerr << "Collected " << curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
-	std::cerr << "Cache hit rate: " << (hits+0.0)/(hits+misses+1.0) << "\n"; // +1.0 to avoid div by 0;
+void write_stats_file() {
+	//curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
+	float hit_rate = (hits+0.0)/(hits+misses+1.0);
+	float miss_per_inst = (misses+0.0)/(inst_count+1.0);
+	
+	std::string stats_file_name =  DefaultOutputPath + "/" + full_output_trace_path + StatsFileSuffix;
+	
+	std::ofstream stats_file(stats_file_name);
+	
+	stats_file << "app,file_no,m_cache_lines,m_cache_line_size,m_cache_size,m_inst_count,m_hit_rate,m_miss_per_inst\n";
+	stats_file << output_trace_path << "," <<
+		file_count << "," <<
+		cache_size << "," << 
+		cache_line << "," << 
+		(cache_line*cache_size) << "," << 
+		inst_count << "," <<
+		hit_rate<< "," <<
+		miss_per_inst << "\n";
+					 stats_file.close();
+					 
+}
+void close_trace_files(bool clear_tags) {
+	write_stats_file();
+	inst_count = 0;
 	if (KnobFlushCacheOnNewFile.Value()) {
 		flush_cache();
 	}
-	write_tags_and_clear();
+	
+	write_tags_and_clear(clear_tags);
 	delete hdf_handler;
 }
 
@@ -543,20 +585,22 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
 		  PIN_ExitApplication(0);
 	  } else {
 		  std::cerr << "Creating new trace file\n";
-		  close_trace_files();
+		  close_trace_files(false);// false preserves the tags
 		  open_trace_files();
 	  }
   }
 }
 
 VOID new_trace_called(VOID * trace_name) {
-	close_trace_files();
+	BE_THREAD_SAFE();
+	close_trace_files(true);
 	file_count = 0;
 	output_trace_path = (char*)trace_name;
 	open_trace_files();
 }
 
 VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
+	BE_THREAD_SAFE();
   char* s = (char *)tag_name;
   std::string str_tag (s);
 
@@ -600,6 +644,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
 }
 
 VOID dump_stop_called(VOID * tag_name) {
+		BE_THREAD_SAFE();
   char *s = (char *)tag_name;
   std::string str_tag (s);
   std::cerr << "Tag stopped: " << str_tag <<"\n";
@@ -628,11 +673,13 @@ VOID dump_stop_called(VOID * tag_name) {
 }
 
 VOID signal_start() {
+	BE_THREAD_SAFE();
 	std::cerr << "Tracing Started\n";
 	reached_start = true;
 }
 
 VOID signal_stop() {
+	BE_THREAD_SAFE();
 	std::cerr << "Tracing Stopped\n";
 	reached_start = false;
 }
@@ -669,7 +716,6 @@ void dump_cache(std::ostream & out) {
  */
 int add_to_simulated_cache(ADDRINT addr) {
 	int r;
-	pthread_mutex_lock(&cache_lock);
 	addr -= addr%cache_line; // Cache line modulus
 	if (CACHE_DEBUG) {
 		cache_writes++;
@@ -718,7 +764,6 @@ int add_to_simulated_cache(ADDRINT addr) {
 			std::cerr << cache_writes << "th write (Hit): " << addr << "\n";
 		}
 	}
-	pthread_mutex_unlock(&cache_lock);
 	return r;
 
 }
@@ -739,6 +784,7 @@ void record(ADDRINT addr, int acc_type) {
 }
 
 VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
+	BE_THREAD_SAFE();
   if (DEBUG) {
     read_insts++;
   }
@@ -816,7 +862,7 @@ VOID Fini(INT32 code, VOID *v) {
     is_prev_acc = false;
   }
 
-  close_trace_files();
+  close_trace_files(true);
   
   std::cerr << "Collected " << total_traced_lines << " memory requests\n";
 }
@@ -941,13 +987,35 @@ bool check_alnum(const std::string& str) {
   return true;
 };
 
+VOID PIN_FAST_ANALYSIS_CALL count_insts(ADDRINT c) {
+	BE_THREAD_SAFE();
+	inst_count += c;
+}
+
+VOID Trace(TRACE trace, VOID *v)
+{
+    // Visit every basic block  in the trace
+    for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
+    {
+        // Insert a call to docount for every bbl, passing the number of instructions.
+        // IPOINT_ANYWHERE allows Pin to schedule the call anywhere in the bbl to obtain best performance.
+        // Use a fast linkage for the call.
+        BBL_InsertCall(bbl, IPOINT_ANYWHERE, AFUNPTR(count_insts), IARG_FAST_ANALYSIS_CALL, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
+    }
+}
+
+//VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
+//{
+//	BE_THREAD_SAFE();
+//}
+
 int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
   PIN_InitSymbols();
   if (PIN_Init(argc, argv)) return Usage();
 
-  if (pthread_mutex_init(&cache_lock, NULL) != 0) {
-	  std::cerr << "cache_mutex init has failed\n";
+  if (!PIN_MutexInit(&the_big_lock)) {
+	  std::cerr << "the_big_lock init has failed\n";
 	  return 1;
   }
   
@@ -1026,6 +1094,8 @@ int main(int argc, char *argv[]) {
   IMG_AddInstrumentFunction(FindFunc, 0);
   RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
+  TRACE_AddInstrumentFunction(Trace, 0);
+  //  PIN_AddThreadStartFunction(ThreadStart, 0);
   
   PIN_AddFiniFunction(Fini, 0);
 

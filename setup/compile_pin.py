@@ -47,7 +47,7 @@ with cd(PIN_DIR):
     full_input_path.rfind("/")
     pintool_so = full_input_path[full_input_path.rfind("/")+1:-3] + "so"
     print("--------------------Running Pin---------------------")
-    cmd =["make", "obj-intel64/" + pintool_so, "TARGET=intel64", "DEBUG=0"]
+    cmd =["make", "obj-intel64/" + pintool_so, "TARGET=intel64"] + [f"DEBUG={os.environ['DEBUG']}"] if os.environ.get('DEBUG') else [];
     print (" ".join(cmd)+ "\n")
     p = subprocess.run(cmd, capture_output=True)
     print("Stdout: ")
