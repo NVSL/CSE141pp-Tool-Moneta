@@ -466,7 +466,6 @@ KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
 
 VOID flush_cache() {
-	BE_THREAD_SAFE();
 	if (CACHE_DEBUG) {
 		std::cerr << "Flushing cache\n";
 	}
