@@ -41,7 +41,7 @@ class Tags():
             chk.widget.on_event('change', self.update_all_checkbox)
             stats = self.get_stats(tag)
             btn, tooltip = self.create_zoom_button(tag, stats=stats)
-            statss = self.dropdown_str(tag, stats).splitlines()
+            statss = self.tag_tooltip(tag, stats).splitlines()
 
             tag_row = v.Row(children=[
                 btn,
@@ -102,10 +102,13 @@ class Tags():
                 f'Total: {total}\n'
                 f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
                 f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
+                f'Total Hits: {stats[0]+stats[1]} ({stats_percent(stats[0]+stats[1],total)}) \n'
                 f'Capacity Read Misses: {stats[2]} ({stats_percent(stats[2],total)}) \n'
                 f'Capacity Write Misses: {stats[3]} ({stats_percent(stats[3],total)}) \n'
+                f'Total Capacity Misses: {stats[2]+stats[3]} ({stats_percent(stats[2]+stats[3],total)}) \n'
                 f'Compulsory Read Misses: {stats[4]} ({stats_percent(stats[4],total)}) \n'
                 f'Compulsory Write Misses: {stats[5]} ({stats_percent(stats[5],total)}) \n'
+                f'Total Compulsory Misses: {stats[4]+stats[5]} ({stats_percent(stats[4]+stats[5],total)}) \n'
         )
         return final_tooltip
 
