@@ -1,4 +1,5 @@
 from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME
+from moneta.utils import check_path
 import numpy as np
 import vaex
 import csv
@@ -20,15 +21,25 @@ class Trace():
         self.tag_path = tag_path
         self.meta_path = meta_path
 
+        print(f'WIP: GOING TO OPEN {self.trace_path} {self.tag_path} {self.meta_path}')
+        self.err_message = 'WIP'
+        return
+
         self.err_message = None
+
+        path_err = self.validate_paths()
+        if path_err:
+            self.err_message = path_err
+            return
+
         self.retrieve_tags()
         if len(self.tags) == 0:
             self.err_message = NO_TAGS
             return
+
         self.init_df()
         self.retrieve_cache_info()
         self.legend_state = None
-
 
     def retrieve_tags(self):
         self.tags = []
@@ -54,3 +65,8 @@ class Trace():
         self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()] + 1]
         self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]+1]
 
+    def validate_paths(self):
+        for path in [self.trace_path, self.tag_path, self.meta_path]:
+            if not os.path.exists(path):
+                return f'{ERROR_LABEL} {path} could not be found!\n'
+                

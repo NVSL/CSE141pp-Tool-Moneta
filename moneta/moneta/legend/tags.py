@@ -1,6 +1,6 @@
 from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
-from moneta.utils import stats_percent
+from moneta.utils import percent_string
 from moneta.settings import ADDRESS
 
 class Tags():
