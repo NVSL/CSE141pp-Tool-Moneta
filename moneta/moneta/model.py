@@ -32,7 +32,7 @@ class Model():
         return True
 
     def load_trace(self, trace_name):
-        trace_path, tag_path, meta_path = self.trace_map[trace_name]      
+        trace_path, tag_path, meta_path, _ = self.trace_map[trace_name]      
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         return self.curr_trace.err_message
 

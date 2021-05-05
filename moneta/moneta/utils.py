@@ -266,27 +266,30 @@ def collect_traces():
     for file_name in file_names:
         log.info(f"Checking {file_name}")
         
-        if (file_name.startswith("trace_") and file_name.endswith(".hdf5")):
+        if (file_name.endswith(".hdf5")):
             
-            trace_name = file_name[6:file_name.index(".hdf5")]
-            tag_path = os.path.join(dir_path, "tag_map_" + trace_name + ".csv")
-            meta_path = os.path.join(dir_path, "meta_data_" + trace_name + ".txt")
+            trace_name = file_name[0:file_name.index(".hdf5")]
+            tag_path = os.path.join(dir_path, trace_name + ".tags")
+            meta_path = os.path.join(dir_path, trace_name + ".meta")
+            stats_path = os.path.join(dir_path, trace_name + ".stats")
             if not (os.path.isfile(tag_path) and os.path.isfile(meta_path)):
                 print(f"{WARNING_LABEL} {TextStyle.YELLOW}Tag Map and/or Metadata file missing for {file_name}. Omitting trace.{TextStyle.END}")
                 continue
           
             trace_list.append(trace_name)
             trace_map[trace_name] = (os.path.join(dir_path, file_name),
-                                     tag_path, meta_path)
+                                     tag_path, meta_path, stats_path)
             log.debug(f"Trace: {trace_name}, Tag: {tag_path}")
     return trace_list, trace_map 
 
 
 def delete_traces(trace_paths):
-    for trace_path, tag_path, meta_path in trace_paths:
+    for trace_path, tag_path, meta_path, stats_path in trace_paths:
         if (os.path.isfile(trace_path)):
             subprocess.run(['rm', trace_path])
         if (os.path.isfile(tag_path)):
             subprocess.run(['rm', tag_path])
         if (os.path.isfile(meta_path)):
             subprocess.run(['rm', meta_path])
+        if (os.path.isfile(stats_path)):
+            subprocess.run(['rm', stats_path])
