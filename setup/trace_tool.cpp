@@ -52,13 +52,13 @@ const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
-const std::string TracePrefix    {"trace_"};
+//const std::string TracePrefix    {"trace_"};
+//const std::string TagFilePrefix  {"tag_map_"};  
+//const std::string MetaFilePrefix {"meta_data_"};
 const std::string TraceSuffix    {".hdf5"};
-const std::string TagFilePrefix  {"tag_map_"};
-const std::string TagFileSuffix  {".csv"};
-const std::string StatsFileSuffix  {".stats.csv"};
-const std::string MetaFilePrefix {"meta_data_"};
-const std::string MetaFileSuffix {".txt"};
+const std::string TagFileSuffix  {".tags"}; //csv
+const std::string StatsFileSuffix  {".stats"}; //csv
+const std::string MetaFileSuffix {".meta"}; //txt
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -537,9 +537,9 @@ void open_trace_files() {
 	full_output_trace_path = s.str();
 	file_count++;
 	  
-	output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + s.str() + TagFileSuffix;
-	std::string output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + s.str() + MetaFileSuffix;
-	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + TracePrefix + s.str() + TraceSuffix;
+	output_tagfile_path = DefaultOutputPath + "/" + s.str() + TagFileSuffix;
+	std::string output_metadata_path = DefaultOutputPath + "/" +  s.str() + MetaFileSuffix;
+	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + s.str() + TraceSuffix;
 	mkdir(DefaultOutputPath.c_str(), 0755);
 	
 	std::ofstream meta_file (output_metadata_path);
