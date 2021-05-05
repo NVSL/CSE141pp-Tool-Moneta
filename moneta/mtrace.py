@@ -40,9 +40,11 @@ def main() :
         os.environ["OMP_NUM_THREADS"] = "1"
 
     pin_cmd =f"/pin/pin.sh -ifeellucky -injection child "
-    tool_cmd=f"-t /pin/source/tools/ManualExamples/obj-intel64/trace_tool.so -name {args.trace} -file_count {args.file_count} -cache_lines {args.cache_line_count} -block {args.cache_line_size} -start {args.main} -ol {args.memops} -stack_size {int(1e12)} -skip {args.skip} -flush-cache-on-new-file"
+    tool_cmd=f"-t /pin/source/tools/ManualExamples/obj-intel64/trace_tool.so -name {args.trace} -file_count {args.file_count} -cache_lines {args.cache_line_count} -block {args.cache_line_size} -start {args.main} -ol {args.memops} -stack_size {int(1e12)} -skip {args.skip}"
     if args.debug:
         pin_cmd += " -pause_tool 30"
+    if args.flush_cache_on_new_file:
+        tool_cmd += " -flush-cache-on-new-file"
     app_cmd = ' '.join(args.cmd[1:])
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
