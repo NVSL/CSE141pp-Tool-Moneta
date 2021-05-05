@@ -1,5 +1,5 @@
 from ipywidgets import VBox, Layout, Label
-from moneta.settings import STATS_HITS, STATS_CAP_MISS, STATS_COMP_MISS
+from moneta.settings import STATS_HITS, STATS_CAP_MISS, STATS_COMP_MISS, INDEX, ADDRESS, READ_HIT, WRITE_HIT, READ_MISS, WRITE_MISS, COMP_R_MISS, COMP_W_MISS
 from moneta.utils import stats_string
 
 class PlotStats():
@@ -38,7 +38,7 @@ class PlotStats():
         self.curr_cap_misses.value = stats_string(STATS_CAP_MISS, cap_miss_count, total_count)
         self.curr_comp_misses.value = stats_string(STATS_COMP_MISS, comp_miss_count, total_count)
 
-    def get_curr_stats(self, plot, selection):
+    def get_curr_stats(self):
         plot = self.model.plot
         selection = self.model.legend.get_select_string()
         df = plot.dataset

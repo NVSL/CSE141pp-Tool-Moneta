@@ -46,9 +46,9 @@ def main() :
     app_cmd = ' '.join(args.cmd[1:])
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
-    files = [f"meta_data_{args.trace}.txt",
-             f"tag_map_{args.trace}.csv",
-             f"trace_{args.trace}.hdf5"]
+    files = [f"{args.trace}.meta",
+             f"{args.trace}.tags",
+             f"{args.trace}.hdf5"]
 
     for f in files:
         try:

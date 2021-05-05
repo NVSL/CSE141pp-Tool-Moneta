@@ -88,9 +88,9 @@ class Tags():
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
                 f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
-                f'{stats[0]:0{m}} ({stats_percent(stats[0],total)}), {stats[1]:0{m}} ({stats_percent(stats[1],total)}) Hits\n'
-                f'{stats[2]:0{m}} ({stats_percent(stats[2],total)}), {stats[3]:0{m}} ({stats_percent(stats[3],total)}) Caps\n'
-                f'{stats[4]:0{m}} ({stats_percent(stats[4],total)}), {stats[5]:0{m}} ({stats_percent(stats[5],total)}) Comp\n'
+                f'{stats[0]:0{m}} ({percent_string(stats[0],total)}), {stats[1]:0{m}} ({percent_string(stats[1],total)}) Hits\n'
+                f'{stats[2]:0{m}} ({percent_string(stats[2],total)}), {stats[3]:0{m}} ({percent_string(stats[3],total)}) Caps\n'
+                f'{stats[4]:0{m}} ({percent_string(stats[4],total)}), {stats[5]:0{m}} ({percent_string(stats[5],total)}) Comp\n'
         )
         return final_str
 
@@ -100,15 +100,15 @@ class Tags():
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
                 f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
-                f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
-                f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
-                f'Total Hits: {stats[0]+stats[1]} ({stats_percent(stats[0]+stats[1],total)}) \n'
-                f'Capacity Read Misses: {stats[2]} ({stats_percent(stats[2],total)}) \n'
-                f'Capacity Write Misses: {stats[3]} ({stats_percent(stats[3],total)}) \n'
-                f'Total Capacity Misses: {stats[2]+stats[3]} ({stats_percent(stats[2]+stats[3],total)}) \n'
-                f'Compulsory Read Misses: {stats[4]} ({stats_percent(stats[4],total)}) \n'
-                f'Compulsory Write Misses: {stats[5]} ({stats_percent(stats[5],total)}) \n'
-                f'Total Compulsory Misses: {stats[4]+stats[5]} ({stats_percent(stats[4]+stats[5],total)}) \n'
+                f'Read Hits: {stats[0]} ({percent_string(stats[0],total)}) \n'
+                f'Write Hits: {stats[1]} ({percent_string(stats[1],total)}) \n'
+                f'Total Hits: {stats[0]+stats[1]} ({percent_string(stats[0]+stats[1],total)}) \n'
+                f'Capacity Read Misses: {stats[2]} ({percent_string(stats[2],total)}) \n'
+                f'Capacity Write Misses: {stats[3]} ({percent_string(stats[3],total)}) \n'
+                f'Total Capacity Misses: {stats[2]+stats[3]} ({percent_string(stats[2]+stats[3],total)}) \n'
+                f'Compulsory Read Misses: {stats[4]} ({percent_string(stats[4],total)}) \n'
+                f'Compulsory Write Misses: {stats[5]} ({percent_string(stats[5],total)}) \n'
+                f'Total Compulsory Misses: {stats[4]+stats[5]} ({percent_string(stats[4]+stats[5],total)}) \n'
         )
         return final_tooltip
 

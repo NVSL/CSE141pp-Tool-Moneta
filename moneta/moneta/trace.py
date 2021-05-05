@@ -1,10 +1,8 @@
-from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME
+from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, ERROR_LABEL
 import numpy as np
 import vaex
 import csv
-
-import logging
-log = logging.getLogger(__name__)
+import os
 
 class Tag():
     def __init__(self, tag_dict):
@@ -14,15 +12,10 @@ class Tag():
 
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
-        log.info("__init__")
         self.name = name
         self.trace_path = trace_path
         self.tag_path = tag_path
         self.meta_path = meta_path
-
-        print(f'WIP: GOING TO OPEN {self.trace_path} {self.tag_path} {self.meta_path}')
-        self.err_message = 'WIP'
-        return
 
         self.err_message = None
 

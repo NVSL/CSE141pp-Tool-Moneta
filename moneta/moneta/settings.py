@@ -9,7 +9,7 @@ FC_WIDTH = "100%"
 FC_SCROLLBOX_HEIGHT = "30vh"
 FC_FILTER = ["*.hdf5"]
 TRACE_FILE_END = ".hdf5"
-TAG_FILE_END = ".tag"
+TAG_FILE_END = ".tags"
 META_FILE_END = ".meta"
 
 

@@ -2,12 +2,8 @@ from moneta.settings import CUSTOM_CMAP, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDR
 from moneta.legend.legend import Legend
 from moneta.trace import Trace
 
-import logging
-log = logging.getLogger(__name__)
-
 class Model():
     def __init__(self):
-        log.info("__init__")
         self.output_traces = None
         self.trace_map = None
 
