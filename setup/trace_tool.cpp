@@ -57,7 +57,7 @@ constexpr ADDRINT LIMIT {0};
 //const std::string MetaFilePrefix {"meta_data_"};
 const std::string TraceSuffix    {".hdf5"};
 const std::string TagFileSuffix  {".tags"}; //csv
-const std::string StatsFileSuffix  {".stats"}; //csv
+const std::string StatsFileSuffix  {".stats.csv"}; //csv
 const std::string MetaFileSuffix {".meta"}; //txt
 
 // User-initialized
@@ -485,6 +485,11 @@ VOID flush_cache() {
 	accesses.clear();
 	hits = 0;
 	misses = 0;
+}
+
+VOID flush_cache_user() {
+	BE_THREAD_SAFE();
+	flush_cache();
 }
 
 
@@ -973,7 +978,7 @@ VOID FindFunc(IMG img, VOID *v) {
 	rtn = RTN_FindByName(img, FLUSH_CACHE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache_user,
 				IARG_END);
 		RTN_Close(rtn);
 	}
