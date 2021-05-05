@@ -126,6 +126,11 @@ struct Tag {
 
   Tag(TagData* td, int id) : parent {td}, id {id} {}
 
+  void reset_for_new_file() { // for a new file, everything remains the same except the access number.
+	  x_range.first = -1;
+	  x_range.second = -1;
+  }
+	
   void update(ADDRINT addr, int access) {
     addr_range.first = std::min(addr_range.first, addr);
     addr_range.second = std::max(addr_range.second, addr);
@@ -155,6 +160,12 @@ struct TagData {
     tags.push_back(new Tag(this, tags.size()));
   }
 
+  void  reset_for_new_file() {
+	  for (Tag* t : tags) {
+		  t->reset_for_new_file();
+	  }
+  }
+	
   bool update(ADDRINT addr, int access) {
     bool updated {0};
     for (Tag* t : tags) {
@@ -473,6 +484,17 @@ VOID flush_cache() {
 	misses = 0;
 }
 
+VOID flush_cache_user() {
+	BE_THREAD_SAFE();
+	flush_cache();
+}
+
+
+void reset_tags_for_new_file() {
+	for (auto& tag_iter : all_tags) {
+		tag_iter.second->reset_for_new_file();
+	}
+}
 
 void write_tags_and_clear(bool clear_tags) {
 	std::vector<Tag*> tags;
@@ -504,6 +526,8 @@ void write_tags_and_clear(bool clear_tags) {
 			delete tag_iter.second;
 		}
 		all_tags.clear();
+	} else {
+		reset_tags_for_new_file();
 	}
 	
 }
@@ -528,11 +552,16 @@ void open_trace_files() {
 	std::cerr << "Opening trace '" << s.str() << "'.\n";
 	unlink(output_hdf5_trace_path.c_str());
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
-	
-	all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
-	all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
+
+	if (all_tags.find(STACK) == all_tags.end()) {
+		all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
+	}
+	if (all_tags.find(HEAP) == all_tags.end()) {
+		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
+	}
 	curr_traced_lines = 0;
 }
+
 
 void write_stats_file() {
 	//curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
@@ -555,6 +584,8 @@ void write_stats_file() {
 					 stats_file.close();
 					 
 }
+
+
 void close_trace_files(bool clear_tags) {
 	write_stats_file();
 	inst_count = 0;
@@ -944,7 +975,7 @@ VOID FindFunc(IMG img, VOID *v) {
 	rtn = RTN_FindByName(img, FLUSH_CACHE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache_user,
 				IARG_END);
 		RTN_Close(rtn);
 	}
