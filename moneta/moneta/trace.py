@@ -1,5 +1,4 @@
 from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME
-from moneta.utils import check_path
 import numpy as np
 import vaex
 import csv
