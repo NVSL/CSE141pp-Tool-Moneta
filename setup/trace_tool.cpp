@@ -476,6 +476,10 @@ KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
 
+void exit_early(int v) {
+	PIN_MutexUnlock(&the_big_lock);
+	PIN_ExitApplication(v);
+}
 VOID flush_cache() {
 	if (CACHE_DEBUG) {
 		std::cerr << "Flushing cache\n";
@@ -612,7 +616,7 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
   if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
 	  if (file_count >= KnobFileCount.Value()) {
 		  std::cerr << "Exiting application early\n";
-		  PIN_ExitApplication(0);
+		  exit_early(0);
 	  } else {
 		  std::cerr << "Creating new trace file\n";
 		  close_trace_files(false);// false preserves the tags
@@ -642,7 +646,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
   if (str_tag == HEAP || str_tag == STACK) {
     std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
   }
   if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
@@ -663,7 +667,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
       old_tag->addr_range.second != hi) {
       std::cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
     }
     if (create_new) {
       old_tag->create_new_tag();
@@ -684,14 +688,14 @@ VOID dump_stop_called(VOID * tag_name) {
   if (str_tag == HEAP || str_tag == STACK) {
     std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
   }
 
   std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
   if (iter == all_tags.end()) {
     std::cerr << "Error: Stopping a tag that was never started: " << str_tag << "\n"
 	    "Exiting Trace Early...\n";
-    PIN_ExitApplication(0);
+    exit_early(0);
   }
   for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
 		  i != iter->second->tags.rend(); ++i) {
