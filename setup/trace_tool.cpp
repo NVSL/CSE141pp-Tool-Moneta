@@ -1149,8 +1149,8 @@ int main(int argc, char *argv[]) {
   RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   TRACE_AddInstrumentFunction(Trace, 0);
-  PIN_AddThreadStartFunction(ThreadStart, 0);
-  PIN_AddThreadFiniFunction(ThreadStop, 0);
+  //PIN_AddThreadStartFunction(ThreadStart, 0);
+  //PIN_AddThreadFiniFunction(ThreadStop, 0);
   
   PIN_AddFiniFunction(Fini, 0);
 
