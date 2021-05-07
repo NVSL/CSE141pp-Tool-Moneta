@@ -118,6 +118,7 @@ INDEX = "index"
 ADDRESS = "Address"
 ACCESS = "Access"
 TAG = "Tag"
+THREAD_ID = "ThreadID"
 
 ### Axis Labels
 INDEX_LABEL = "Access Number"

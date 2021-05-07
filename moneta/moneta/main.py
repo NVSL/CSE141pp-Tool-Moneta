@@ -19,7 +19,7 @@ def main():
 
     logger.info("Starting main")
     view.View(model.Model())
-    pass
+
 
 if __name__ == '__main__':
     main()

@@ -27,6 +27,7 @@ class Legend():
         self.accesses = Accesses(model, self.update_selection)
         self.stats = PlotStats(model)
         self.tags = Tags(model, self.update_selection)
+        self.threads = Threads(model, self.update_selection)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
         self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)

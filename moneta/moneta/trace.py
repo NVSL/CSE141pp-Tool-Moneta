@@ -12,6 +12,7 @@ class Tag():
         self.access = (tag_dict[F_ACC], tag_dict[L_ACC])
         self.name = tag_dict[TAG_NAME]
 
+        
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
         log.info("__init__")
