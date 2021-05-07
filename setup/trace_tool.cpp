@@ -108,10 +108,18 @@ class PINMutexGuard {
 	PIN_MUTEX &mutex;
 public:
 	PINMutexGuard(PIN_MUTEX &m) : mutex(m) {
-		PIN_MutexLock(&mutex);
+		PIN_LockClient(); // This is not the right way to do
+				  // this, but using our own mutex
+				  // leads to hangs with multithreaded
+				  // programs.  I'm not sure why.  THe
+				  // client lock is recursive, while
+				  // the mutex is not.  That may have
+				  // something to do with it.
+		//PIN_MutexLock(&mutex);
 	}
 	~PINMutexGuard() {
-		PIN_MutexUnlock(&mutex);
+		PIN_UnlockClient();
+		//PIN_MutexUnlock(&mutex);
 	}
 	
 };
