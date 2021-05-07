@@ -222,6 +222,7 @@ bool reached_start {0};
 // Output Columns
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
+const std::string ThreadIDColumn {"ThreadID"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -231,6 +232,7 @@ class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
   uint8_t accs[chunk_size];
+  uint8_t threadids[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
@@ -239,9 +241,10 @@ class HandleHdf5 {
 
   // Memory accesses
   H5::H5File mem_file;
-  H5::DataSet tag_d;
+	//  H5::DataSet tag_d;
   H5::DataSet acc_d;
   H5::DataSet addr_d;
+  H5::DataSet threadid_d;
     // State vars
   hsize_t curr_chunk_dims [1] = {chunk_size};
   hsize_t total_ds_dims [1] = {chunk_size};
@@ -269,6 +272,7 @@ class HandleHdf5 {
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
     acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+    threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
@@ -282,6 +286,7 @@ class HandleHdf5 {
     }
     acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
+    threadid_d.extend( total_ds_dims );
 
     H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
@@ -291,6 +296,10 @@ class HandleHdf5 {
     old_dataspace = addr_d.getSpace(); // Rinse and repeat
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+
+    old_dataspace = threadid_d.getSpace(); // Rinse and repeat
+    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
+    threadid_d.write( threadids, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -346,11 +355,12 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(ADDRINT address, int access) {
+	int write_data_mem(ADDRINT address, int access, THREADID threadid) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
     addrs[mem_ind] = address; // Write to memory first
+    threadids[mem_ind] = threadid & 0xff;
     accs[mem_ind++] = access;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
@@ -612,13 +622,13 @@ void close_trace_files(bool clear_tags) {
 	delete hdf_handler;
 }
 
-VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
+VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack, THREADID threadid) {
   if (is_stack) {
     all_tags[STACK]->update(addr, curr_traced_lines);
   } else {
     all_tags[HEAP]->update(addr, curr_traced_lines);
   }
-  hdf_handler->write_data_mem(addr, acc_type);
+  hdf_handler->write_data_mem(addr, acc_type, threadid);
   curr_traced_lines++; // Afterward, for 0-based indexing
   total_traced_lines++;
   if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
@@ -825,7 +835,7 @@ void record(ADDRINT addr, int acc_type) {
   prev_acc.type = acc_type;
 }
 
-VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
+VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
 	BE_THREAD_SAFE();
   if (DEBUG) {
     read_insts++;
@@ -834,7 +844,7 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), thread_id);
   }
   if (all_lines>= SkipMemOps) {
 	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
@@ -900,7 +910,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), 0);
     is_prev_acc = false;
   }
 
@@ -927,6 +937,7 @@ VOID Instruction(INS ins, VOID *v)
         if (isRead) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
                 IARG_REG_VALUE, REG_RSP,
@@ -938,6 +949,7 @@ VOID Instruction(INS ins, VOID *v)
         if (isWrite) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
                 IARG_REG_VALUE, REG_RSP,
@@ -1137,7 +1149,8 @@ int main(int argc, char *argv[]) {
   RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   TRACE_AddInstrumentFunction(Trace, 0);
-  //  PIN_AddThreadStartFunction(ThreadStart, 0);
+  PIN_AddThreadStartFunction(ThreadStart, 0);
+  PIN_AddThreadFiniFunction(ThreadStop, 0);
   
   PIN_AddFiniFunction(Fini, 0);
 
