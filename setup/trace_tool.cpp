@@ -156,13 +156,15 @@ struct TagData {
   const int id;
   const std::string tag_name;
   const std::pair<ADDRINT, ADDRINT> addr_range;
-
+  bool isThread;
+	
   std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi) : 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool isThread) : 
 	  id(curr_id++),
 	  tag_name {tag_name},
-	  addr_range({low, hi})
+	  addr_range({low, hi}),
+	  isThread(isThread)
   {
     this->create_new_tag();
   }
@@ -579,10 +581,10 @@ void open_trace_files() {
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
 
 	if (all_tags.find(STACK) == all_tags.end()) {
-		all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
+		all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, false);
 	}
 	if (all_tags.find(HEAP) == all_tags.end()) {
-		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
+		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT,false);
 	}
 	curr_traced_lines = 0;
 }
@@ -651,11 +653,10 @@ VOID new_trace_called(VOID * trace_name) {
 	open_trace_files();
 }
 
-VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
-	BE_THREAD_SAFE();
+TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new, bool is_thread) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
-
+  TagData * r;
   std::cerr << "Tag Started: " << str_tag <<"\n";
   if (DEBUG) {
     std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
@@ -672,31 +673,38 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
       std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    all_tags[str_tag] = new TagData(str_tag, low, hi);
-
+    r = new TagData(str_tag, low, hi, is_thread);
+    all_tags[str_tag] = r;
+    
   } else { // Reuse tag
     if (DEBUG) {
       std::cerr << "Dump define called - Old tag\n";
     }
 
     // Exit program if redefining tag
-    TagData* old_tag = all_tags[str_tag];
-    if (old_tag->addr_range.first != low || // Must be same range
-      old_tag->addr_range.second != hi) {
+    r = all_tags[str_tag];
+    if (r->addr_range.first != low || // Must be same range
+      r->addr_range.second != hi) {
       std::cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
       exit_early(0);
     }
     if (create_new) {
-      old_tag->create_new_tag();
+      r->create_new_tag();
     } else {
-      old_tag->tags.back()->active = true;
+      r->tags.back()->active = true;
     }
   }
+  return r;
 }
 
-VOID dump_stop_called(VOID * tag_name) {
-		BE_THREAD_SAFE();
+VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
+	BE_THREAD_SAFE();
+	do_dump_start(tag_name, low, hi, create_new, false);
+}
+
+VOID do_dump_stop(VOID * tag_name) {
+	
   char *s = (char *)tag_name;
   std::string str_tag (s);
   std::cerr << "Tag stopped: " << str_tag <<"\n";
@@ -724,6 +732,10 @@ VOID dump_stop_called(VOID * tag_name) {
   }
 }
 
+VOID dump_stop_called(VOID * tag_name) {
+	BE_THREAD_SAFE();
+	do_dump_stop(tag_name);
+}
 VOID signal_start() {
 	BE_THREAD_SAFE();
 	std::cerr << "Tracing Started\n";
@@ -857,7 +869,8 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
   for (auto& tag_iter : all_tags) {
     TagData* td = tag_iter.second;
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
-    if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
+    if (td->isThread) continue;
+    if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
       bool updated = td->update(addr, curr_traced_lines);
       //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
@@ -867,6 +880,8 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
       }
     }
   }
+  
+  
   if (!recorded) {
     record(addr, access_type);
   }
@@ -1058,10 +1073,28 @@ VOID Trace(TRACE trace, VOID *v)
     }
 }
 
-//VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
-//{
-//	BE_THREAD_SAFE();
-//}
+std::unordered_map<THREADID, TagData *> thread_ids;
+
+VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
+{
+	std::stringstream name;
+	name << "_THREAD_" << threadid;
+		
+	BE_THREAD_SAFE();
+	//TagData *r = do_dump_start((VOID*)name.str().c_str(), 0, (ADDRINT)-1, false, true);
+	//thread_ids[threadid] = r;
+}
+
+
+VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
+{
+	std::stringstream name;
+	name << "_THREAD_" << threadid;
+		
+	BE_THREAD_SAFE();
+	//do_dump_stop((VOID *)name.str().c_str());
+	//thread_ids.erase(threadid);
+}
 
 int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
