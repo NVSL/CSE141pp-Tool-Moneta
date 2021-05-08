@@ -136,8 +136,9 @@ struct Tag {
   std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
   bool is_thread;
   THREADID thread_id;
+  UINT64 access_count;
 	
-	Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id) {}
+  Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id), access_count(0) {}
 
   void reset_for_new_file() { // for a new file, everything remains the same except the access number.
 	  x_range.first = -1;
@@ -145,6 +146,7 @@ struct Tag {
   }
 	
   void update(ADDRINT addr, int access) {
+    access_count++;
     addr_range.first = std::min(addr_range.first, addr);
     addr_range.second = std::max(addr_range.second, addr);
     if (x_range.first == -1) {
@@ -542,23 +544,23 @@ void write_tags_and_clear(bool clear_tags) {
 		  });
 
 	std::ofstream tag_file (output_tagfile_path);
-	tag_file << "Tag_Name,Is_Thread,Thread_ID,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+	tag_file << "Tag_Name,Is_Thread,Thread_ID,Low_Address,High_Address,First_Access,Last_Access,Access_Count\n"; // Header row
 	for (Tag* t : tags) {
 		if (t->x_range.first != -1) {
 			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
 				 << (t->is_thread ? "True" :"False") << ","
 				 << t->thread_id << ","
 				 << t->addr_range.first << ","
-				 << t->addr_range.first << ","
-				 << t->addr_range.first << ","
+				 << t->addr_range.second << ","
 				 << t->x_range.first << ","
-				 << t->x_range.second << "\n";
+				 << t->x_range.second << ","
+				 << t->access_count << "\n";
 		}
 	}
 
 	// Close files
 	tag_file.flush();
-	tag_file.close();
+       	tag_file.close();
 	if (clear_tags) {
 		for (auto& tag_iter : all_tags) {
 			delete tag_iter.second;
@@ -890,8 +892,15 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
     TagData* td = tag_iter.second;
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
 
-    if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
-		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
+    bool is_match;
+    if (td->is_thread) {
+	    is_match = (td->thread_id == thread_id);
+    } else {
+	    is_match = ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
+			(td->addr_range.second == LIMIT || addr <= td->addr_range.second));
+    }
+
+    if (is_match) {
       bool updated = td->update(addr, curr_traced_lines);
       //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
       if (!recorded && updated) {
@@ -1100,7 +1109,7 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 	name << "_THREAD_" << threadid;
 		
 	BE_THREAD_SAFE();
-	TagData *r = do_dump_start((VOID*)name.str().c_str(), 0, (ADDRINT)-1, false, true, threadid);
+	TagData *r = do_dump_start((VOID*)name.str().c_str(), (ADDRINT)-1, 0, false, true, threadid);
 	thread_ids[threadid] = r;
 }
 
@@ -1202,7 +1211,7 @@ int main(int argc, char *argv[]) {
   INS_AddInstrumentFunction(Instruction, 0);
   TRACE_AddInstrumentFunction(Trace, 0);
   PIN_AddThreadStartFunction(ThreadStart, 0);
-  PIN_AddThreadFiniFunction(ThreadStop, 0);
+    PIN_AddThreadFiniFunction(ThreadStop, 0);
   
   PIN_AddFiniFunction(Fini, 0);
 
