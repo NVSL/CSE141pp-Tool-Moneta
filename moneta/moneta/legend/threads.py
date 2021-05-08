@@ -18,7 +18,7 @@ class Threads():
         
         all_row = [v.Row(children=[self.all_check_tp], class_='ml-7')]
 
-        tag_rows = []
+        thread_rows = []
         treenodelabel = v.Html(tag='style', children=[(".vuetify-styles .v-treeview-node__label {"
             "margin-left: 0px;"
             "overflow: visible;"
@@ -36,16 +36,16 @@ class Threads():
             "min-height: 21px;"
             "}"
         )]) 
-        for tag in range(0,16): #self.model.curr_trace.tags:
-            chk = Checkbox(tag)
+        for thread in self.model.curr_trace.threads:
+            chk = Checkbox(thread)
             self.checkboxes.append(chk)
             chk.widget.on_event('change', self.update_all_checkbox)
-            stats = self.get_stats(tag)
-            btn, tooltip = self.create_zoom_button(tag, stats=stats)
-            statss = self.tag_tooltip(tag, stats).splitlines()
+            stats = self.get_stats(thread)
+            #btn, tooltip = self.create_zoom_button(tag, stats=stats)
+            statss = self.thread_tooltip(tag, stats).splitlines()
 
             tag_row = v.Row(children=[
-                btn,
+                #btn,
                 chk.widget
                 ], class_='ml-0')
             items = [{
@@ -61,12 +61,12 @@ class Threads():
         tag_rows.append(v.Container(row=False, children=[treenodelabel]))
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
 
-    def create_zoom_button(self, tag, stats=None): #TODO move constants out
+    def create_zoom_button(self, thread, stats=None): #TODO move constants out
         if stats is None:
-            stats = self.get_stats(tag)
+            stats = self.get_stats(thread)
 
-        tooltip = self.tag_tooltip(tag, stats)
-        btn = Button(icon='search-plus', tooltip=self.tag_tooltip(tag, stats), 
+        tooltip = self.thread_tooltip(thread, stats)
+        btn = Button(icon='search-plus', tooltip=self.thread_tooltip(thread, stats), 
                 style={'button_color': 'transparent'},
                 layout=Layout(height='35px', width='35px',
                     borders='none', align_items='center'
@@ -79,15 +79,15 @@ class Threads():
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
-        rows = df[int(tag.access[0]):int(tag.access[1])+1]
-        return rows[rows[f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
+        rows = df #[int(tag.access[0]):int(tag.access[1])+1]  We could track the start and end of each threads, but we don't.
+        return rows.count(binby=[df.Access], limits=[1,7], shape=[6])
 
     def dropdown_str(self, tag, stats):
         total = sum(stats)
         m = len(str(total))
         final_str = (
-                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
+#                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
+#                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
                 f'{stats[0]:0{m}} ({stats_percent(stats[0],total)}), {stats[1]:0{m}} ({stats_percent(stats[1],total)}) Hits\n'
                 f'{stats[2]:0{m}} ({stats_percent(stats[2],total)}), {stats[3]:0{m}} ({stats_percent(stats[3],total)}) Caps\n'
@@ -95,11 +95,11 @@ class Threads():
         )
         return final_str
 
-    def tag_tooltip(self, tag, stats):
+    def thread_tooltip(self, thread, stats):
         total = sum(stats)
         final_tooltip = (
-                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
-                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
+#                f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
+#                f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
                 f'Total: {total}\n'
                 f'Read Hits: {stats[0]} ({stats_percent(stats[0],total)}) \n'
                 f'Write Hits: {stats[1]} ({stats_percent(stats[1],total)}) \n'
@@ -132,10 +132,5 @@ class Threads():
         self.update_selection()
 
 class Checkbox:
-    def __init__(self, tag):
-        self.widget = v.Checkbox(label=tag.name, v_model=True, class_='ma-0 mt-1 pa-0')
-        self.start = tag.access[0] # Could fix x-axis being 1 access here aka access[0] == access[1]
-        self.stop = tag.access[1]
-        self.top = tag.address[1]
-        self.bottom = tag.address[0]
-
+    def __init__(self, thread):
+        self.widget = v.Checkbox(label=f"Thread {thread}", v_model=True, class_='ma-0 mt-1 pa-0')

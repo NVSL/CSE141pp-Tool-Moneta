@@ -27,7 +27,7 @@ class Trace():
             self.err_message = NO_TAGS
             return
         self.init_df()
-        self.retrieve_cache_info()
+        self.retrieve_meta_data()
         self.legend_state = None
 
 
@@ -41,13 +41,18 @@ class Trace():
         except:
             pass
 
-    def retrieve_cache_info(self):
+    def retrieve_meta_data(self):
         with open(self.meta_path) as f:
             lines = f.readlines()
             lines_split = lines[0].split()
         self.cache_lines = int(lines_split[0])
         self.cache_block = int(lines_split[1])
 
+        if len(lines) > 1:
+            self.threads = map(int,lines[1].split())
+        else:
+            self.threads = [0]
+            
     def init_df(self):
         self.df = vaex.open(self.trace_path)
         num_accs = self.df[ADDRESS].count()
