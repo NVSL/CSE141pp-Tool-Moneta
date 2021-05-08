@@ -134,8 +134,10 @@ struct Tag {
   bool active {true};
   std::pair<int, int> x_range {-1, -1};
   std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
-
-  Tag(TagData* td, int id) : parent {td}, id {id} {}
+  bool is_thread;
+  THREADID thread_id;
+	
+	Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id) {}
 
   void reset_for_new_file() { // for a new file, everything remains the same except the access number.
 	  x_range.first = -1;
@@ -156,21 +158,22 @@ struct TagData {
   const int id;
   const std::string tag_name;
   const std::pair<ADDRINT, ADDRINT> addr_range;
-  bool isThread;
-	
+  bool is_thread;
+  THREADID thread_id;
   std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool isThread) : 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool is_thread, THREADID thread_id = 0) : 
 	  id(curr_id++),
 	  tag_name {tag_name},
 	  addr_range({low, hi}),
-	  isThread(isThread)
+	  is_thread(is_thread),
+	  thread_id(thread_id)
   {
     this->create_new_tag();
   }
 
   void create_new_tag() {
-    tags.push_back(new Tag(this, tags.size()));
+	  tags.push_back(new Tag(this, tags.size(), is_thread, thread_id));
   }
 
   void  reset_for_new_file() {
@@ -214,6 +217,9 @@ ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
 
 bool reached_start {0};
+
+
+std::unordered_map<THREADID, TagData *> thread_ids;
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -536,11 +542,16 @@ void write_tags_and_clear(bool clear_tags) {
 		  });
 
 	std::ofstream tag_file (output_tagfile_path);
-	tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+	tag_file << "Tag_Name,Is_Thread,Thread_ID,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
 	for (Tag* t : tags) {
 		if (t->x_range.first != -1) {
-			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
-				 << t->addr_range.second << "," << t->x_range.first << ","
+			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
+				 << (t->is_thread ? "True" :"False") << ","
+				 << t->thread_id << ","
+				 << t->addr_range.first << ","
+				 << t->addr_range.first << ","
+				 << t->addr_range.first << ","
+				 << t->x_range.first << ","
 				 << t->x_range.second << "\n";
 		}
 	}
@@ -567,15 +578,9 @@ void open_trace_files() {
 	file_count++;
 	  
 	output_tagfile_path = DefaultOutputPath + "/" + s.str() + TagFileSuffix;
-	std::string output_metadata_path = DefaultOutputPath + "/" +  s.str() + MetaFileSuffix;
 	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + s.str() + TraceSuffix;
 	mkdir(DefaultOutputPath.c_str(), 0755);
 	
-	std::ofstream meta_file (output_metadata_path);
-	meta_file << cache_size << " " << cache_line;
-	meta_file.flush();
-	meta_file.close();
-
 	std::cerr << "Opening trace '" << s.str() << "'.\n";
 	unlink(output_hdf5_trace_path.c_str());
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
@@ -615,6 +620,21 @@ void write_stats_file() {
 
 void close_trace_files(bool clear_tags) {
 	write_stats_file();
+
+	std::string output_metadata_path = DefaultOutputPath + "/" + full_output_trace_path + MetaFileSuffix;
+	std::ofstream meta_file (output_metadata_path);
+	meta_file << cache_size << " " << cache_line <<"\n";
+	for(auto & thread: thread_ids) {
+		meta_file << thread.first << " ";
+	}
+	if (thread_ids.find(0) == thread_ids.end()) {
+		meta_file << 0 << " ";
+	}
+	meta_file << "\n";
+	meta_file.flush();
+	meta_file.close();
+
+
 	inst_count = 0;
 	if (KnobFlushCacheOnNewFile.Value()) {
 		flush_cache();
@@ -653,7 +673,7 @@ VOID new_trace_called(VOID * trace_name) {
 	open_trace_files();
 }
 
-TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new, bool is_thread) {
+TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new, bool is_thread, THREADID thread_id) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
   TagData * r;
@@ -673,7 +693,7 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
       std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    r = new TagData(str_tag, low, hi, is_thread);
+    r = new TagData(str_tag, low, hi, is_thread, thread_id);
     all_tags[str_tag] = r;
     
   } else { // Reuse tag
@@ -700,7 +720,7 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
 
 VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
 	BE_THREAD_SAFE();
-	do_dump_start(tag_name, low, hi, create_new, false);
+	do_dump_start(tag_name, low, hi, create_new, false, 0);
 }
 
 VOID do_dump_stop(VOID * tag_name) {
@@ -869,7 +889,7 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
   for (auto& tag_iter : all_tags) {
     TagData* td = tag_iter.second;
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
-    if (td->isThread) continue;
+
     if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
 		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
       bool updated = td->update(addr, curr_traced_lines);
@@ -1073,7 +1093,6 @@ VOID Trace(TRACE trace, VOID *v)
     }
 }
 
-std::unordered_map<THREADID, TagData *> thread_ids;
 
 VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 {
@@ -1081,8 +1100,8 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 	name << "_THREAD_" << threadid;
 		
 	BE_THREAD_SAFE();
-	//TagData *r = do_dump_start((VOID*)name.str().c_str(), 0, (ADDRINT)-1, false, true);
-	//thread_ids[threadid] = r;
+	TagData *r = do_dump_start((VOID*)name.str().c_str(), 0, (ADDRINT)-1, false, true, threadid);
+	thread_ids[threadid] = r;
 }
 
 
@@ -1092,8 +1111,8 @@ VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
 	name << "_THREAD_" << threadid;
 		
 	BE_THREAD_SAFE();
-	//do_dump_stop((VOID *)name.str().c_str());
-	//thread_ids.erase(threadid);
+	do_dump_stop((VOID *)name.str().c_str());
+	thread_ids.erase(threadid);
 }
 
 int main(int argc, char *argv[]) {
@@ -1182,8 +1201,8 @@ int main(int argc, char *argv[]) {
   RTN_AddInstrumentFunction(FindStartFunc, 0);
   INS_AddInstrumentFunction(Instruction, 0);
   TRACE_AddInstrumentFunction(Trace, 0);
-  //PIN_AddThreadStartFunction(ThreadStart, 0);
-  //PIN_AddThreadFiniFunction(ThreadStop, 0);
+  PIN_AddThreadStartFunction(ThreadStart, 0);
+  PIN_AddThreadFiniFunction(ThreadStop, 0);
   
   PIN_AddFiniFunction(Fini, 0);
 
