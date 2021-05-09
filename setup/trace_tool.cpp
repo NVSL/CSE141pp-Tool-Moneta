@@ -77,6 +77,7 @@ const std::string NEW_TRACE {"M_NEW_TRACE"};
 const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
+const std::string GET_THREAD_ID  {"GET_THREAD_ID"};
 const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
 UINT64 SkipMemOps = 10000000000000000ull;
@@ -781,6 +782,9 @@ void dump_cache(std::ostream & out) {
 	}
 }
 
+int get_thread_id() {
+	return PIN_ThreadId();
+}
 #if (0)
 #define cache_assert(exp)				\
 	do {						\
@@ -1067,6 +1071,11 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, GET_THREAD_ID.c_str());
+	if(RTN_Valid(rtn)){
+		std::cerr << "replace get_thread_id\n";
+		RTN_Replace(rtn, (AFUNPTR)get_thread_id);
 	}
 }
 
