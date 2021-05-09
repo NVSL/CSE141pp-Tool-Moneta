@@ -2,10 +2,9 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE, LEGEND_THREADS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS, THREAD_ID
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
-from moneta.legend.threads import Threads
 from moneta.legend.stats import PlotStats
 
 from enum import Enum
@@ -28,10 +27,8 @@ class Legend():
         self.accesses = Accesses(model, self.update_selection)
         self.stats = PlotStats(model)
         self.tags = Tags(model, self.update_selection)
-        self.threads = Threads(model, self.update_selection)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
-        self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
         self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
@@ -54,13 +51,14 @@ class Legend():
         selections = set()
         for checkbox in self.accesses.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('(Access != %d)' % (checkbox.acc_type))
+                selections.add(f'(Access != {checkbox.acc_type})')
         for checkbox in self.tags.checkboxes:
             if checkbox.widget.v_model == False:
-                selections.add('((%s < %s) | (%s > %s) | (%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop, ADDRESS, checkbox.bottom, ADDRESS, checkbox.top))
-        for checkbox in self.threads.checkboxes:
-            if checkbox.widget.v_model == False:
-                pass #selections.add('((%s < %s) | (%s > %s) | (%s < %s) | (%s > %s))' % (INDEX, checkbox.start, INDEX, checkbox.stop, ADDRESS, checkbox.bottom, ADDRESS, checkbox.top))
+                if checkbox.is_thread:
+                    selections.add(f'({THREAD_ID} != {checkbox.thread_id})')
+                else:
+                    selections.add(f'(({INDEX}  < {checkbox.start}) | ({INDEX} > {checkbox.stop}) | ({ADDRESS} < {checkbox.bottom}) | ({ADDRESS} > {checkbox.top}))')
+
         return '&'.join(selections)
 
     @debounced(0.5)

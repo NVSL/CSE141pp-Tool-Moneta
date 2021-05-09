@@ -10,7 +10,7 @@ class Model():
     def __init__(self):
         log.info("__init__")
         self.output_traces = None
-        self.trace_map = None
+        self.trace_map = dict()
 
         self.curr_trace = None
         self.legend = None
@@ -32,7 +32,15 @@ class Model():
         return True
 
     def load_trace(self, trace_name):
-        trace_path, tag_path, meta_path, _ = self.trace_map[trace_name]      
+        if trace_name in self.trace_map:
+            trace_path, tag_path, meta_path, _ = self.trace_map[trace_name]
+        else:
+            trace_path = trace_name + ".hdf5"
+            tag_path = trace_name + ".tags"
+            meta_path = trace_name + ".meta"
+        log.debug(f"trace_path = {trace_path}")
+        log.debug(f"tag_path = {tag_path}")
+        log.debug(f"meta_path = {meta_path}")
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         return self.curr_trace.err_message
 

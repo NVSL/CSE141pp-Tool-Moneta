@@ -1,7 +1,11 @@
 from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
 from moneta.utils import stats_percent
-from moneta.settings import ADDRESS
+from moneta.settings import ADDRESS, THREAD_ID
+
+import logging
+log = logging.getLogger(__name__)
+
 
 class Tags():
     def __init__(self, model, update_selection):
@@ -79,7 +83,13 @@ class Tags():
     def get_stats(self, tag):
         df = self.model.curr_trace.df
         rows = df[int(tag.access[0]):int(tag.access[1])+1]
-        return rows[rows[f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})']].count(binby=[df.Access], limits=[1,7], shape=[6])
+        if tag.is_thread:
+            q = f'({THREAD_ID} == {tag.thread_id})'
+            log.debug(f"q = {q}")
+        else:
+            q = f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})'
+
+        return rows[rows[q]].count(binby=[df.Access], limits=[1,7], shape=[6])
 
     def dropdown_str(self, tag, stats):
         total = sum(stats)
@@ -137,4 +147,5 @@ class Checkbox:
         self.stop = tag.access[1]
         self.top = tag.address[1]
         self.bottom = tag.address[0]
-
+        self.is_thread = tag.is_thread
+        self.thread_id = tag.thread_id

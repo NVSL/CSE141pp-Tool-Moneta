@@ -281,9 +281,9 @@ class HandleHdf5 {
     hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
-    acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+    acc_d =      mem_file.createDataSet(AccessColumn.c_str(),   H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
-    addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+    addr_d =     mem_file.createDataSet(AddressColumn.c_str(),  H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
     //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
@@ -308,8 +308,8 @@ class HandleHdf5 {
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
 
     old_dataspace = threadid_d.getSpace(); // Rinse and repeat
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
-    threadid_d.write( threadids, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+    threadid_d.write(threadids, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -365,12 +365,12 @@ public:
   }
 
   // Write data for memory access to file
-	int write_data_mem(ADDRINT address, int access, THREADID threadid) {
+  int write_data_mem(ADDRINT address, int access, THREADID threadid) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
     addrs[mem_ind] = address; // Write to memory first
-    threadids[mem_ind] = threadid & 0xff;
+    threadids[mem_ind] = (unsigned char)(threadid & 0xff);
     accs[mem_ind++] = access;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
@@ -1211,8 +1211,7 @@ int main(int argc, char *argv[]) {
   INS_AddInstrumentFunction(Instruction, 0);
   TRACE_AddInstrumentFunction(Trace, 0);
   PIN_AddThreadStartFunction(ThreadStart, 0);
-    PIN_AddThreadFiniFunction(ThreadStop, 0);
-  
+  PIN_AddThreadFiniFunction(ThreadStop, 0);
   PIN_AddFiniFunction(Fini, 0);
 
   if (DEBUG) {
