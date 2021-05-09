@@ -17,6 +17,7 @@ class FileChooser(VBox, ValueWidget):
             filename='',
             title='',
             select_desc='Select',
+            load_desc='Load',
             change_desc='Change',
             show_hidden=False,
             select_default=False,
@@ -31,6 +32,7 @@ class FileChooser(VBox, ValueWidget):
         self._selected_filename = None
         self._show_hidden = show_hidden
         self._select_desc = select_desc
+        self._load_desc = load_desc
         self._change_desc = change_desc
         self._callback = None
         self._select_default = select_default
@@ -314,9 +316,11 @@ class FileChooser(VBox, ValueWidget):
         if self._gb.layout.display == 'none':
             # If not shown, open the dialog
             self._show_dialog()
+            self._select.description = self._load_desc
         else:
             # If shown, close the dialog and apply the selection
             self._apply_selection()
+            self._select.description = self._select_desc
 
             # Execute callback function
             if self._callback is not None:
@@ -347,7 +351,7 @@ class FileChooser(VBox, ValueWidget):
         """Close the dialog and apply the selection."""
         self._gb.layout.display = 'none'
         self._cancel.layout.display = 'none'
-        self._select.description = self._change_desc
+        self._select.description = self._select_desc
         self._selected_path = self._pathlist.value
         self._selected_filename = self._filename.value
 
@@ -372,6 +376,7 @@ class FileChooser(VBox, ValueWidget):
         self._gb.layout.display = 'none'
         self._cancel.layout.display = 'none'
         self._select.disabled = False
+        self._select.description = self._select_desc
 
     def reset(self, path=None, filename=None):
         """Reset the form to the default path and filename."""
@@ -568,7 +573,8 @@ class FileChooser(VBox, ValueWidget):
             "use_dir_icons='{4}', "
             "show_only_dirs='{5}', "
             "select_desc='{6}', "
-            "change_desc='{7}')"
+            "select_desc='{7}', "
+            "change_desc='{8}')"
         ).format(
             self._default_path,
             self._default_filename,
@@ -577,6 +583,7 @@ class FileChooser(VBox, ValueWidget):
             self._use_dir_icons,
             self._show_only_dirs,
             self._select_desc,
+            self._load_desc,
             self._change_desc
         )
         return str_
