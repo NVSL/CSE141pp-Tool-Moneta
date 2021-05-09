@@ -2,14 +2,17 @@ from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox,
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS, THREAD_ID
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS, THREAD_ID, LEGEND_THREADS_TITLE
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
+from moneta.trace import TAG_TYPE_SPACETIME, TAG_TYPE_THREAD
 from moneta.legend.stats import PlotStats
 
 from enum import Enum
 import numpy as np
 from vaex.jupyter.bqplot import *
+import logging
+log = logging.getLogger(__name__)
 
 class Legend():
     def __init__(self, model):
@@ -26,9 +29,11 @@ class Legend():
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.accesses = Accesses(model, self.update_selection)
         self.stats = PlotStats(model)
-        self.tags = Tags(model, self.update_selection)
+        self.tags = Tags(model, self.update_selection, tag_type=TAG_TYPE_SPACETIME)
+        self.threads = Tags(model, self.update_selection, tag_type=TAG_TYPE_THREAD)
         self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
+        self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
         self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
 
         def update_legend_icon(_panels, _, selected):
@@ -52,14 +57,12 @@ class Legend():
         for checkbox in self.accesses.checkboxes:
             if checkbox.widget.v_model == False:
                 selections.add(f'(Access != {checkbox.acc_type})')
-        for checkbox in self.tags.checkboxes:
-            if checkbox.widget.v_model == False:
-                if checkbox.is_thread:
-                    selections.add(f'({THREAD_ID} != {checkbox.thread_id})')
-                else:
-                    selections.add(f'(({INDEX}  < {checkbox.start}) | ({INDEX} > {checkbox.stop}) | ({ADDRESS} < {checkbox.bottom}) | ({ADDRESS} > {checkbox.top}))')
 
-        return '&'.join(selections)
+        for checkbox in self.tags.checkboxes + self.threads.checkboxes:
+            if checkbox.widget.v_model == False:
+                selections.add(f"(~({checkbox.tag.query_string()}))")
+        q = '&'.join(selections)
+        return q
 
     @debounced(0.5)
     def update_selection(self):

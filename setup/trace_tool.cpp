@@ -544,11 +544,11 @@ void write_tags_and_clear(bool clear_tags) {
 		  });
 
 	std::ofstream tag_file (output_tagfile_path);
-	tag_file << "Tag_Name,Is_Thread,Thread_ID,Low_Address,High_Address,First_Access,Last_Access,Access_Count\n"; // Header row
+	tag_file << "Tag_Name,Tag_Type,Thread_ID,Low_Address,High_Address,First_Access,Last_Access,Access_Count\n"; // Header row
 	for (Tag* t : tags) {
 		if (t->x_range.first != -1) {
 			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
-				 << (t->is_thread ? "True" :"False") << ","
+				 << (t->is_thread ? "thread" :"space-time") << ","
 				 << t->thread_id << ","
 				 << t->addr_range.first << ","
 				 << t->addr_range.second << ","

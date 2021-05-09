@@ -138,12 +138,13 @@ HI_ADDR = "High_Address"
 F_ACC = "First_Access"
 L_ACC = "Last_Access"
 TAG_NAME = "Tag_Name"
-IS_THREAD="Is_Thread"
+TAG_FILE_TAG_TYPE="Tag_Type"
 TAG_FILE_THREAD_ID="Thread_ID"
 
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
+LEGEND_THREADS_TITLE = 'Threads'
 LEGEND_STATS_TITLE = 'Stats'
 
 # Legend grid box

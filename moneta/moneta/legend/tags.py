@@ -8,16 +8,17 @@ log = logging.getLogger(__name__)
 
 
 class Tags():
-    def __init__(self, model, update_selection):
+    def __init__(self, model, update_selection, tag_type):
         self.model = model
+        self.tag_type = tag_type
         self.update_selection = update_selection
         self.checkboxes = []
-        self.widgets = self.init_widgets()
+        self.widgets = self.init_widgets(tag_type)
 
-    def init_widgets(self):
+    def init_widgets(self, tag_type):
         self.all_check = v.Checkbox(v_on='tooltip.on', prepend_icon='fa-globe', label="All", v_model=True, class_='ma-0 mt-1 pa-0')
         self.all_check_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self.all_check}],
-                children=["Select all tags"])
+                children=["Select all"])
         self.all_check.on_event('change', self.check_all)
         all_row = [v.Row(children=[self.all_check_tp], class_='ml-7')]
 
@@ -38,29 +39,31 @@ class Tags():
             ".vuetify-styles .v-treeview--dense .v-treeview-node__root {"
             "min-height: 21px;"
             "}"
-        )]) 
+        )])
+        
         for tag in self.model.curr_trace.tags:
-            chk = Checkbox(tag)
-            self.checkboxes.append(chk)
-            chk.widget.on_event('change', self.update_all_checkbox)
-            stats = self.get_stats(tag)
-            btn, tooltip = self.create_zoom_button(tag, stats=stats)
-            statss = self.tag_tooltip(tag, stats).splitlines()
+            if tag.tag_type == tag_type:
+                chk = Checkbox(tag)
+                self.checkboxes.append(chk)
+                chk.widget.on_event('change', self.update_all_checkbox)
+                stats = self.get_stats(tag)
+                btn, tooltip = self.create_zoom_button(tag, stats=stats)
+                statss = self.tag_tooltip(tag, stats).splitlines()
 
-            tag_row = v.Row(children=[
-                btn,
-                chk.widget
-                ], class_='ml-0')
-            items = [{
-              'id': 1,
-              'name': '',
-              'children': [{'id': i+2, 'name': stat} for i, stat in enumerate(statss)],
-            }]
-            treeview = v.Treeview(items=items, dense=True)
-            tag_rows.append(v.Container(row=False, class_="d-flex justify-start ma-0 pa-0",children=[
-                    v.Col(cols=1, children=[treeview], class_="ma-0 pa-0"),
-                    v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
-                    ]))
+                tag_row = v.Row(children=[
+                    btn,
+                    chk.widget
+                    ], class_='ml-0')
+                items = [{
+                  'id': 1,
+                  'name': '',
+                  'children': [{'id': i+2, 'name': stat} for i, stat in enumerate(statss)],
+                }]
+                treeview = v.Treeview(items=items, dense=True)
+                tag_rows.append(v.Container(row=False, class_="d-flex justify-start ma-0 pa-0",children=[
+                        v.Col(cols=1, children=[treeview], class_="ma-0 pa-0"),
+                        v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
+                        ]))
         tag_rows.append(v.Container(row=False, children=[treenodelabel]))
         return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
 
@@ -82,14 +85,8 @@ class Tags():
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
-        rows = df[int(tag.access[0]):int(tag.access[1])+1]
-        if tag.is_thread:
-            q = f'({THREAD_ID} == {tag.thread_id})'
-            log.debug(f"q = {q}")
-        else:
-            q = f'({ADDRESS} >= {tag.address[0]}) & ({ADDRESS} <= {tag.address[1]})'
+        return df[df[tag.query_string()]].count(binby=[df.Access], limits=[1,7], shape=[6])
 
-        return rows[rows[q]].count(binby=[df.Access], limits=[1,7], shape=[6])
 
     def dropdown_str(self, tag, stats):
         total = sum(stats)
@@ -142,10 +139,9 @@ class Tags():
 
 class Checkbox:
     def __init__(self, tag):
-        self.widget = v.Checkbox(label=tag.name, v_model=True, class_='ma-0 mt-1 pa-0')
+        self.widget = v.Checkbox(label=tag.display_name(), v_model=True, class_='ma-0 mt-1 pa-0')
         self.start = tag.access[0] # Could fix x-axis being 1 access here aka access[0] == access[1]
         self.stop = tag.access[1]
         self.top = tag.address[1]
         self.bottom = tag.address[0]
-        self.is_thread = tag.is_thread
-        self.thread_id = tag.thread_id
+        self.tag = tag

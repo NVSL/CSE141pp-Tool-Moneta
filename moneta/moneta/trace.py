@@ -1,4 +1,4 @@
-from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, IS_THREAD, TAG_FILE_THREAD_ID
+from moneta.settings import NO_TAGS, INDEX, ADDRESS, THREAD_ID, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, TAG_FILE_THREAD_ID, TAG_FILE_TAG_TYPE
 import numpy as np
 import vaex
 import csv
@@ -6,14 +6,49 @@ import csv
 import logging
 log = logging.getLogger(__name__)
 
+TAG_TYPE_SPACETIME = "space-time"
+TAG_TYPE_THREAD = "thread"
 class Tag():
     def __init__(self, tag_dict):
         self.address = (tag_dict[LO_ADDR], tag_dict[HI_ADDR])
         self.access = (tag_dict[F_ACC], tag_dict[L_ACC])
         self.name = tag_dict[TAG_NAME]
         self.thread_id = int(tag_dict.get(TAG_FILE_THREAD_ID, "0"))
-        self.is_thread = True if tag_dict.get(IS_THREAD, "False") == "True" else False
-        
+        self.tag_type = tag_dict.get(TAG_FILE_TAG_TYPE, TAG_TYPE_SPACETIME)
+
+    def is_thread(self):
+        return self.tag_type == TAG_TYPE_THREAD
+
+    @classmethod
+    def create(cls, tag_dict):
+        tag_type = tag_dict.get(TAG_FILE_TAG_TYPE, TAG_TYPE_SPACETIME)
+        tag_type_map = {
+            TAG_TYPE_SPACETIME: SpaceTimeTag,
+            TAG_TYPE_THREAD: ThreadTag
+            }
+        return tag_type_map[tag_type](tag_dict)
+    
+class ThreadTag(Tag):
+    def __init__(self, tag_dict):
+        super(ThreadTag, self).__init__(tag_dict)
+
+    def query_string(self):
+        return f'({THREAD_ID} == {self.thread_id})'
+
+    def display_name(self):
+        return f"Thread {self.thread_id}"
+
+class SpaceTimeTag(Tag):
+    def __init__(self, tag_dict):
+        super(SpaceTimeTag, self).__init__(tag_dict)
+
+    def query_string(self):
+        return (f"({ADDRESS} >= {self.address[0]}) & ({ADDRESS} <= {self.address[1]}) &" +
+                f"({INDEX} >= {self.access[0]}) & ({INDEX} <= {self.access[1]})")
+
+    def display_name(self):
+        return self.name
+    
 class Trace():
     def __init__(self, name, trace_path, tag_path, meta_path):
         log.info("__init__")
@@ -38,7 +73,7 @@ class Trace():
             rows = csv.DictReader(f)
             for row in rows:
                 log.debug(f"found tag '{row['Tag_Name']}': {row}")
-                self.tags.append(Tag(row))
+                self.tags.append(Tag.create(row))
                 
     def retrieve_meta_data(self):
         with open(self.meta_path) as f:
