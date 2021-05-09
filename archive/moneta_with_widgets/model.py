@@ -1,15 +1,24 @@
-from moneta.settings import CUSTOM_CMAP, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, TRACE_FILE_END, META_FILE_END, TAG_FILE_END
+from moneta.settings import CUSTOM_CMAP, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS
+from moneta.utils import collect_traces, delete_traces 
 from moneta.legend.legend import Legend
 from moneta.trace import Trace
 
+import logging
+log = logging.getLogger(__name__)
+
 class Model():
     def __init__(self):
+        log.info("__init__")
         self.output_traces = None
-        self.trace_map = dict()
+        self.trace_map = None
 
         self.curr_trace = None
         self.legend = None
         self.plot = None
+
+    def update_trace_list(self):
+        self.output_traces, self.trace_map = collect_traces()
+        return sorted(self.output_traces, key=str.casefold)
 
     def clear_trace_state(self):
         self.curr_trace = None
@@ -22,12 +31,8 @@ class Model():
             return False
         return True
 
-    def load_trace(self, path, trace_name):
-        raw_trace_name = trace_name.replace(TRACE_FILE_END, '')
-        trace_path = f'{path}/{raw_trace_name}{TRACE_FILE_END}'
-        tag_path = f'{path}/{raw_trace_name}{TAG_FILE_END}'
-        meta_path = f'{path}/{raw_trace_name}{META_FILE_END}'
-
+    def load_trace(self, trace_name):
+        trace_path, tag_path, meta_path, _ = self.trace_map[trace_name]      
         self.curr_trace = Trace(trace_name, trace_path, tag_path, meta_path)
         return self.curr_trace.err_message
 
@@ -53,3 +58,12 @@ class Model():
                     show=False
                  )
 
+
+    def delete_traces(self, traces):
+        delete_traces(map(lambda x: self.trace_map[x], traces))
+        
+        if self.curr_trace is not None and self.curr_trace.name in traces:
+            self.clear_trace_state()
+            return False
+        return True
+    

@@ -52,12 +52,9 @@ const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
-//const std::string TracePrefix    {"trace_"};
-//const std::string TagFilePrefix  {"tag_map_"};  
-//const std::string MetaFilePrefix {"meta_data_"};
 const std::string TraceSuffix    {".hdf5"};
 const std::string TagFileSuffix  {".tags"}; //csv
-const std::string StatsFileSuffix  {".stats.csv"}; //csv
+const std::string StatsFileSuffix  {".stats"}; //csv
 const std::string MetaFileSuffix {".meta"}; //txt
 
 // User-initialized
@@ -582,6 +579,7 @@ void open_trace_files() {
 	  
 	output_tagfile_path = DefaultOutputPath + "/" + s.str() + TagFileSuffix;
 	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + s.str() + TraceSuffix;
+
 	mkdir(DefaultOutputPath.c_str(), 0755);
 	
 	std::cerr << "Opening trace '" << s.str() << "'.\n";
