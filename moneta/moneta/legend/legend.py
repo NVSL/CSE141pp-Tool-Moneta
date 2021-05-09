@@ -15,14 +15,18 @@ class Legend():
     def __init__(self, model):
         self.model = model
 
-
         self.panels = v.ExpansionPanels(accordion=True, multiple=True, v_model=[])
         up = 'keyboard_arrow_up'
         down = 'keyboard_arrow_down'
         legend_icon = v.Icon(children=[down])
         self.legend_button = v.Btn(icon=True, children=[legend_icon])
         # Style to remove gray background in panels, and remove padding in panel contents
-        panel_style = v.Html(tag='style', children=[".v-application--wrap{background-color: white!important} .v-expansion-panel-content__wrap{padding:0!important}"])
+        panel_style = v.Html(tag='style', children=[(
+            ".v-application--wrap{background-color: white!important}"
+            ".v-expansion-panel-content__wrap{padding:0!important}"
+            ".v-input__slot .v-label{color: black!important}"
+        )])
+
         self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
         self.accesses = Accesses(model, self.update_selection)
         self.stats = PlotStats(model)
