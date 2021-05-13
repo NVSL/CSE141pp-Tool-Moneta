@@ -1,4 +1,5 @@
 from moneta.settings import NO_TAGS, INDEX, ADDRESS, LO_ADDR, HI_ADDR, F_ACC, L_ACC, TAG_NAME, ERROR_LABEL, TAG_FILE_THREAD_ID, TAG_FILE_TAG_TYPE, THREAD_ID
+import math
 import numpy as np
 import vaex
 import csv
@@ -20,6 +21,7 @@ class Tag():
     def is_thread(self):
         return self.tag_type == TAG_TYPE_THREAD
 
+    
     @classmethod
     def create(cls, tag_dict):
         tag_type = tag_dict.get(TAG_FILE_TAG_TYPE, TAG_TYPE_SPACETIME)
@@ -28,7 +30,7 @@ class Tag():
             TAG_TYPE_THREAD: ThreadTag
             }
         return tag_type_map[tag_type](tag_dict)
-    
+
 class ThreadTag(Tag):
     def __init__(self, tag_dict):
         super(ThreadTag, self).__init__(tag_dict)
@@ -107,4 +109,11 @@ class Trace():
         for path in [self.trace_path, self.tag_path, self.meta_path]:
             if not os.path.exists(path):
                 return f'{ERROR_LABEL} {path} could not be found!\n'
-                
+
+    def compute_working_set(self, df):
+        bits = int(math.log(self.cache_block, 2))
+        working_set = df['Address'].unique("")
+        shifted  = map(lambda x: x >> bits, working_set)
+        count = len(set(shifted))
+        bytes = count * self.cache_lines
+        return count, bytes

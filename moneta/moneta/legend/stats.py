@@ -1,6 +1,7 @@
 from ipywidgets import VBox, Layout, Label
 from moneta.settings import STATS_HITS, STATS_CAP_MISS, STATS_COMP_MISS, INDEX, ADDRESS, READ_HIT, WRITE_HIT, READ_MISS, WRITE_MISS, COMP_R_MISS, COMP_W_MISS, STATS_MEM_ACCESSED
-from moneta.utils import stats_string, compute_working_set, mem_accessed_stats
+from moneta.utils import stats_string, mem_accessed_stats
+from moneta.trace import Trace
 
 class PlotStats():
     def __init__(self, model):
@@ -42,7 +43,7 @@ class PlotStats():
         self.curr_cap_misses.value = stats_string(STATS_CAP_MISS, cap_miss_count, total_count)
         self.curr_comp_misses.value = stats_string(STATS_COMP_MISS, comp_miss_count, total_count)
         self.curr_mem_accessed.value = stats_string(STATS_MEM_ACCESSED, mem_accessed_stats(bytes, lines, self.model.curr_trace.cache_lines))
-
+        
     def get_curr_stats(self):
         plot = self.model.plot
         selection = self.model.legend.get_select_string()
@@ -59,7 +60,7 @@ class PlotStats():
         
         # Limit min/max is min/max value of Access enum, shape is number of types of access
         stats = df.count(binby=['Access'], limits=[1,7], shape=6)
-        lines, bytes =  compute_working_set(df)
+        lines, bytes =  self.model.curr_trace.compute_working_set(df)
         hit_count = stats[READ_HIT - 1] + stats[WRITE_HIT - 1]
         cap_miss_count = stats[READ_MISS - 1] + stats[WRITE_MISS - 1]
         comp_miss_count = stats[COMP_R_MISS - 1] + stats[COMP_W_MISS - 1]

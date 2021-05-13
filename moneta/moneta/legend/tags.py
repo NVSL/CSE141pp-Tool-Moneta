@@ -2,7 +2,8 @@ from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
 
-from moneta.utils import percent_string, compute_working_set, mem_accessed_stats
+from moneta.utils import percent_string,  mem_accessed_stats
+from moneta.trace import Trace
 from moneta.settings import ADDRESS
 import logging
 log = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class Tags():
     def get_stats(self, tag):
         df = self.model.curr_trace.df
         cache = df[df[tag.query_string()]].count(binby=[df.Access], limits=[1,7], shape=[6])
-        working_set = compute_working_set(df[df[tag.query_string()]])
+        working_set = self.model.curr_trace.compute_working_set(df[df[tag.query_string()]])
         return list(cache) +list(working_set) 
 
 
