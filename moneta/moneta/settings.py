@@ -90,6 +90,8 @@ LEGEND_STATS_TITLE = 'Stats'
 STATS_HITS = "Hits"
 STATS_COMP_MISS = "Comp. Misses"
 STATS_CAP_MISS = "Cap. Misses"
+STATS_MEM_ACCESSED = "Mem."
+
 
 # Legend grid box
 vdiv = HBox([

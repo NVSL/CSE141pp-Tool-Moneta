@@ -80,7 +80,8 @@ class Trace():
             for row in rows:
                 log.debug(f"found tag '{row['Tag_Name']}': {row}")
                 self.tags.append(Tag.create(row))
-                
+
+    
     def retrieve_meta_data(self):
         with open(self.meta_path) as f:
             lines = f.readlines()

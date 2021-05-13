@@ -136,7 +136,8 @@ struct Tag {
   THREADID thread_id;
   UINT64 access_count;
 	
-  Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id), access_count(0) {}
+  Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id), access_count(0) {
+  }
 
   void reset_for_new_file() { // for a new file, everything remains the same except the access number.
 	  x_range.first = -1;

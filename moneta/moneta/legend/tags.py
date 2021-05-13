@@ -2,8 +2,7 @@ from ipywidgets import VBox, HBox, Layout, Button
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
 
-
-from moneta.utils import percent_string
+from moneta.utils import percent_string, compute_working_set, mem_accessed_stats
 from moneta.settings import ADDRESS
 import logging
 log = logging.getLogger(__name__)
@@ -87,7 +86,9 @@ class Tags():
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
-        return df[df[tag.query_string()]].count(binby=[df.Access], limits=[1,7], shape=[6])
+        cache = df[df[tag.query_string()]].count(binby=[df.Access], limits=[1,7], shape=[6])
+        working_set = compute_working_set(df[df[tag.query_string()]])
+        return list(cache) +list(working_set) 
 
 
     def dropdown_str(self, tag, stats):
@@ -96,6 +97,7 @@ class Tags():
         final_str = (
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
                 f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
+                f'Mem.: {mem_accessed_stats(stats[7],stats[6], self.model.curr_trace.cache_lines)}\n'
                 f'Total: {total}\n'
                 f'{stats[0]:0{m}} ({percent_string(stats[0],total)}), {stats[1]:0{m}} ({percent_string(stats[1],total)}) Hits\n'
                 f'{stats[2]:0{m}} ({percent_string(stats[2],total)}), {stats[3]:0{m}} ({percent_string(stats[3],total)}) Caps\n'
@@ -108,6 +110,7 @@ class Tags():
         final_tooltip = (
                 f'Access Range: {tag.access[0]}, {tag.access[1]}\n'
                 f'Address Range: 0x{int(tag.address[0]):X}, 0x{int(tag.address[1]):X}\n'
+                f'Mem.: {mem_accessed_stats(stats[7],stats[6], self.model.curr_trace.cache_lines)}\n'
                 f'Total: {total}\n'
                 f'Read Hits: {stats[0]} ({percent_string(stats[0],total)}) \n'
                 f'Write Hits: {stats[1]} ({percent_string(stats[1],total)}) \n'
