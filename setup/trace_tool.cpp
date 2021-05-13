@@ -592,15 +592,17 @@ void open_trace_files() {
 	if (all_tags.find(HEAP) == all_tags.end()) {
 		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT,false);
 	}
+
 	for (auto thread: thread_ids) {
 		std::stringstream name;
 		name << "_THREAD_" << thread.first;
 		if (all_tags.find(name.str()) == all_tags.end()) {
-			auto t =  new TagData(name.str(), (ADDRINT)-1, 0, true);
+			auto t =  new TagData(name.str(), (ADDRINT)-1,0, true, thread.first);
 			all_tags[name.str()] = t;
-			thread_ids[thread.first] = t; 
+			thread_ids[thread.first] = t;
 		}
 	}
+
 	curr_traced_lines = 0;
 }
 
