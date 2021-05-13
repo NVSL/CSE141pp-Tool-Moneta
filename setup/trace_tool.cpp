@@ -592,6 +592,15 @@ void open_trace_files() {
 	if (all_tags.find(HEAP) == all_tags.end()) {
 		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT,false);
 	}
+	for (auto thread: thread_ids) {
+		std::stringstream name;
+		name << "_THREAD_" << thread.first;
+		if (all_tags.find(name.str()) == all_tags.end()) {
+			auto t =  new TagData(name.str(), (ADDRINT)-1, 0, true);
+			all_tags[name.str()] = t;
+			thread_ids[thread.first] = t; 
+		}
+	}
 	curr_traced_lines = 0;
 }
 
@@ -706,7 +715,7 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
     r = all_tags[str_tag];
     if (r->addr_range.first != low || // Must be same range
       r->addr_range.second != hi) {
-      std::cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
+	    std::cerr << "Error: Tag '" << str_tag << "' redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
       exit_early(0);
     }
