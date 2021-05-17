@@ -18,6 +18,9 @@
 #include "H5Cpp.h" // Hdf5
 #include<cassert>
 
+VOID Instruction(INS ins, VOID *v);
+VOID Trace(TRACE trace, VOID *v);
+
 // Pin comes with some old standard libraries.
 namespace pintool {
 template <typename V>
@@ -768,10 +771,20 @@ VOID dump_stop_called(VOID * tag_name) {
 	BE_THREAD_SAFE();
 	do_dump_stop(tag_name);
 }
+
+bool instrumentation_started = false;
+
 VOID signal_start() {
 	BE_THREAD_SAFE();
 	std::cerr << "Tracing Started\n";
 	reached_start = true;
+
+	if (!instrumentation_started) {
+		std::cerr << "Turning on instrumentation\n";
+		INS_AddInstrumentFunction(Instruction, 0);
+		TRACE_AddInstrumentFunction(Trace, 0);
+		instrumentation_started = true;
+	}
 }
 
 VOID signal_stop() {
@@ -1226,8 +1239,8 @@ int main(int argc, char *argv[]) {
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
   RTN_AddInstrumentFunction(FindStartFunc, 0);
-  INS_AddInstrumentFunction(Instruction, 0);
-  TRACE_AddInstrumentFunction(Trace, 0);
+  //  INS_AddInstrumentFunction(Instruction, 0);
+  //  TRACE_AddInstrumentFunction(Trace, 0);
   PIN_AddThreadStartFunction(ThreadStart, 0);
   PIN_AddThreadFiniFunction(ThreadStop, 0);
   PIN_AddFiniFunction(Fini, 0);
