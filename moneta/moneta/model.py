@@ -1,8 +1,10 @@
 from moneta.settings import CUSTOM_CMAP, INDEX_LABEL, ADDRESS_LABEL, INDEX, ADDRESS, TRACE_FILE_END, META_FILE_END, TAG_FILE_END
 from moneta.legend.legend import Legend
 from moneta.trace import Trace
+import vaex.jupyter.plot
+vaex.jupyter.plot.backends['moneta_backend'] = ("moneta.vaextended.bqplot", "BqplotBackend")
 
-class Model():
+class Moneta():
     def __init__(self):
         self.output_traces = None
         self.trace_map = dict()
