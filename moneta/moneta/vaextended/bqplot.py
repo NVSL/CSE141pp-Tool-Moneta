@@ -308,6 +308,22 @@ class BqplotBackend(BackendBase):
 
 
     def zoom_sel(self, x1, x2, y1, y2, smart_zoom=False, padding=False):
+        # handle locked x or y
+        # dont zoom if both axes are locked
+        if self.panzoom_x.value == False and self.panzoom_y.value == False:
+            return
+        # if either x axis or y axis is locked, set the coresponding x12 or y12 coords to
+        # the current axis size so it doesn't zoom 
+        if self.panzoom_x.value == False:
+            x1 = self.scale_x.min
+            x2 = self.scale_x.max
+        if self.panzoom_y.value == False:
+            smart_zoom = False
+            padding = False
+            y1 = self.scale_y.min
+            y2 = self.scale_y.max
+            
+
         df = self.get_df_selection(x1, x2, y1, y2)
 
         if df.count() != 0:
