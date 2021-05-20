@@ -899,7 +899,6 @@ void record(ADDRINT addr, int acc_type, THREADID thread) {
 
 VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
 	BE_THREAD_SAFE();
-	std::cout << "T"<<thread_id << "\t" << addr << "\n";
 	if (DEBUG) {
     read_insts++;
   }
