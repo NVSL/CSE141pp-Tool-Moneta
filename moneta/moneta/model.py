@@ -13,17 +13,6 @@ class Moneta():
         self.legend = None
         self.plot = None
 
-    def clear_trace_state(self):
-        self.curr_trace = None
-        self.legend = None
-        self.plot = None
-
-    def ready_next_trace(self):
-        if self.curr_trace is not None:
-            self.clear_trace_state()
-            return False
-        return True
-
     def load_trace(self, path, trace_name):
         raw_trace_name = trace_name.replace(TRACE_FILE_END, '')
         trace_path = f'{path}/{raw_trace_name}{TRACE_FILE_END}'

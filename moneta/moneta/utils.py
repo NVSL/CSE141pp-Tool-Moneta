@@ -1,34 +1,29 @@
-from IPython.display import clear_output, display
+from moneta.settings import ERROR_LABEL
 
 def percent_string(count, total):
     return 'N/A' if total == 0 else f'{count/total:06.2%}'
 
 def stats_string(label, count, total):
     return f'{label}: {count} ({percent_string(count, total)})'
-
-
-def handle_load_trace(file_chooser, model):
-    model.ready_next_trace()
-    clear_output(wait=True)
-    display(file_chooser)
-
-    path = file_chooser.selected_path
-    trace_name = file_chooser.selected_filename
-    print(f'Loading {trace_name}\n')
-    display_trace(model, path, trace_name)
     
-def display_trace(model, path, trace_name):
-    err_message = model.load_trace(path, trace_name)
+def validate_zoom_args(zoom):
+    err_message = f'{ERROR_LABEL} Invalid Zoom Format'
 
-    if err_message is not None:
-        print(err_message)
-        return
+    if len(zoom) != 2:
+        return err_message
 
-    model.create_plot()
+    x_zoom = zoom[0]
+    y_zoom = zoom[1]
 
-    if model.plot is None:
-        print("Couldn't load plot")
-        return
+    if len(x_zoom) != 2 or len(y_zoom) != 2:
+        return err_message
 
-    model.plot.show()
-    model.legend.stats.update(init=True)
+    type_check = all([isinstance(i, int) or isinstance(i, float) for i in [*x_zoom, *y_zoom]])
+
+    if not type_check:
+        return err_message
+
+    if x_zoom[0] >= x_zoom[1] or y_zoom[0] >= y_zoom[1]:
+        return err_message
+        
+    return ''

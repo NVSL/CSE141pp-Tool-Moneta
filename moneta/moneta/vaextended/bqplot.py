@@ -71,6 +71,7 @@ class BqplotBackend(BackendBase):
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
             self.base_address.value = f"Base address: 0x{int(self.limits[1][0]):X}"
+            self.curr_zoom.value = f"{[tuple( map(int,i) ) for i in self.limits]}"
             self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
@@ -115,6 +116,13 @@ class BqplotBackend(BackendBase):
         self.stuck_ctr = 0
 
         self.base_address = widgets.Label(value=f"Base address: 0x{int(self.limits[1][0]):X}")
+        self.curr_zoom = widgets.Text(
+            description="Current Zoom:", 
+            value=f"{[tuple( map(int,i) ) for i in self.limits]}", 
+            disabled=True, 
+            style={'description_width':'initial'},
+            layout=widgets.Layout(width='50%')
+        )
 
         self.curr_action = Action.other
         self.undo_actions = list()
@@ -122,7 +130,7 @@ class BqplotBackend(BackendBase):
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
-        self.widget = widgets.VBox([self.figure, self.base_address])
+        self.widget = widgets.VBox([self.figure, self.base_address, self.curr_zoom])
         self.create_tools()
 
     @debounced(0.2, method=True)
