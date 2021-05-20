@@ -213,6 +213,7 @@ struct Access {
   TagData* tag;
   int type;
   ADDRINT addr;
+	THREADID thread_id;
 } prev_acc;
 
 bool is_prev_acc {0};
@@ -889,22 +890,24 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type) {
+void record(ADDRINT addr, int acc_type, THREADID thread) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
+  prev_acc.thread_id = thread;
 }
 
 VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
 	BE_THREAD_SAFE();
-  if (DEBUG) {
+	std::cout << "T"<<thread_id << "\t" << addr << "\n";
+	if (DEBUG) {
     read_insts++;
   }
   all_lines++;
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), thread_id);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
   }
   if (all_lines>= SkipMemOps) {
 	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
@@ -930,7 +933,7 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
       bool updated = td->update(addr, curr_traced_lines);
       //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
       if (!recorded && updated) {
-        record(addr, access_type);
+	      record(addr, access_type, thread_id);
         recorded = true;
       }
     }
@@ -938,7 +941,7 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
   
   
   if (!recorded) {
-    record(addr, access_type);
+	  record(addr, access_type, thread_id);
   }
 }
 
