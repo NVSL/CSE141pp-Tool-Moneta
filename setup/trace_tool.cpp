@@ -982,7 +982,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), 0);
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
     is_prev_acc = false;
   }
 
