@@ -169,7 +169,7 @@ class BqplotBackend(BackendBase):
         tool_actions_map = dict()
 
         if 1:  # tool_select:
-            self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
+            self.zoom_brush = bqplot.interacts.BrushIntervalSelector(scale=self.scale_y, orientation='vertical', color="blue", )
             self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
             self.click_brush = None # use regular mouse
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
@@ -297,14 +297,15 @@ class BqplotBackend(BackendBase):
             if not self.zoom_brush.brushing: # Update on mouse up
                 self.figure.interaction = None
             if self.zoom_brush.selected is not None:
-                (x1, y1), (x2, y2) = self.zoom_brush.selected
+                print(self.zoom_brush.selected)
+                (y1, y2) = self.zoom_brush.selected
                 if not self.zoom_brush.brushing: # Update on mouse up
                     self.figure.interaction = self.zoom_brush
                 with self.zoom_brush.hold_trait_notifications(): # Delete selection
                     self.zoom_brush.selected_x = None
                     self.zoom_brush.selected_y = None
 
-                self.zoom_sel(x1, x2, y1, y2, smart_zoom=True, padding=True)
+                self.zoom_sel(self.scale_x.min, self.scale_x.max, y1, y2, smart_zoom=True, padding=True)
 
 
     def zoom_sel(self, x1, x2, y1, y2, smart_zoom=False, padding=False):
