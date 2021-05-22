@@ -70,7 +70,7 @@ class Legend():
         self.legend_button.on_event('click', update_panels)
 
     def progress_bar(self, fns):
-        for fn in tqdm(fns):
+        for fn in tqdm(fns, leave=False):
             fn()
 
     def get_select_string(self): # TODO - move constants out
