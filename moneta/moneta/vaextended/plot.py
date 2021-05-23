@@ -274,7 +274,7 @@ class PlotBase(widgets.Widget):
             x_lo, x_hi = self.backend.limits[0]
             diffy = y_hi - y_lo
             diffx = x_hi - x_lo
-            x_size = max(1, int(min(128, self.shape//diffx)))
+            x_size = max(1, int(min(128, self.shape//diffx))) # 128 out of 512 meaning max is 1/4 of plot
             y_size = max(1, int(min(128, self.shape//(diffy/4.0))))
 
             if x_size > 1 or y_size > 1:
