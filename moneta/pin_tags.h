@@ -8,6 +8,7 @@ extern "C" {
 	__attribute__ ((optimize("O0"))) void M_NEW_TRACE(const char* name) {}
 	__attribute__ ((optimize("O0"))) void DUMP_START_ALL(const char* tag, bool create_new) {DUMP_START(tag, 0, (void*)-1, create_new);}
 	__attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
+	__attribute__ ((optimize("O0"))) int GET_THREAD_ID() { return 0;}
 	
 	__attribute__ ((optimize("O0"))) void M_START_TRACE(bool one, bool two) {}
 	__attribute__ ((optimize("O0"))) void M_STOP_TRACE(bool one, bool two) {}

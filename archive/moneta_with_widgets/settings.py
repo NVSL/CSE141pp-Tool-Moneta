@@ -1,17 +1,61 @@
+import os
+
+## Input Fields
+
+# Cache Lines
+CACHE_LINES_VAL = 4096
+CACHE_LINES_DESC = "Cache Lines:"
+
+# Cache Block size
+CACHE_BLOCK_VAL = 64
+CACHE_BLOCK_DESC = "Block Size (Bytes):"
+
+# Output Lines
+OUTPUT_LINES_VAL = 10000000
+OUTPUT_LINES_DESC = "Max Accesses:"
+
+# Working Directory Path
+CWD_PATH_DEF = "e.g. ./examples/build"
+CWD_PATH_DESC = "Working Directory (Optional):"
+HISTORY_MAX = 5
+
+# Executable Path
+EXEC_PATH_DEF = "e.g. ./sorting"
+EXEC_PATH_DESC = "Executable Path:"
+
+# Trace Name
+TRACE_NAME_DEF = "e.g. baseline"
+TRACE_NAME_DESC = "Name for Trace:"
+
+# Start Function
+START_FUN_DEF = "main"
+START_FUN_DESC = "Function to start trace at:"
+
+# Select Multiple
+SELECT_MULTIPLE_DESC = "Trace:"
+
+## Buttons
+
+# Generate
+GENERATE_DESC = "Generate Trace"
+GENERATE_COLOR = 'darkseagreen'
+
+# Load
+LOAD_DESC = "Load Trace"
+LOAD_COLOR = 'lightblue'
+
+# Delete
+DELETE_DESC = "Delete Trace"
+DELETE_COLOR = 'salmon'
+
+import logging
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+log = logging.getLogger(__name__)
 
 from matplotlib.colors import ListedColormap
 from ipywidgets import Layout, HBox, VBox, Layout
 import numpy as np
 import os
-
-## File Chooser Settings
-FC_WIDTH = "100%"
-FC_SCROLLBOX_HEIGHT = "30vh"
-FC_FILTER = ["*.hdf5"]
-TRACE_FILE_END = ".hdf5"
-TAG_FILE_END = ".tags"
-META_FILE_END = ".meta"
-
 
 # Colormap
 newc = np.ones((11, 4))
@@ -37,7 +81,24 @@ class TextStyle():
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
+
+
+BUTTON_LAYOUT = Layout(margin='15px 15px 0px 15px',
+        height='40px', width='100%', border='1px solid black')
+TW_BOX_LAYOUT = Layout(display='flex',
+                    flex_flow='row',
+                    align_items='stretch',
+                    width='100%')
+TW_LAYOUT = Layout(flex='1 1 0%', width='100%')
+
+#MONETA_BASE_DIR = os.path.expanduser("~") + "/work/"
+#MONETA_BASE_DIR = "/home/jovyan/work/"
+MONETA_BASE_DIR = os.getcwd() + "/"
+MONETA_TOOL_DIR = MONETA_BASE_DIR #+ "moneta/"
+OUTPUT_DIR = MONETA_BASE_DIR #+ "moneta/output/"
+CWD_HISTORY_PATH = OUTPUT_DIR + "cwd_history"
 PIN_PATH  = "/pin/pin.sh"
+#TOOL_PATH = MONETA_BASE_DIR + "setup/trace_tool.so"
 TOOL_PATH = "/pin/source/tools/ManualExamples/obj-intel64/trace_tool.so"
 WIDGET_DESC_PROP = {'description_width': '200px'}
 WIDGET_LAYOUT = Layout(width='90%')
@@ -57,7 +118,6 @@ INDEX = "index"
 ADDRESS = "Address"
 ACCESS = "Access"
 TAG = "Tag"
-THREAD_ID = "ThreadID"
 
 ### Axis Labels
 INDEX_LABEL = "Access Number"
@@ -77,19 +137,11 @@ HI_ADDR = "High_Address"
 F_ACC = "First_Access"
 L_ACC = "Last_Access"
 TAG_NAME = "Tag_Name"
-TAG_FILE_TAG_TYPE="Tag_Type"
-TAG_FILE_THREAD_ID="Thread_ID"
 
 # Legend variables
 LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
-LEGEND_THREADS_TITLE = 'Threads'
 LEGEND_STATS_TITLE = 'Stats'
-
-# Stats Labels
-STATS_HITS = "Hits"
-STATS_COMP_MISS = "Comp. Misses"
-STATS_CAP_MISS = "Cap. Misses"
 
 # Legend grid box
 vdiv = HBox([
