@@ -392,8 +392,12 @@ class BqplotBackend(BackendBase):
         tool_name = self.tool_actions[self.interaction_tooltips.v_model]
         if tool_name == CLICK_ZOOM_IN:
             scale = CLICK_ZOOM_SCALE
+            useSmartZoom = True
+            usePadding = True
         elif tool_name == CLICK_ZOOM_OUT:
             scale = CLICK_ZOOM_SCALE * 100
+            useSmartZoom = False
+            usePadding = False
         else:
             print('Invalid Tool Selected')
             return
@@ -413,4 +417,5 @@ class BqplotBackend(BackendBase):
         y1 = y - (0.5 * scale * y_diff)
         y2 = y + (0.5 * scale * y_diff)
 
-        self.zoom_sel(float(x1), float(x2), float(y1), float(y2), smart_zoom=True, padding=True)
+        self.zoom_sel(float(x1), float(x2), float(y1), float(y2),
+                      smart_zoom=useSmartZoom, padding=usePadding)
