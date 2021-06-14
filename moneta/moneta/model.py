@@ -25,6 +25,8 @@ class Moneta():
     def cache_size(self):
         return self.curr_trace.cache_lines*self.curr_trace.cache_block
 
+
+
     def plot_title(self):
         return (
                 f"{self.curr_trace.name} - "
@@ -37,7 +39,7 @@ class Moneta():
         self.plot = self.curr_trace.df.plot_widget(
                     self.curr_trace.df[INDEX], self.curr_trace.df[ADDRESS], 
                     what='max(Access)', colormap=CUSTOM_CMAP, 
-                    selection=[True], limits=[self.curr_trace.x_lim, self.curr_trace.y_lim],
+                    selection=[True], limits=self.curr_trace.get_initial_zoom(),
                     backend='moneta_backend', type='vaextended', model=self,
                     x_col=INDEX, y_col=ADDRESS, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, 
                     update_stats=self.legend.stats.update,
