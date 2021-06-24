@@ -169,8 +169,18 @@ class BqplotBackend(BackendBase):
         tool_actions_map = dict()
 
         if 1:  # tool_select:
-            self.zoom_brush = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
-            self.zoom_brush.observe(self.update_zoom_brush, ["brushing"])
+            # initiaite the 3 types of zoom brushes, which should only highlight axis that are not locked
+            self.zoom_brush_full = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
+            self.zoom_brush_full.observe(self.update_zoom_brush_full, ["brushing"])
+            
+            self.zoom_brush_vertical =  bqplot.interacts.BrushIntervalSelector(scale=self.scale_y, orientation='vertical', color="blue")
+            self.zoom_brush_vertical.observe(self.update_zoom_brush_vertical, ["brushing"])
+
+            self.zoom_brush_horizontal =  bqplot.interacts.BrushIntervalSelector(scale=self.scale_x, orientation='horizontal', color="blue")
+            self.zoom_brush_horizontal.observe(self.update_zoom_brush_horizontal, ["brushing"])
+
+            # set initial zoom brush to the full brush 
+            self.zoom_brush = self.zoom_brush_full
             self.click_brush = None # use regular mouse
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
             tool_actions_map[PAN_ZOOM] = self.panzoom
@@ -216,6 +226,7 @@ class BqplotBackend(BackendBase):
                 with self.zoom_brush.hold_trait_notifications():
                     self.zoom_brush.selected_x = None
                     self.zoom_brush.selected_y = None
+                    self.zoom_brush.selected = None
             self.reset_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
                                     v.Icon(children=['refresh'])
                                 ])
@@ -253,32 +264,45 @@ class BqplotBackend(BackendBase):
             self.undo_btn.on_event('click', lambda *ignore: undo_redo(Action.undo, self.undo_actions))
             self.redo_btn.on_event('click', lambda *ignore: undo_redo(Action.redo, self.redo_actions))
 
-            control_lyt = widgets.Layout(width='40px')
-            self.panzoom_x = control_x = widgets.Checkbox(value=True,description='X',indent=False, layout=control_lyt)
-            self.panzoom_y = control_y = widgets.Checkbox(value=True,description='Y',indent=False, layout=control_lyt)
-            def update_panzoom(checkbox):
-                if control_x.value:
-                    if control_y.value:
-                        self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
-                    else:
-                        self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x]})
-                else:
-                    if control_y.value:
-                        self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
-                    else:
+            control_lyt = widgets.Layout(width='100px')
+            self.control_x = widgets.Checkbox(value=False,description='Lock X Axis',indent=False, layout=control_lyt)
+            self.control_y = widgets.Checkbox(value=False,description='Lock Y Axis',indent=False, layout=control_lyt)
+            def axis_lock_update(checkbox):
+                # When eithier axis checkbox is locked.
+                # Updates the panzoom tool to lock eithier the x or y axis.
+                # Also updates the zoombrush tool to use relevant zoom brush
+                if self.control_x.value:
+                    if self.control_y.value:
                         self.panzoom = bqplot.PanZoom()
+                        self.zoom_brush = bqplot.interacts.BrushSelector()
+                    else:
+                        self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
+                        self.zoom_brush = self.zoom_brush_vertical
+                else:
+                    if self.control_y.value:
+                        self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x]})
+                        self.zoom_brush = self.zoom_brush_horizontal
+                    else:
+                        self.panzoom = bqplot.PanZoom(scales={'x': [self.scale_x], 'y': [self.scale_y]})
+                        self.zoom_brush = self.zoom_brush_full
+
                 tool_actions_map[PAN_ZOOM] = self.panzoom
+                tool_actions_map[ZOOM_SELECT] = self.zoom_brush
+
                 # Update immediately if in PAN_ZOOM mode
                 name = tool_actions[self.interaction_tooltips.v_model]
                 if name == PAN_ZOOM:
-                  self.figure.interaction = self.panzoom
+                    self.figure.interaction = self.panzoom
+                elif name == ZOOM_SELECT:
+                    self.figure.interaction = self.zoom_brush
+                
 
-            self.panzoom_x.observe(update_panzoom)
-            self.panzoom_y.observe(update_panzoom)
-            self.panzoom_controls = widgets.VBox([self.panzoom_x,self.panzoom_y])
+            self.control_x.observe(axis_lock_update)
+            self.control_y.observe(axis_lock_update)
+            self.axis_controls = widgets.VBox([self.control_x,self.control_y])
 
             self.tooltips = v.Row(children=[
-                    self.panzoom_controls, 
+                    self.axis_controls, 
                     self.interaction_tooltips, 
                     self.reset_tooltip,
                     self.undo_tooltip,
@@ -292,7 +316,7 @@ class BqplotBackend(BackendBase):
         df = self.dataset
         return df[(df[ind] >= x1) & (df[ind] <= x2) & (df[addr] >= y1) & (df[addr] <= y2)]
 
-    def update_zoom_brush(self, *args):
+    def update_zoom_brush_full(self, *args):
         with self.output:
             if not self.zoom_brush.brushing: # Update on mouse up
                 self.figure.interaction = None
@@ -306,23 +330,48 @@ class BqplotBackend(BackendBase):
 
                 self.zoom_sel(x1, x2, y1, y2, smart_zoom=True, padding=True)
 
+    def update_zoom_brush_horizontal(self, *args):
+        with self.output:
+            if not self.zoom_brush.brushing: # Update on mouse up
+                self.figure.interaction = None
+            if self.zoom_brush.selected is not None:
+                (x1, x2) = self.zoom_brush.selected
+                if not self.zoom_brush.brushing: # Update on mouse up
+                    self.figure.interaction = self.zoom_brush
+                with self.zoom_brush.hold_trait_notifications(): # Delete selection
+                    self.zoom_brush.selected = None
+
+                self.zoom_sel(x1, x2, None, None, smart_zoom=False, padding=False)
+
+    def update_zoom_brush_vertical(self, *args):
+        with self.output:
+            if not self.zoom_brush.brushing: # Update on mouse up
+                self.figure.interaction = None
+            if self.zoom_brush.selected is not None:
+                (y1, y2) = self.zoom_brush.selected
+                if not self.zoom_brush.brushing: # Update on mouse up
+                    self.figure.interaction = self.zoom_brush
+                with self.zoom_brush.hold_trait_notifications(): # Delete selection
+                    self.zoom_brush.selected = None
+                self.zoom_sel(None, None, y1, y2, smart_zoom=False, padding=False)
+
 
     def zoom_sel(self, x1, x2, y1, y2, smart_zoom=False, padding=False):
-        # handle locked x or y
+        #################### handle locked x or y axis ########################
         # dont zoom if both axes are locked
-        if self.panzoom_x.value == False and self.panzoom_y.value == False:
+        if self.control_x.value == True and self.control_y.value == True:
             return
         # if either x axis or y axis is locked, set the coresponding x12 or y12 coords to
         # the current axis size so it doesn't zoom 
-        if self.panzoom_x.value == False:
+        if self.control_x.value == True:
             x1 = self.scale_x.min
             x2 = self.scale_x.max
-        if self.panzoom_y.value == False:
+        if self.control_y.value == True:
             smart_zoom = False
             padding = False
             y1 = self.scale_y.min
             y2 = self.scale_y.max
-            
+        #######################################################################    
 
         df = self.get_df_selection(x1, x2, y1, y2)
 
