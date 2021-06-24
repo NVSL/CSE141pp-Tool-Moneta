@@ -18,6 +18,9 @@
 #include "H5Cpp.h" // Hdf5
 #include<cassert>
 
+VOID Instruction(INS ins, VOID *v);
+VOID Trace(TRACE trace, VOID *v);
+
 // Pin comes with some old standard libraries.
 namespace pintool {
 template <typename V>
@@ -52,13 +55,10 @@ const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
 
 // Output file formatting
-const std::string TracePrefix    {"trace_"};
 const std::string TraceSuffix    {".hdf5"};
-const std::string TagFilePrefix  {"tag_map_"};
-const std::string TagFileSuffix  {".csv"};
-const std::string StatsFileSuffix  {".stats.csv"};
-const std::string MetaFilePrefix {"meta_data_"};
-const std::string MetaFileSuffix {".txt"};
+const std::string TagFileSuffix  {".tags"}; //csv
+const std::string StatsFileSuffix  {".stats"}; //csv
+const std::string MetaFileSuffix {".meta"}; //txt
 
 // User-initialized
 static UINT64 max_lines  {DefaultMaximumLines};
@@ -77,6 +77,7 @@ const std::string NEW_TRACE {"M_NEW_TRACE"};
 const std::string DUMP_STOP  {"DUMP_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
+const std::string GET_THREAD_ID  {"GET_THREAD_ID"};
 const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
 UINT64 SkipMemOps = 10000000000000000ull;
@@ -108,10 +109,18 @@ class PINMutexGuard {
 	PIN_MUTEX &mutex;
 public:
 	PINMutexGuard(PIN_MUTEX &m) : mutex(m) {
-		PIN_MutexLock(&mutex);
+		PIN_LockClient(); // This is not the right way to do
+				  // this, but using our own mutex
+				  // leads to hangs with multithreaded
+				  // programs.  I'm not sure why.  THe
+				  // client lock is recursive, while
+				  // the mutex is not.  That may have
+				  // something to do with it.
+		//PIN_MutexLock(&mutex);
 	}
 	~PINMutexGuard() {
-		PIN_MutexUnlock(&mutex);
+		PIN_UnlockClient();
+		//PIN_MutexUnlock(&mutex);
 	}
 	
 };
@@ -126,10 +135,19 @@ struct Tag {
   bool active {true};
   std::pair<int, int> x_range {-1, -1};
   std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
+  bool is_thread;
+  THREADID thread_id;
+  UINT64 access_count;
+	
+  Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id), access_count(0) {}
 
-  Tag(TagData* td, int id) : parent {td}, id {id} {}
-
+  void reset_for_new_file() { // for a new file, everything remains the same except the access number.
+	  x_range.first = -1;
+	  x_range.second = -1;
+  }
+	
   void update(ADDRINT addr, int access) {
+    access_count++;
     addr_range.first = std::min(addr_range.first, addr);
     addr_range.second = std::max(addr_range.second, addr);
     if (x_range.first == -1) {
@@ -143,21 +161,30 @@ struct TagData {
   const int id;
   const std::string tag_name;
   const std::pair<ADDRINT, ADDRINT> addr_range;
-
+  bool is_thread;
+  THREADID thread_id;
   std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi) : 
+  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool is_thread, THREADID thread_id = 0) : 
 	  id(curr_id++),
 	  tag_name {tag_name},
-	  addr_range({low, hi})
+	  addr_range({low, hi}),
+	  is_thread(is_thread),
+	  thread_id(thread_id)
   {
     this->create_new_tag();
   }
 
   void create_new_tag() {
-    tags.push_back(new Tag(this, tags.size()));
+	  tags.push_back(new Tag(this, tags.size(), is_thread, thread_id));
   }
 
+  void  reset_for_new_file() {
+	  for (Tag* t : tags) {
+		  t->reset_for_new_file();
+	  }
+  }
+	
   bool update(ADDRINT addr, int access) {
     bool updated {0};
     for (Tag* t : tags) {
@@ -186,6 +213,7 @@ struct Access {
   TagData* tag;
   int type;
   ADDRINT addr;
+	THREADID thread_id;
 } prev_acc;
 
 bool is_prev_acc {0};
@@ -193,6 +221,9 @@ ADDRINT min_rsp {ULLONG_MAX};
 bool is_last_acc {0};
 
 bool reached_start {0};
+
+
+std::unordered_map<THREADID, TagData *> thread_ids;
 
 // Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
@@ -203,6 +234,7 @@ bool reached_start {0};
 // Output Columns
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
+const std::string ThreadIDColumn {"ThreadID"};
 //const std::string CacheAccessColumn {"CacheAccess"};
 
 /*
@@ -212,6 +244,7 @@ class HandleHdf5 {
   static const unsigned long long int chunk_size = 200000; // Private vars
   unsigned long long addrs[chunk_size]; // Chunk local vars
   uint8_t accs[chunk_size];
+  uint8_t threadids[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
@@ -220,9 +253,10 @@ class HandleHdf5 {
 
   // Memory accesses
   H5::H5File mem_file;
-  H5::DataSet tag_d;
+	//  H5::DataSet tag_d;
   H5::DataSet acc_d;
   H5::DataSet addr_d;
+  H5::DataSet threadid_d;
     // State vars
   hsize_t curr_chunk_dims [1] = {chunk_size};
   hsize_t total_ds_dims [1] = {chunk_size};
@@ -249,8 +283,9 @@ class HandleHdf5 {
     hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
-    acc_d = mem_file.createDataSet(AccessColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
-    addr_d = mem_file.createDataSet(AddressColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+    acc_d =      mem_file.createDataSet(AccessColumn.c_str(),   H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+    threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+    addr_d =     mem_file.createDataSet(AddressColumn.c_str(),  H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
 
     //H5::DataSpace c_dataspace {1, idims_t, max_dims};
     //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
@@ -263,6 +298,7 @@ class HandleHdf5 {
     }
     acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
+    threadid_d.extend( total_ds_dims );
 
     H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
@@ -272,6 +308,10 @@ class HandleHdf5 {
     old_dataspace = addr_d.getSpace(); // Rinse and repeat
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+
+    old_dataspace = threadid_d.getSpace(); // Rinse and repeat
+    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+    threadid_d.write(threadids, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -327,11 +367,12 @@ public:
   }
 
   // Write data for memory access to file
-  int write_data_mem(ADDRINT address, int access) {
+  int write_data_mem(ADDRINT address, int access, THREADID threadid) {
     if (HDF_DEBUG) {
       std::cerr << "Write to Hdf5 - memory\n";
     }
     addrs[mem_ind] = address; // Write to memory first
+    threadids[mem_ind] = (unsigned char)(threadid & 0xff);
     accs[mem_ind++] = access;
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
@@ -465,6 +506,10 @@ KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
 
+void exit_early(int v) {
+	PIN_MutexUnlock(&the_big_lock);
+	PIN_ExitApplication(v);
+}
 VOID flush_cache() {
 	if (CACHE_DEBUG) {
 		std::cerr << "Flushing cache\n";
@@ -476,6 +521,17 @@ VOID flush_cache() {
 	misses = 0;
 }
 
+VOID flush_cache_user() {
+	BE_THREAD_SAFE();
+	flush_cache();
+}
+
+
+void reset_tags_for_new_file() {
+	for (auto& tag_iter : all_tags) {
+		tag_iter.second->reset_for_new_file();
+	}
+}
 
 void write_tags_and_clear(bool clear_tags) {
 	std::vector<Tag*> tags;
@@ -490,23 +546,30 @@ void write_tags_and_clear(bool clear_tags) {
 		  });
 
 	std::ofstream tag_file (output_tagfile_path);
-	tag_file << "Tag_Name,Low_Address,High_Address,First_Access,Last_Access\n"; // Header row
+	tag_file << "Tag_Name,Tag_Type,Thread_ID,Low_Address,High_Address,First_Access,Last_Access,Access_Count\n"; // Header row
 	for (Tag* t : tags) {
 		if (t->x_range.first != -1) {
-			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << "," << t->addr_range.first << ","
-				 << t->addr_range.second << "," << t->x_range.first << ","
-				 << t->x_range.second << "\n";
+			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
+				 << (t->is_thread ? "thread" :"space-time") << ","
+				 << t->thread_id << ","
+				 << t->addr_range.first << ","
+				 << t->addr_range.second << ","
+				 << t->x_range.first << ","
+				 << t->x_range.second << ","
+				 << t->access_count << "\n";
 		}
 	}
 
 	// Close files
 	tag_file.flush();
-	tag_file.close();
+       	tag_file.close();
 	if (clear_tags) {
 		for (auto& tag_iter : all_tags) {
 			delete tag_iter.second;
 		}
 		all_tags.clear();
+	} else {
+		reset_tags_for_new_file();
 	}
 	
 }
@@ -518,24 +581,35 @@ void open_trace_files() {
 	full_output_trace_path = s.str();
 	file_count++;
 	  
-	output_tagfile_path = DefaultOutputPath + "/" + TagFilePrefix + s.str() + TagFileSuffix;
-	std::string output_metadata_path = DefaultOutputPath + "/" + MetaFilePrefix + s.str() + MetaFileSuffix;
-	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + TracePrefix + s.str() + TraceSuffix;
+	output_tagfile_path = DefaultOutputPath + "/" + s.str() + TagFileSuffix;
+	std::string output_hdf5_trace_path = DefaultOutputPath + "/" + s.str() + TraceSuffix;
+
 	mkdir(DefaultOutputPath.c_str(), 0755);
 	
-	std::ofstream meta_file (output_metadata_path);
-	meta_file << cache_size << " " << cache_line;
-	meta_file.flush();
-	meta_file.close();
-
 	std::cerr << "Opening trace '" << s.str() << "'.\n";
 	unlink(output_hdf5_trace_path.c_str());
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
-	
-	all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT);
-	all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT);
+
+	if (all_tags.find(STACK) == all_tags.end()) {
+		all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, false);
+	}
+	if (all_tags.find(HEAP) == all_tags.end()) {
+		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT,false);
+	}
+
+	for (auto thread: thread_ids) {
+		std::stringstream name;
+		name << "_THREAD_" << thread.first;
+		if (all_tags.find(name.str()) == all_tags.end()) {
+			auto t =  new TagData(name.str(), (ADDRINT)-1,0, true, thread.first);
+			all_tags[name.str()] = t;
+			thread_ids[thread.first] = t;
+		}
+	}
+
 	curr_traced_lines = 0;
 }
+
 
 void write_stats_file() {
 	//curr_traced_lines << " memory requests in trace '" << full_output_trace_path << "'.\n";
@@ -558,8 +632,25 @@ void write_stats_file() {
 					 stats_file.close();
 					 
 }
+
+
 void close_trace_files(bool clear_tags) {
 	write_stats_file();
+
+	std::string output_metadata_path = DefaultOutputPath + "/" + full_output_trace_path + MetaFileSuffix;
+	std::ofstream meta_file (output_metadata_path);
+	meta_file << cache_size << " " << cache_line <<"\n";
+	for(auto & thread: thread_ids) {
+		meta_file << thread.first << " ";
+	}
+	if (thread_ids.find(0) == thread_ids.end()) {
+		meta_file << 0 << " ";
+	}
+	meta_file << "\n";
+	meta_file.flush();
+	meta_file.close();
+
+
 	inst_count = 0;
 	if (KnobFlushCacheOnNewFile.Value()) {
 		flush_cache();
@@ -569,19 +660,19 @@ void close_trace_files(bool clear_tags) {
 	delete hdf_handler;
 }
 
-VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack) {
+VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack, THREADID threadid) {
   if (is_stack) {
     all_tags[STACK]->update(addr, curr_traced_lines);
   } else {
     all_tags[HEAP]->update(addr, curr_traced_lines);
   }
-  hdf_handler->write_data_mem(addr, acc_type);
+  hdf_handler->write_data_mem(addr, acc_type, threadid);
   curr_traced_lines++; // Afterward, for 0-based indexing
   total_traced_lines++;
   if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
 	  if (file_count >= KnobFileCount.Value()) {
 		  std::cerr << "Exiting application early\n";
-		  PIN_ExitApplication(0);
+		  exit_early(0);
 	  } else {
 		  std::cerr << "Creating new trace file\n";
 		  close_trace_files(false);// false preserves the tags
@@ -598,11 +689,10 @@ VOID new_trace_called(VOID * trace_name) {
 	open_trace_files();
 }
 
-VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
-	BE_THREAD_SAFE();
+TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new, bool is_thread, THREADID thread_id) {
   char* s = (char *)tag_name;
   std::string str_tag (s);
-
+  TagData * r;
   std::cerr << "Tag Started: " << str_tag <<"\n";
   if (DEBUG) {
     std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
@@ -611,7 +701,7 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
   if (str_tag == HEAP || str_tag == STACK) {
     std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
   }
   if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
@@ -619,31 +709,38 @@ VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new
       std::cerr << "Range: " << low << ", " << hi << "\n";
     }
 
-    all_tags[str_tag] = new TagData(str_tag, low, hi);
-
+    r = new TagData(str_tag, low, hi, is_thread, thread_id);
+    all_tags[str_tag] = r;
+    
   } else { // Reuse tag
     if (DEBUG) {
       std::cerr << "Dump define called - Old tag\n";
     }
 
     // Exit program if redefining tag
-    TagData* old_tag = all_tags[str_tag];
-    if (old_tag->addr_range.first != low || // Must be same range
-      old_tag->addr_range.second != hi) {
-      std::cerr << "Error: Tag redefined - Tag can't map to different ranges\n"
+    r = all_tags[str_tag];
+    if (r->addr_range.first != low || // Must be same range
+      r->addr_range.second != hi) {
+	    std::cerr << "Error: Tag '" << str_tag << "' redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
     }
     if (create_new) {
-      old_tag->create_new_tag();
+      r->create_new_tag();
     } else {
-      old_tag->tags.back()->active = true;
+      r->tags.back()->active = true;
     }
   }
+  return r;
 }
 
-VOID dump_stop_called(VOID * tag_name) {
-		BE_THREAD_SAFE();
+VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
+	BE_THREAD_SAFE();
+	do_dump_start(tag_name, low, hi, create_new, false, 0);
+}
+
+VOID do_dump_stop(VOID * tag_name) {
+	
   char *s = (char *)tag_name;
   std::string str_tag (s);
   std::cerr << "Tag stopped: " << str_tag <<"\n";
@@ -653,14 +750,14 @@ VOID dump_stop_called(VOID * tag_name) {
   if (str_tag == HEAP || str_tag == STACK) {
     std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
               "Exiting Trace Early...\n";
-      PIN_ExitApplication(0);
+      exit_early(0);
   }
 
   std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
   if (iter == all_tags.end()) {
     std::cerr << "Error: Stopping a tag that was never started: " << str_tag << "\n"
 	    "Exiting Trace Early...\n";
-    PIN_ExitApplication(0);
+    exit_early(0);
   }
   for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
 		  i != iter->second->tags.rend(); ++i) {
@@ -671,10 +768,24 @@ VOID dump_stop_called(VOID * tag_name) {
   }
 }
 
+VOID dump_stop_called(VOID * tag_name) {
+	BE_THREAD_SAFE();
+	do_dump_stop(tag_name);
+}
+
+bool instrumentation_started = false;
+
 VOID signal_start() {
 	BE_THREAD_SAFE();
 	std::cerr << "Tracing Started\n";
 	reached_start = true;
+
+	if (!instrumentation_started) {
+		std::cerr << "Turning on instrumentation\n";
+		INS_AddInstrumentFunction(Instruction, 0);
+		TRACE_AddInstrumentFunction(Trace, 0);
+		instrumentation_started = true;
+	}
 }
 
 VOID signal_stop() {
@@ -694,6 +805,9 @@ void dump_cache(std::ostream & out) {
 	}
 }
 
+int get_thread_id() {
+	return PIN_ThreadId();
+}
 #if (0)
 #define cache_assert(exp)				\
 	do {						\
@@ -776,22 +890,23 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type) {
+void record(ADDRINT addr, int acc_type, THREADID thread) {
   is_prev_acc = true;
   prev_acc.addr = addr;
   prev_acc.type = acc_type;
+  prev_acc.thread_id = thread;
 }
 
-VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
+VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
 	BE_THREAD_SAFE();
-  if (DEBUG) {
+	if (DEBUG) {
     read_insts++;
   }
   all_lines++;
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
   }
   if (all_lines>= SkipMemOps) {
 	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
@@ -804,18 +919,28 @@ VOID RecordMemAccess(ADDRINT addr, bool is_read, ADDRINT rsp) {
   for (auto& tag_iter : all_tags) {
     TagData* td = tag_iter.second;
     if (td->tag_name == STACK || td->tag_name == HEAP) continue;
-    if ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) && 
-		    (td->addr_range.second == LIMIT || addr <= td->addr_range.second)) {
+
+    bool is_match;
+    if (td->is_thread) {
+	    is_match = (td->thread_id == thread_id);
+    } else {
+	    is_match = ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
+			(td->addr_range.second == LIMIT || addr <= td->addr_range.second));
+    }
+
+    if (is_match) {
       bool updated = td->update(addr, curr_traced_lines);
       //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
       if (!recorded && updated) {
-        record(addr, access_type);
+	      record(addr, access_type, thread_id);
         recorded = true;
       }
     }
   }
+  
+  
   if (!recorded) {
-    record(addr, access_type);
+	  record(addr, access_type, thread_id);
   }
 }
 
@@ -857,7 +982,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size));
+    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
     is_prev_acc = false;
   }
 
@@ -884,6 +1009,7 @@ VOID Instruction(INS ins, VOID *v)
         if (isRead) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
                 IARG_REG_VALUE, REG_RSP,
@@ -895,6 +1021,7 @@ VOID Instruction(INS ins, VOID *v)
         if (isWrite) {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
                 IARG_REG_VALUE, REG_RSP,
@@ -947,7 +1074,7 @@ VOID FindFunc(IMG img, VOID *v) {
 	rtn = RTN_FindByName(img, FLUSH_CACHE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
-		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache,
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache_user,
 				IARG_END);
 		RTN_Close(rtn);
 	}
@@ -968,6 +1095,11 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
 				IARG_END);
 		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, GET_THREAD_ID.c_str());
+	if(RTN_Valid(rtn)){
+		std::cerr << "replace get_thread_id\n";
+		RTN_Replace(rtn, (AFUNPTR)get_thread_id);
 	}
 }
 
@@ -1003,10 +1135,27 @@ VOID Trace(TRACE trace, VOID *v)
     }
 }
 
-//VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
-//{
-//	BE_THREAD_SAFE();
-//}
+
+VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
+{
+	std::stringstream name;
+	name << "_THREAD_" << threadid;
+		
+	BE_THREAD_SAFE();
+	TagData *r = do_dump_start((VOID*)name.str().c_str(), (ADDRINT)-1, 0, false, true, threadid);
+	thread_ids[threadid] = r;
+}
+
+
+VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
+{
+	std::stringstream name;
+	name << "_THREAD_" << threadid;
+		
+	BE_THREAD_SAFE();
+	do_dump_stop((VOID *)name.str().c_str());
+	thread_ids.erase(threadid);
+}
 
 int main(int argc, char *argv[]) {
   //Initialize pin & symbol manager
@@ -1092,10 +1241,10 @@ int main(int argc, char *argv[]) {
   // Add instrumentation
   IMG_AddInstrumentFunction(FindFunc, 0);
   RTN_AddInstrumentFunction(FindStartFunc, 0);
-  INS_AddInstrumentFunction(Instruction, 0);
-  TRACE_AddInstrumentFunction(Trace, 0);
-  //  PIN_AddThreadStartFunction(ThreadStart, 0);
-  
+  //  INS_AddInstrumentFunction(Instruction, 0);
+  //  TRACE_AddInstrumentFunction(Trace, 0);
+  PIN_AddThreadStartFunction(ThreadStart, 0);
+  PIN_AddThreadFiniFunction(ThreadStop, 0);
   PIN_AddFiniFunction(Fini, 0);
 
   if (DEBUG) {
