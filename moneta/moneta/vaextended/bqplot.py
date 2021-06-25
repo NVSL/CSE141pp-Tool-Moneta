@@ -26,7 +26,8 @@ accessRanges = {}
 ZOOM_SELECT = 'Zoom to Selection'
 PAN_ZOOM = 'Pan Zoom'
 RESET_ZOOM = 'Reset Zoom'
-CLICK_ZOOM = 'Click Zoom'
+CLICK_ZOOM_IN = 'Click Zoom IN'
+CLICK_ZOOM_OUT = 'Click Zoom OUT'
 CLICK_ZOOM_SCALE = 0.1 # 10x zoom
 
 UNDO = 'Undo'
@@ -165,11 +166,11 @@ class BqplotBackend(BackendBase):
 
     def create_tools(self):
         self.tools = []
-        tool_actions = []
+        self.tool_actions = []
         tool_actions_map = dict()
 
         if 1:  # tool_select:
-            # initiaite the 3 types of zoom brushes, which should only highlight axis that are not locked
+            #### initiaite the 4 types of zoom brushes, which should only highlight axis that are not locked ###
             self.zoom_brush_full = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
             self.zoom_brush_full.observe(self.update_zoom_brush_full, ["brushing"])
             
@@ -179,19 +180,27 @@ class BqplotBackend(BackendBase):
             self.zoom_brush_horizontal =  bqplot.interacts.BrushIntervalSelector(scale=self.scale_x, orientation='horizontal', color="blue")
             self.zoom_brush_horizontal.observe(self.update_zoom_brush_horizontal, ["brushing"])
 
-            # set initial zoom brush to the full brush 
-            self.zoom_brush = self.zoom_brush_full
+            self.zoom_brush_none = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="gray")
+            self.zoom_brush_none.observe(self.update_zoom_brush_none, ["brushing"])
+
+            #### Set the default initial tools ####
+            self.zoom_brush = self.zoom_brush_full  
             self.click_brush = None # use regular mouse
+            self.click_brush_in = None 
+            self.click_brush_out = None
+
             tool_actions_map[ZOOM_SELECT] = self.zoom_brush
             tool_actions_map[PAN_ZOOM] = self.panzoom
-            tool_actions_map[CLICK_ZOOM] = self.click_brush
-            tool_actions = [PAN_ZOOM, ZOOM_SELECT, CLICK_ZOOM]
+            tool_actions_map[CLICK_ZOOM_IN] = self.click_brush_in
+            tool_actions_map[CLICK_ZOOM_OUT] = self.click_brush_out
+            self.tool_actions = [PAN_ZOOM, ZOOM_SELECT,
+                                 CLICK_ZOOM_IN, CLICK_ZOOM_OUT]
 
             self.start_limits = copy.deepcopy(self.limits)
 
             def change_interact(*args):
                 with self.output:
-                    name = tool_actions[self.interaction_tooltips.v_model]
+                    name = self.tool_actions[self.interaction_tooltips.v_model]
                     self.figure.interaction = tool_actions_map[name]
 
             self.interaction_tooltips = \
@@ -214,9 +223,18 @@ class BqplotBackend(BackendBase):
                                     'name': 'activator',
                                     'variable': 'tooltip',
                                     'children': v.Btn(v_on='tooltip.on', children=[
-                                        v.Icon(children=['mdi-mouse'])
+                                        v.Icon(
+                                            children=['mdi-magnify-plus-cursor'])
                                     ])
-                                }], children=[CLICK_ZOOM])
+                                }], children=[CLICK_ZOOM_IN]),
+                                v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                                'children': v.Btn(v_on='tooltip.on', children=[
+                                                    v.Icon(
+                                                        children=['mdi-magnify-minus-cursor'])
+                                                ])
+                                }], children=[CLICK_ZOOM_OUT])
                             ])
             self.interaction_tooltips.observe(change_interact, "v_model")
 
@@ -274,7 +292,7 @@ class BqplotBackend(BackendBase):
                 if self.control_x.value:
                     if self.control_y.value:
                         self.panzoom = bqplot.PanZoom()
-                        self.zoom_brush = bqplot.interacts.BrushSelector()
+                        self.zoom_brush = self.zoom_brush_none
                     else:
                         self.panzoom = bqplot.PanZoom(scales={'y': [self.scale_y]})
                         self.zoom_brush = self.zoom_brush_vertical
@@ -290,7 +308,7 @@ class BqplotBackend(BackendBase):
                 tool_actions_map[ZOOM_SELECT] = self.zoom_brush
 
                 # Update immediately if in PAN_ZOOM mode
-                name = tool_actions[self.interaction_tooltips.v_model]
+                name = self.tool_actions[self.interaction_tooltips.v_model]
                 if name == PAN_ZOOM:
                     self.figure.interaction = self.panzoom
                 elif name == ZOOM_SELECT:
@@ -355,6 +373,9 @@ class BqplotBackend(BackendBase):
                     self.zoom_brush.selected = None
                 self.zoom_sel(None, None, y1, y2, smart_zoom=False, padding=False)
 
+    def update_zoom_brush_none(self, *args):
+        with self.zoom_brush.hold_trait_notifications(): # Delete selection
+            self.zoom_brush.selected = None
 
     def zoom_sel(self, x1, x2, y1, y2, smart_zoom=False, padding=False):
         #################### handle locked x or y axis ########################
@@ -364,6 +385,8 @@ class BqplotBackend(BackendBase):
         # if either x axis or y axis is locked, set the coresponding x12 or y12 coords to
         # the current axis size so it doesn't zoom 
         if self.control_x.value == True:
+            smart_zoom = False
+            padding = False
             x1 = self.scale_x.min
             x2 = self.scale_x.max
         if self.control_y.value == True:
@@ -424,19 +447,34 @@ class BqplotBackend(BackendBase):
             click to zoom call back 
             target contains mouse coordinates
         '''
+        # check whether we want to zoom in or out
+        tool_name = self.tool_actions[self.interaction_tooltips.v_model]
+        if tool_name == CLICK_ZOOM_IN:
+            scale = CLICK_ZOOM_SCALE
+            useSmartZoom = True
+            usePadding = True
+        elif tool_name == CLICK_ZOOM_OUT:
+            scale = CLICK_ZOOM_SCALE * 100
+            useSmartZoom = False
+            usePadding = False
+        else:
+            print('Invalid Tool Selected')
+            return
+
+
         # get the mouse coordinates
         x = target['data']['click_x']
         y = target['data']['click_y']
 
-
         # difference smallest and largest value on each axis
-        x_diff = self.scale_x.max - self.scale_x.min
-        y_diff = self.scale_y.max - self.scale_y.min
+        x_diff = abs(self.scale_x.max - self.scale_x.min)
+        y_diff = abs(self.scale_y.max - self.scale_y.min)
         # multiply diff by CLICK_ZOOM_SCALE for 10x zoom, and by 0.5 since we want to
         # create a box around the x y mouse coord.
-        x1 = x - (0.5 * CLICK_ZOOM_SCALE * x_diff)
-        x2 = x + (0.5 * CLICK_ZOOM_SCALE * x_diff)
-        y1 = y - (0.5 * CLICK_ZOOM_SCALE * y_diff)
-        y2 = y + (0.5 * CLICK_ZOOM_SCALE * y_diff)
+        x1 = x - (0.5 * scale * x_diff)
+        x2 = x + (0.5 * scale * x_diff)
+        y1 = y - (0.5 * scale * y_diff)
+        y2 = y + (0.5 * scale * y_diff)
 
-        self.zoom_sel(float(x1), float(x2), float(y1), float(y2), smart_zoom=True, padding=True)
+        self.zoom_sel(float(x1), float(x2), float(y1), float(y2),
+                      smart_zoom=useSmartZoom, padding=usePadding)
