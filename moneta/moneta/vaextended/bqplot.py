@@ -478,3 +478,19 @@ class BqplotBackend(BackendBase):
 
         self.zoom_sel(float(x1), float(x2), float(y1), float(y2),
                       smart_zoom=useSmartZoom, padding=usePadding)
+
+
+    def highlight_selection(self, x1, x2, y1, y2, toggle_value, tag):
+        print(toggle_value)
+        print(tag)
+        selector = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="red")
+        if toggle_value['new']:
+            # higlight tag access
+            selector.selected_x = [x1,x2]
+
+            selector.selected_y = [y1, y2]
+
+        else:
+            # remove highlight
+            selector.selected_x = None
+            selector.selected_y = None

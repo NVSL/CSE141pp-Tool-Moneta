@@ -1,4 +1,4 @@
-from ipywidgets import VBox, HBox, Layout, Button
+from ipywidgets import VBox, HBox, Layout, Button, ToggleButton
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
 
@@ -50,10 +50,12 @@ class Tags():
                 chk.widget.on_event('change', self.update_all_checkbox)
                 stats = self.get_stats(tag)
                 btn, tooltip = self.create_zoom_button(tag, stats=stats)
+                highlight_btn, highlight_tooltip = self.create_highlight_toggle(tag, stats=stats)
                 statss = self.tag_tooltip(tag, stats).splitlines()
 
                 tag_row = v.Row(children=[
                     btn,
+                    highlight_btn,
                     chk.widget
                     ], class_='ml-0')
                 items = [{
@@ -84,6 +86,33 @@ class Tags():
                                     float(tag.address[0]), float(tag.address[1])+1)
         btn.on_click(zoom_to_selection)
         return btn, tooltip
+
+    def create_highlight_toggle(self, tag, stats=None): #TODO move constants out
+        if stats is None:
+            stats = self.get_stats(tag)
+
+        tooltip = self.tag_tooltip(tag, stats)
+        toggle_btn = ToggleButton(
+                value=False,
+                description='',
+                disabled=False,
+                button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                tooltip='Press to toggle highlighting of the tag region.',
+                icon='binoculars', # (FontAwesome names without the `fa-` prefix)
+                layout=Layout(height='35px', width='35px',
+                    borders='none', align_items='center'
+                )
+            )
+        
+        def highlight(toggle_value):
+            self.model.plot.backend.highlight_selection(float(tag.access[0]), float(tag.access[1])+1,
+                                                        float(tag.address[0]), float(tag.address[1])+1, toggle_value, tag)
+
+        toggle_btn.observe(highlight, 'value')
+
+
+
+        return toggle_btn, tooltip
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df
