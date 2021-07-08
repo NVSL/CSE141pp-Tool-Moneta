@@ -286,7 +286,16 @@ class BqplotBackend(BackendBase):
             self.control_x = widgets.Checkbox(value=False,description='Lock X Axis',indent=False, layout=control_lyt)
             self.control_y = widgets.Checkbox(value=False,description='Lock Y Axis',indent=False, layout=control_lyt)
             def axis_lock_update(checkbox):
-                # When eithier axis checkbox is locked.
+                ####### Only allows one checkbox to be locked at a time ######
+                if checkbox['owner'].description == self.control_x.description:
+                    if self.control_y.value:
+                        self.control_y.value = False
+
+                if checkbox['owner'].description == self.control_y.description:
+                    if self.control_x.value:
+                        self.control_x.value = False
+                ##############################################################
+                # When a axis checkbox is locked.
                 # Updates the panzoom tool to lock eithier the x or y axis.
                 # Also updates the zoombrush tool to use relevant zoom brush
                 if self.control_x.value:
