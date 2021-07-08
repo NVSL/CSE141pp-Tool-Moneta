@@ -274,10 +274,10 @@ class PlotBase(widgets.Widget):
             x_lo, x_hi = self.backend.limits[0]
             diffy = y_hi - y_lo
             diffx = x_hi - x_lo
-            new_size = 0
-            curr_scale = max(diffx, diffy)
-            new_size = int(min(32, self.shape//(curr_scale/4)))
-            if new_size > 1:
+            x_size = max(1, int(min(128, self.shape//diffx))) # 128 out of 512 meaning max is 1/4 of plot
+            y_size = max(1, int(min(128, self.shape//(diffy/4.0))))
+
+            if x_size > 1 or y_size > 1:
                 row = col = 0
                 rows = len(fgrid[0])
                 cols = len(fgrid[0][0])
@@ -286,8 +286,8 @@ class PlotBase(widgets.Widget):
                     for col in range(cols):
                         val = fgrid[0][row][col]
                         if val != 0:
-                            for i in range(row, min(rows, row+new_size)):
-                                for j in range(col, min(cols, col+new_size)):
+                            for i in range(row, min(rows, row+x_size)):
+                                for j in range(col, min(cols, col+y_size)):
                                     if fgrid[0][i][j] == 0:
                                         n_fgrid[0][i][j] = val
                 fgrid = n_fgrid
