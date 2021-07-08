@@ -1,6 +1,7 @@
 from ipywidgets import Button, Checkbox, ColorPicker, HBox, Label, Layout, VBox, Accordion
 import ipyvuetify as v
 from vaex.jupyter.utils import debounced
+from tqdm.notebook import tqdm
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS, THREAD_ID, LEGEND_THREADS_TITLE
 from moneta.legend.accesses import Accesses
@@ -30,15 +31,27 @@ class Legend():
             ".v-input__slot .v-label{color: black!important}"
         )])
 
-        self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
-        self.accesses = Accesses(model, self.update_selection)
-        self.stats = PlotStats(model)
-        self.tags = Tags(model, self.update_selection, tag_type=TAG_TYPE_SPACETIME)
-        self.threads = Tags(model, self.update_selection, tag_type=TAG_TYPE_THREAD)
-        self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
-        self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
-        self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
-        self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
+        def a(): self.widgets = VBox([self.panels, panel_style], layout=Layout(padding='0px', border='1px solid black', width='400px'))
+        def b(): self.accesses = Accesses(model, self.update_selection)
+        def c(): self.stats = PlotStats(model)
+        def d(): self.tags = Tags(model, self.update_selection, tag_type=TAG_TYPE_SPACETIME)
+        def e(): self.threads = Tags(model, self.update_selection, tag_type=TAG_TYPE_THREAD)
+        def f(): self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
+        def g(): self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
+        def h(): self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
+        def i(): self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
+
+        self.progress_bar([
+            a,
+            b,
+            c,
+            d,
+            e,
+            f,
+            g,
+            h,
+            i,
+            ])
 
         def update_legend_icon(_panels, _, selected):
             if len(selected) == len(self.panels.children):
@@ -55,6 +68,10 @@ class Legend():
                 legend_icon.children = [up]
                 self.panels.v_model = list(range(len(self.panels.children)))
         self.legend_button.on_event('click', update_panels)
+
+    def progress_bar(self, fns):
+        for fn in tqdm(fns, leave=False):
+            fn()
 
     def get_select_string(self): # TODO - move constants out
         selections = set()

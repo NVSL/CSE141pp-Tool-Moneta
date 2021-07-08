@@ -276,7 +276,7 @@ class PlotBase(widgets.Widget):
             diffx = x_hi - x_lo
             new_size = 0
             curr_scale = max(diffx, diffy)
-            new_size = int(min(32, self.shape//curr_scale))
+            new_size = int(min(32, self.shape//(curr_scale/4)))
             if new_size > 1:
                 row = col = 0
                 rows = len(fgrid[0])
