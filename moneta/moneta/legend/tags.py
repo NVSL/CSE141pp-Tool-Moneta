@@ -1,8 +1,8 @@
-from ipywidgets import VBox, HBox, Layout, Button, ToggleButton
+from ipywidgets import VBox, HBox, Layout, Button, ToggleButton, ColorPicker
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
-
-
+from matplotlib.colors import to_hex, to_rgba, ListedColormap
+import random
 from moneta.utils import percent_string
 from moneta.settings import ADDRESS
 import logging
@@ -15,6 +15,7 @@ class Tags():
         self.tag_type = tag_type
         self.update_selection = update_selection
         self.checkboxes = []
+        self.tag_colors = {}
         self.widgets = self.init_widgets(tag_type)
 
     def init_widgets(self, tag_type):
@@ -53,9 +54,14 @@ class Tags():
                 highlight_btn, highlight_tooltip = self.create_highlight_toggle(tag, stats=stats)
                 statss = self.tag_tooltip(tag, stats).splitlines()
 
+                colorpicker = self.create_colorpicker(tag)
+                
+
                 tag_row = v.Row(children=[
                     btn,
                     highlight_btn,
+                    colorpicker,
+
                     chk.widget
                     ], class_='ml-0')
                 items = [{
@@ -69,7 +75,7 @@ class Tags():
                         v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
                         ]))
         tag_rows.append(v.Container(row=False, children=[treenodelabel]))
-        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
+        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="300px")])
 
     def create_zoom_button(self, tag, stats=None): #TODO move constants out
         if stats is None:
@@ -106,13 +112,42 @@ class Tags():
         
         def highlight(toggle_value):
             self.model.plot.backend.highlight_selection(float(tag.access[0]), float(tag.access[1])+1,
-                                                        float(tag.address[0]), float(tag.address[1])+1, toggle_value, tag)
+                                                        float(tag.address[0]), float(tag.address[1])+1, 
+                                                        toggle_value, tag)
 
         toggle_btn.observe(highlight, 'value')
 
 
 
         return toggle_btn, tooltip
+
+
+    def create_colorpicker(self, tag, clr=1):
+        
+        random_number = random.randint(0,16777215)
+        hex_color = str(hex(random_number))
+        hex_color = '#'+ hex_color[2:]
+        clr_picker = ColorPicker(concise=True, value=hex_color, 
+                disabled=False, layout=Layout(height='35px', width='35px',
+                    borders='none', align_items='center')
+                )
+
+        self.tag_colors[tag.name] = hex_color
+
+        clr_picker.observing = True
+        def handle_color_picker(new_clr):
+            print(new_clr)
+            print(tag.display_name())
+            self.tag_colors[tag.name] = new_clr.new
+
+            # self.colormap[clr] = to_rgba(new_clr.new, 1)
+            # self.model.plot.colormap = ListedColormap(self.colormap)
+            # self.model.plot.backend.plot._update_image()
+       
+        clr_picker.observe(handle_color_picker, names='value')
+       
+        return clr_picker
+    
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df

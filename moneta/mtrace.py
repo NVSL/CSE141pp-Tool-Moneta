@@ -45,7 +45,7 @@ def main() :
         pin_cmd += " -pause_tool 30"
     if args.flush_cache_on_new_file:
         tool_cmd += " -flush-cache-on-new-file"
-    app_cmd = ' '.join(args.cmd[1:])
+    app_cmd = ' '.join(args.cmd)
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
     files = [f"{args.trace}.meta",
@@ -63,3 +63,5 @@ def main() :
         
     print(f"Running: {run_cmd}")
     subprocess.run(run_cmd.split())
+
+main()

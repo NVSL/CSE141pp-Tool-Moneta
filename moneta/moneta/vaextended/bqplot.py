@@ -482,7 +482,7 @@ class BqplotBackend(BackendBase):
 
     def highlight_selection(self, x1, x2, y1, y2, toggle_value, tag):
         print(toggle_value)
-        print(tag)
+        print(tag.display_name())
         selector = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="red")
         if toggle_value['new']:
             # higlight tag access
