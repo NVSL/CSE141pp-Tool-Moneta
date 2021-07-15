@@ -5,4 +5,4 @@ export DEBUG
 endif
 
 default:
-	python compile_pin.py
+	python3.9 compile_pin.py
