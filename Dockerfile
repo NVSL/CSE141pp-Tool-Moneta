@@ -32,7 +32,7 @@ COPY moneta/setup.py ${DIR_MONETA}/
 RUN sed -i 's/\r$//' bashrc_aliases 
 RUN cat bashrc_aliases >> ~/.bashrc
 
-RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
+RUN echo ".container{width: 100%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
 COPY setup/compile_pin.py ${DIR_SETUP}/
 COPY setup/trace_tool.cpp ${DIR_SETUP}/

@@ -10,3 +10,5 @@ build:
 .PHONY: install
 install:
 	pip install -e .
+# this is a hack to make notebook use the whole browser window.
+	echo ".container{width: 100%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css 
