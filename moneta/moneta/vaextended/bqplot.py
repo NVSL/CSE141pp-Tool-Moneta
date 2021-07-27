@@ -72,6 +72,7 @@ class BqplotBackend(BackendBase):
             #self.image.y = (self.scale_y.min, self.scale_y.max)
             self.image.y = (self.limits[1][0], self.limits[1][1])
             self.base_address.value = f"Base address: 0x{int(self.limits[1][0]):X}"
+            self.zoom_args.value = self.zoom_args_string()
             self.plot.update_stats()
 
     def create_widget(self, output, plot, dataset, limits):
@@ -116,6 +117,13 @@ class BqplotBackend(BackendBase):
         self.stuck_ctr = 0
 
         self.base_address = widgets.Label(value=f"Base address: 0x{int(self.limits[1][0]):X}")
+        self.zoom_args = widgets.Text(
+            description="Zoom Args", 
+            value=self.zoom_args_string(), 
+            disabled=True, 
+            style={'description_width':'initial'},
+            layout=widgets.Layout(width='50%')
+        )
 
         self.curr_action = Action.other
         self.undo_actions = list()
@@ -123,7 +131,7 @@ class BqplotBackend(BackendBase):
         self.counter = 2
         self.scale_x.observe(self._update_limits)
         self.scale_y.observe(self._update_limits)
-        self.widget = widgets.VBox([self.figure, self.base_address])
+        self.widget = widgets.VBox([self.figure, self.base_address, self.zoom_args])
         self.create_tools()
 
     @debounced(0.2, method=True)
@@ -460,12 +468,12 @@ class BqplotBackend(BackendBase):
         tool_name = self.tool_actions[self.interaction_tooltips.v_model]
         if tool_name == CLICK_ZOOM_IN:
             scale = CLICK_ZOOM_SCALE
-            useSmartZoom = True
-            usePadding = True
+            use_smart_zoom = True
+            use_padding = True
         elif tool_name == CLICK_ZOOM_OUT:
             scale = CLICK_ZOOM_SCALE * 100
-            useSmartZoom = False
-            usePadding = False
+            use_smart_zoom = False
+            use_padding = False
         else:
             print('Invalid Tool Selected')
             return
@@ -486,4 +494,8 @@ class BqplotBackend(BackendBase):
         y2 = y + (0.5 * scale * y_diff)
 
         self.zoom_sel(float(x1), float(x2), float(y1), float(y2),
-                      smart_zoom=useSmartZoom, padding=usePadding)
+                      smart_zoom=use_smart_zoom, padding=use_padding)
+
+    def zoom_args_string(self):
+        to_int = [tuple( map(int,i) ) for i in self.limits]
+        return f'zoom_access={to_int[0]}, zoom_address={to_int[1]}'
