@@ -29,6 +29,7 @@ RESET_ZOOM = 'Reset Zoom'
 CLICK_ZOOM_IN = 'Click Zoom IN'
 CLICK_ZOOM_OUT = 'Click Zoom OUT'
 CLICK_ZOOM_SCALE = 0.1 # 10x zoom
+RULER = "Measurement"
 
 UNDO = 'Undo'
 REDO = 'Redo'
@@ -191,6 +192,9 @@ class BqplotBackend(BackendBase):
             self.zoom_brush_none = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="gray")
             self.zoom_brush_none.observe(self.update_zoom_brush_none, ["brushing"])
 
+            # initiaite measurement tool
+            self.ruler = bqplot.interacts.BrushSelector(x_scale=self.scale_x, y_scale=self.scale_y, color="blue")
+            self.ruler.observe(self.measure_selected_area, ["brushing"])
             #### Set the default initial tools ####
             self.zoom_brush = self.zoom_brush_full  
             self.click_brush = None # use regular mouse
@@ -201,8 +205,9 @@ class BqplotBackend(BackendBase):
             tool_actions_map[PAN_ZOOM] = self.panzoom
             tool_actions_map[CLICK_ZOOM_IN] = self.click_brush_in
             tool_actions_map[CLICK_ZOOM_OUT] = self.click_brush_out
+            tool_actions_map[RULER] = self.ruler
             self.tool_actions = [PAN_ZOOM, ZOOM_SELECT,
-                                 CLICK_ZOOM_IN, CLICK_ZOOM_OUT]
+                                 CLICK_ZOOM_IN, CLICK_ZOOM_OUT, RULER]
 
             self.start_limits = copy.deepcopy(self.limits)
 
@@ -242,7 +247,14 @@ class BqplotBackend(BackendBase):
                                                     v.Icon(
                                                         children=['mdi-magnify-minus-cursor'])
                                                 ])
-                                }], children=[CLICK_ZOOM_OUT])
+                                }], children=[CLICK_ZOOM_OUT]),
+                                v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': v.Btn(v_on='tooltip.on', children=[
+                                        v.Icon(children=['mdi-ruler'])
+                                    ])
+                                }], children=[RULER])      # ruler
                             ])
             self.interaction_tooltips.observe(change_interact, "v_model")
 
@@ -389,6 +401,22 @@ class BqplotBackend(BackendBase):
                 with self.zoom_brush.hold_trait_notifications(): # Delete selection
                     self.zoom_brush.selected = None
                 self.zoom_sel(None, None, y1, y2, smart_zoom=False, padding=False)
+
+    def measure_selected_area(self, *args):
+        with self.output:
+            if not self.ruler.brushing: # Update on mouse up
+                pass
+            if self.ruler.selected is not None:
+                (x1, y1), (x2, y2) = self.ruler.selected
+                if not self.ruler.brushing: # Update on mouse up
+                    self.figure.interaction = self.ruler
+                with self.ruler.hold_trait_notifications(): # Delete selection
+                    self.ruler.selected_x = None
+                    self.ruler.selected_y = None
+                df = self.get_df_selection(x1, x2, y1, y2)
+                uniqueCacheLines = {l >> int(np.log2(self.plot.model.curr_trace.cache_block)) for l in df.unique('Address')}
+                self.plot.model.selected_values = (y2-y1, len(uniqueCacheLines), df.count())
+                self.plot.model.legend.mearsurement.update()
 
     def update_zoom_brush_none(self, *args):
         with self.zoom_brush.hold_trait_notifications(): # Delete selection

@@ -8,6 +8,7 @@ from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from moneta.trace import TAG_TYPE_SPACETIME, TAG_TYPE_THREAD
 from moneta.legend.stats import PlotStats
+from moneta.legend.measurement import PlotMeasure
 
 from enum import Enum
 import numpy as np
@@ -36,10 +37,12 @@ class Legend():
         def c(): self.stats = PlotStats(model)
         def d(): self.tags = Tags(model, self.update_selection, tag_type=TAG_TYPE_SPACETIME)
         def e(): self.threads = Tags(model, self.update_selection, tag_type=TAG_TYPE_THREAD)
+        def m(): self.mearsurement = PlotMeasure(model)
         def f(): self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         def g(): self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
         def h(): self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
         def i(): self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
+        def n(): self.add_panel('Measurement', self.mearsurement.widgets)
 
         self.progress_bar([
             a,
@@ -47,10 +50,12 @@ class Legend():
             c,
             d,
             e,
+            m,
             f,
             g,
             h,
             i,
+            n
             ])
 
         def update_legend_icon(_panels, _, selected):
