@@ -3,7 +3,7 @@ import ipyvuetify as v
 from vaex.jupyter.utils import debounced
 from tqdm.notebook import tqdm
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, INDEX, ADDRESS, THREAD_ID, LEGEND_THREADS_TITLE
+from moneta.settings import newc, COMP_W_MISS, COMP_R_MISS, WRITE_MISS, READ_MISS, WRITE_HIT, READ_HIT, LEGEND_MEM_ACCESS_TITLE, LEGEND_TAGS_TITLE,  LEGEND_STATS_TITLE, LEGEND_MEASUREMENT_TITLE, INDEX, ADDRESS, THREAD_ID, LEGEND_THREADS_TITLE
 from moneta.legend.accesses import Accesses
 from moneta.legend.tags import Tags
 from moneta.trace import TAG_TYPE_SPACETIME, TAG_TYPE_THREAD
@@ -42,7 +42,7 @@ class Legend():
         def g(): self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
         def h(): self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
         def i(): self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
-        def n(): self.add_panel('Measurement', self.mearsurement.widgets)
+        def n(): self.add_panel(LEGEND_MEASUREMENT_TITLE, self.mearsurement.widgets)
 
         self.progress_bar([
             a,

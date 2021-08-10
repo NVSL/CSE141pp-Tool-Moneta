@@ -85,6 +85,7 @@ LEGEND_MEM_ACCESS_TITLE = 'Accesses'
 LEGEND_TAGS_TITLE = 'Tags'
 LEGEND_THREADS_TITLE = 'Threads'
 LEGEND_STATS_TITLE = 'Stats'
+LEGEND_MEASUREMENT_TITLE = 'Measurement'
 
 # Stats Labels
 STATS_HITS = "Hits"

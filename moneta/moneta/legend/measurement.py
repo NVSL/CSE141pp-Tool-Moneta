@@ -24,17 +24,16 @@ class PlotMeasure():
 
         self.widgets = VBox([self.cache_information, self.curr_selected])
     
-    def update(self, init=False):
-        selected_area_size, unique_cache_lines, accesses = self.get_curr_stats()
+    def update(self, selected_area_size, unique_cache_lines, accesses, init=False):
 
         if(init):
-            self.selected_area_size.value = 'Selected area size: ' + str(selected_area_size)
-            self.unique_cache_lines.value = 'Number of unique cache lines: ' + str(unique_cache_lines)
-            self.accesses.value = 'Number of accesses: ' + str(accesses)
+            self.selected_area_size.value = 'Selected area size: ' + str(selected_area_size) + ' bytes'
+            self.unique_cache_lines.value = 'Number of unique cache lines: ' + str(unique_cache_lines) + ' lines'
+            self.accesses.value = 'Number of accesses: ' + str(accesses) + ' accesses'
 
-        self.selected_area_size.value = 'Selected area size: ' + str(selected_area_size)
-        self.unique_cache_lines.value = 'Number of unique cache lines: ' + str(unique_cache_lines)
-        self.accesses.value = 'Number of accesses: ' + str(accesses)
+        self.selected_area_size.value = 'Selected area size: ' + str(selected_area_size) + ' bytes'
+        self.unique_cache_lines.value = 'Number of unique cache lines: ' + str(unique_cache_lines) + ' lines'
+        self.accesses.value = 'Number of accesses: ' + str(accesses) + ' accesses'
 
     def get_curr_stats(self):
         return self.model.selected_values
