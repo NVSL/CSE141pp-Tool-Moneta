@@ -12,6 +12,9 @@ TRACE_FILE_END = ".hdf5"
 TAG_FILE_END = ".tags"
 META_FILE_END = ".meta"
 
+# Enviroment Variables
+COLOR_VIEW = 'COLOR_VIEW'
+C_VIEW_OPTIONS = ['ALL', 'ReadWrite', 'HitMiss', 'TAG', 'THREAD']
 
 # Colormap
 newc = np.ones((11, 4))

@@ -9,6 +9,9 @@ log = logging.getLogger(__name__)
 
 TAG_TYPE_SPACETIME = "space-time"
 TAG_TYPE_THREAD = "thread"
+
+import time
+
 class Tag():
     def __init__(self, tag_dict):
         self.address = (tag_dict[LO_ADDR], tag_dict[HI_ADDR])
@@ -96,11 +99,23 @@ class Trace():
         log.debug(f"threads: {self.threads}")
             
     def init_df(self):
+        start = time.perf_counter()
+        print('start loading df')
         self.df = vaex.open(self.trace_path)
-        num_accs = self.df[ADDRESS].count()
-        self.df[INDEX] = np.arange(0, num_accs)
+        
+        # manually create index column 
+        # time 2.206947305000085
+        # num_accs = self.df[ADDRESS].count()
+        # self.df[INDEX] = np.arange(0, num_accs)
+        
+        
         self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()] + 1]
+        
         self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]+1]
+
+
+        print(self.df)
+        print("END loading df TIME {} sec".format(time.perf_counter() - start))
 
     def validate_paths(self):
         for path in [self.trace_path, self.tag_path, self.meta_path]:
