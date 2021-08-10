@@ -75,7 +75,7 @@ class Legend():
 
     def get_select_string(self): # TODO - move constants out
         selections = set()
-        for checkbox in self.accesses.checkboxes:
+        for checkbox in self.accesses.childcheckboxes:
             if checkbox.widget.v_model == False:
                 selections.add(f'(Access != {checkbox.acc_type})')
 
@@ -88,8 +88,6 @@ class Legend():
     @debounced(0.5)
     def update_selection(self):
         self.model.curr_trace.df.select(self.get_select_string())
-        print(self.model.curr_trace.df)
-        print('need to add tag is to trace.hdf5 to color by tag')
 
     def add_panel(self, name, contents):
         acc = v.ExpansionPanel(children=[

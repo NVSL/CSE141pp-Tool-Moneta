@@ -24,6 +24,16 @@ newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
 newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
 CUSTOM_CMAP = ListedColormap(newc)
 
+# Colors of top level choices. This is handled differenly since these colors
+# control many access types.
+# [r g b a accesstype1 accesstype2 ...]
+READS_CLR = [187/255, 0/255, 255/255, 1, 1, 4, 6]
+WRITES_CLR = [0, 255/255, 255/255, 1, 2, 5, 8]
+HIT_CLR = [215/255, 230/255, 10/255, 1, 1, 2] 
+MISS_CAP_CLR = [0/255, 0/255, 0/255, 1, 4, 5]
+MISS_COM_CLR = [0/255, 0/255, 0/255, 1, 6, 8]
+
+
 # print() Text Colors
 class TextStyle():
     RED = '\033[31m'
@@ -63,6 +73,13 @@ THREAD_ID = "ThreadID"
 INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Address Offset (Bytes)"
 
+# Access Type Identifiers
+# Not part of pin tool but still used to identify accesses 
+TOP_COM_MISS = 20
+TOP_CAP_MISS = 21
+TOP_HIT = 22
+TOP_WRITE = 23
+TOP_READ = 24
 # Pintool Enumerations
 COMP_W_MISS = 6
 COMP_R_MISS = 5
@@ -110,13 +127,20 @@ hdiv = VBox([
     HBox(layout=Layout(
         padding='0',
         border='1px solid black',
-        width='100px',
+        width='120px',
+        height='0'))
+    ], layout=Layout(justify_content='center'))
+Whdiv = VBox([
+    HBox(layout=Layout(
+        padding='0',
+        border='1px solid black',
+        width='140px',
         height='0'))
     ], layout=Layout(justify_content='center'))
 lhdiv = VBox([
     HBox(layout=Layout(
         padding='0',
         border='1px solid #cccbc8',
-        width='100px',
+        width='120px',
         height='0'))
             ], layout=Layout(justify_content='center'))

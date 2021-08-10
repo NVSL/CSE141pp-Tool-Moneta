@@ -263,6 +263,7 @@ class BqplotBackend(BackendBase):
                                     'variable': 'tooltip',
                                     'children': self.undo_btn
                                 }], children=[UNDO])
+                                
             self.redo_btn = v.Btn(v_on='tooltip.on', icon=True, disabled=True, children=[
                                     v.Icon(children=['redo'])
                                 ])
