@@ -35,6 +35,5 @@ class PlotMeasure():
         self.unique_cache_lines.value = 'Number of unique cache lines: ' + str(unique_cache_lines) + ' lines'
         self.accesses.value = 'Number of accesses: ' + str(accesses) + ' accesses'
 
-    def get_curr_stats(self):
-        return self.model.selected_values
+
     

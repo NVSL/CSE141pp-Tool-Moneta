@@ -101,4 +101,7 @@ class Legend():
             ])
         self.panels.children = self.panels.children + [acc]
 
-
+    def openMeasurementPanel(self):
+        index = [panel.children[0].children[0] for panel in self.panels.children].index(LEGEND_MEASUREMENT_TITLE)
+        if index not in self.panels.v_model:
+            self.panels.v_model = self.panels.v_model + [index]

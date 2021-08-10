@@ -416,6 +416,7 @@ class BqplotBackend(BackendBase):
                 df = self.get_df_selection(x1, x2, y1, y2)
                 uniqueCacheLines = {l >> int(np.log2(self.plot.model.curr_trace.cache_block)) for l in df.unique('Address')}
                 self.plot.model.legend.mearsurement.update(y2-y1, len(uniqueCacheLines), df.count())
+                self.plot.model.legend.openMeasurementPanel()
 
     def update_zoom_brush_none(self, *args):
         with self.zoom_brush.hold_trait_notifications(): # Delete selection
