@@ -14,27 +14,42 @@ META_FILE_END = ".meta"
 
 # Enviroment Variables
 COLOR_VIEW = 'COLOR_VIEW'
-C_VIEW_OPTIONS = ['ALL', 'ReadWrite', 'HitMiss', 'TAG', 'THREAD']
+C_VIEW_OPTIONS = ['All', 'AccessType', 'TAG', 'THREAD', 'Custom2', 'Custom4', 'Custom8']
 
 # Colormap
-newc = np.ones((11, 4))
-newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
-newc[2] = [0, 153/255, 204/255, 1] # write_hits - 2, .25
+# newc = np.ones((11, 4)) # why 11 I dont know eithier
+# newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
+# newc[2] = [0, 153/255, 204/255, 1] # write_hits - 2, .25
+# newc[3] = [0.047, 1, 0, 1] # cache_size
+# newc[4] = [1, .5, 0, 1] # read_misses - 3, .375
+# newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
+# newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
+# newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
+# CUSTOM_CMAP = ListedColormap(newc)
+
+
+newc = np.ones((11, 4)) # why 11 I dont know eithier
+newc[1] = [0, 0, 0, 1] # layer 0 black
+newc[2] = [0, 153/255, 204/255, 1] # layer 1 light blue
 newc[3] = [0.047, 1, 0, 1] # cache_size
-newc[4] = [1, .5, 0, 1] # read_misses - 3, .375
-newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
-newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
-newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
+newc[4] = [1, .5, 0, 1] # layer 2  red
+newc[5] = [1, 0, 0, 1] # layer 3
+newc[6] = [0.5, 0.3, 0.1, 1] # layer 4
+newc[8] = [0.745, 0.309, 0.235, 1] # layer 5
 CUSTOM_CMAP = ListedColormap(newc)
+
+
+
+
 
 # Colors of top level choices. This is handled differenly since these colors
 # control many access types.
 # [r g b a accesstype1 accesstype2 ...]
-READS_CLR = [187/255, 0/255, 255/255, 1, 1, 4, 6]
-WRITES_CLR = [0, 255/255, 255/255, 1, 2, 5, 8]
-HIT_CLR = [215/255, 230/255, 10/255, 1, 1, 2] 
-MISS_CAP_CLR = [0/255, 0/255, 0/255, 1, 4, 5]
-MISS_COM_CLR = [0/255, 0/255, 0/255, 1, 6, 8]
+# READS_CLR = [187/255, 0/255, 255/255, 1, 1, 4, 6]
+# WRITES_CLR = [0, 255/255, 255/255, 1, 2, 5, 8]
+# HIT_CLR = [215/255, 230/255, 10/255, 1, 1, 2] 
+# MISS_CAP_CLR = [0/255, 0/255, 0/255, 1, 4, 5]
+# MISS_COM_CLR = [0/255, 0/255, 0/255, 1, 6, 8]
 
 
 # print() Text Colors
@@ -101,7 +116,7 @@ TAG_FILE_TAG_TYPE="Tag_Type"
 TAG_FILE_THREAD_ID="Thread_ID"
 
 # Legend variables
-LEGEND_MEM_ACCESS_TITLE = 'Accesses'
+LEGEND_MEM_ACCESS_TITLE = 'Accesses Layers'
 LEGEND_TAGS_TITLE = 'Tags'
 LEGEND_THREADS_TITLE = 'Threads'
 LEGEND_STATS_TITLE = 'Stats'
@@ -137,7 +152,7 @@ Whdiv = VBox([
     HBox(layout=Layout(
         padding='0',
         border='1px solid black',
-        width='140px',
+        width='180px',
         height='0'))
     ], layout=Layout(justify_content='center'))
 lhdiv = VBox([

@@ -1,10 +1,10 @@
-from ipywidgets import VBox, HBox, Layout, Button, ToggleButton, ColorPicker
+from ipywidgets import VBox, HBox, Layout, Button, ToggleButton, ColorPicker, Dropdown
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
 import random
 from moneta.utils import percent_string
-from moneta.settings import ADDRESS
+from moneta.settings import ADDRESS, C_VIEW_OPTIONS
 import logging
 log = logging.getLogger(__name__)
 
@@ -51,17 +51,11 @@ class Tags():
                 chk.widget.on_event('change', self.update_all_checkbox)
                 stats = self.get_stats(tag)
                 btn, tooltip = self.create_zoom_button(tag, stats=stats)
-                highlight_btn, highlight_tooltip = self.create_highlight_toggle(tag, stats=stats)
                 statss = self.tag_tooltip(tag, stats).splitlines()
 
-                colorpicker = self.create_colorpicker(tag)
-                
 
                 tag_row = v.Row(children=[
                     btn,
-                    highlight_btn,
-                    colorpicker,
-
                     chk.widget
                     ], class_='ml-0')
                 items = [{
@@ -121,32 +115,6 @@ class Tags():
 
         return toggle_btn, tooltip
 
-
-    def create_colorpicker(self, tag, clr=1):
-        
-        random_number = random.randint(0,16777215)
-        hex_color = str(hex(random_number))
-        hex_color = '#'+ hex_color[2:]
-        clr_picker = ColorPicker(concise=True, value=hex_color, 
-                disabled=False, layout=Layout(height='35px', width='35px',
-                    borders='none', align_items='center')
-                )
-
-        self.tag_colors[tag.name] = hex_color
-
-        clr_picker.observing = True
-        def handle_color_picker(new_clr):
-            print(new_clr)
-            print(tag.display_name())
-            self.tag_colors[tag.name] = new_clr.new
-
-            # self.colormap[clr] = to_rgba(new_clr.new, 1)
-            # self.model.plot.colormap = ListedColormap(self.colormap)
-            # self.model.plot.backend.plot._update_image()
-       
-        clr_picker.observe(handle_color_picker, names='value')
-       
-        return clr_picker
     
 
     def get_stats(self, tag):
