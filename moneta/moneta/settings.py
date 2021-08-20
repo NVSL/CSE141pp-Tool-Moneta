@@ -120,6 +120,7 @@ LEGEND_MEM_ACCESS_TITLE = 'Accesses Layers'
 LEGEND_TAGS_TITLE = 'Tags'
 LEGEND_THREADS_TITLE = 'Threads'
 LEGEND_STATS_TITLE = 'Stats'
+LEGEND_MEASUREMENT_TITLE = 'Cache Measurement'
 
 # Stats Labels
 STATS_HITS = "Hits"

@@ -3,7 +3,7 @@ import subprocess
 import argparse
 import os
 
-PIN_DIR = "/pin/source/tools/ManualExamples/"
+PIN_DIR = f"{os.environ['PIN_ROOT']}/source/tools/ManualExamples/"
 OBJ_INTEL = "obj-intel64/"
 TRACE_TOOL = f"{os.getcwd()}/trace_tool.cpp"
 OUTPUT_PATH = f"{os.getcwd()}"
@@ -39,7 +39,6 @@ except:
 if not os.path.isdir(PIN_DIR+OBJ_INTEL):
     os.mkdir(PIN_DIR+OBJ_INTEL)
 
-os.environ['PIN_ROOT']="/pin"
 
 print(f"\n---------------Changing Directories to {PIN_DIR}-----------------")
 with cd(PIN_DIR):
