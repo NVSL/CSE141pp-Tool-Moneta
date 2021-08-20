@@ -18,17 +18,19 @@ import ipywidgets as widgets
 import ipyvuetify as v
 import copy
 from moneta.settings import TextStyle, WARNING_LABEL
+from PIL import Image
 
 blackish = '#666'
 
 
 accessRanges = {}
 ZOOM_SELECT = 'Zoom to Selection'
-PAN_ZOOM = 'Pan Zoom'
+PAN_ZOOM = 'Pan Zoom test1'
 RESET_ZOOM = 'Reset Zoom'
 CLICK_ZOOM_IN = 'Click Zoom IN'
 CLICK_ZOOM_OUT = 'Click Zoom OUT'
 CLICK_ZOOM_SCALE = 0.1 # 10x zoom
+SCREENSHOT = 'Screenshot Test'
 
 UNDO = 'Undo'
 REDO = 'Redo'
@@ -63,6 +65,8 @@ class BqplotBackend(BackendBase):
         with self.output:
             rgb_image = (rgb_image * 255.).astype(np.uint8)
             pil_image = vaex.image.rgba_2_pil(rgb_image)
+            self.pil_image_test = pil_image
+            
             data = vaex.image.pil_2_data(pil_image)
             self.core_image.value = data
             # force update
@@ -253,6 +257,23 @@ class BqplotBackend(BackendBase):
                     self.zoom_brush.selected_x = None
                     self.zoom_brush.selected_y = None
                     self.zoom_brush.selected = None
+                
+            self.screenshot_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
+                                    v.Icon(children=['mdi-camera'])
+                                ])
+            self.screenshot_tooltip = v.Tooltip(bottom=True, v_slots=[{
+                                    'name': 'activator',
+                                    'variable': 'tooltip',
+                                    'children': self.screenshot_btn
+                                }], children=[SCREENSHOT])
+            @debounced(0.5)
+            def screenshot():
+                #display(self.pil_image_test)
+                # print(self.core_image.value)
+                # self.figure.save_svg("test.svg")
+                #self.figure.save_png("test.png")
+                display(self.core.image)
+            self.screenshot_btn.on_event('click', lambda *ignore: screenshot())
             self.reset_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
                                     v.Icon(children=['refresh'])
                                 ])
@@ -289,6 +310,8 @@ class BqplotBackend(BackendBase):
                         self.scale_y.min, self.scale_y.max = y1, y2
             self.undo_btn.on_event('click', lambda *ignore: undo_redo(Action.undo, self.undo_actions))
             self.redo_btn.on_event('click', lambda *ignore: undo_redo(Action.redo, self.redo_actions))
+
+
 
             control_lyt = widgets.Layout(width='100px')
             self.control_x = widgets.Checkbox(value=False,description='Lock X Axis',indent=False, layout=control_lyt)
@@ -341,7 +364,8 @@ class BqplotBackend(BackendBase):
                     self.interaction_tooltips, 
                     self.reset_tooltip,
                     self.undo_tooltip,
-                    self.redo_tooltip
+                    self.redo_tooltip,
+                    self.screenshot_tooltip
                 ], align='center', justify='center')
             self.plot.add_to_toolbar(self.tooltips)
 
