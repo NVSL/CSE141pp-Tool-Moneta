@@ -39,6 +39,20 @@ using namespace Napi;
 
         DUMP_STOP(tag);
     }
+    
+    void JS_NEW_TRACE(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+
+        if (info.Length() < 1) {
+            Napi::TypeError::New(env, "Invalid arguments").ThrowAsJavaScriptException();
+        } 
+
+        // Convert our first arg into a C++ const char*
+        std::string s_str = info[0].ToString().Utf8Value(); // Takes a Napi Value, converts it to a Napi string, then converts to a UTF C string
+        const char* s = s_str.c_str(); // Takes the memory location of the string as a pointer
+
+        NEW_TRACE(s);
+    }
 
     void JS_FLUSH_CACHE(const Napi::CallbackInfo& info) {
         // Napi::Env env = info.Env();
@@ -56,10 +70,12 @@ using namespace Napi;
         START_TRACE();
     }
 
+
 	Napi::Object Init(Napi::Env env, Napi::Object exports) {
         exports.Set(Napi::String::New(env, "JS_START_TRACE"), Napi::Function::New(env, JS_START_TRACE));
         exports.Set(Napi::String::New(env, "JS_DUMP_START_ALL"), Napi::Function::New(env, JS_DUMP_START_ALL));
         exports.Set(Napi::String::New(env, "JS_STOP_TRACE"),Napi::Function::New(env, JS_STOP_TRACE));
+        exports.Set(Napi::String::New(env, "JS_NEW_TRACE"), Napi::Function::New(env, JS_NEW_TRACE));
         exports.Set(Napi::String::New(env, "JS_FLUSH_CACHE"), Napi::Function::New(env, JS_FLUSH_CACHE));
         exports.Set(Napi::String::New(env, "JS_DUMP_STOP"), Napi::Function::New(env, JS_DUMP_STOP));
         exports.Set(Napi::String::New(env, "JS_DUMP_START_ALL"), Napi::Function::New(env, JS_DUMP_START_ALL));
