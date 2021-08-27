@@ -1,0 +1,17 @@
+{
+  "name": "moneta",
+  "version": "1.0.0",
+  "description": "npm package file for Moneta.",
+  "main": "moneta_tags.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-addon-api": "^4.0.0"
+  }
+}
