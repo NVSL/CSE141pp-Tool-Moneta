@@ -1,1 +1,0 @@
-cmd_Release/obj.target/moneta.node := g++ -o Release/obj.target/moneta.node -shared -pthread -rdynamic -m64  -Wl,-soname=moneta.node -Wl,--start-group Release/obj.target/libmoneta/src/index.o -Wl,--end-group 
