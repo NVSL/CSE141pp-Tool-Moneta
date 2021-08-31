@@ -1,5 +1,6 @@
 .PHONY:all
 all: build install
+setup: all
 
 .PHONY: setup
 setup: all
@@ -8,9 +9,9 @@ setup: all
 .PHONY:build
 build:
 	$(MAKE) -C moneta/src
+	$(MAKE) -C setup
 
 .PHONY: install
 install:
-	python -m pip install -e .
-
-#/opt/conda/bin/python `which jupyter-notebook` --allow-root .
+	/opt/conda/bin/pip install -r setup/requirements.txt
+	/opt/conda/bin/pip install -e .
