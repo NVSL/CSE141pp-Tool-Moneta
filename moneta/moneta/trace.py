@@ -97,11 +97,12 @@ class Trace():
             
     def init_df(self):
         self.df = vaex.open(self.trace_path)
-        num_accs = self.df[ADDRESS].count()
-        self.df[INDEX] = np.arange(0, num_accs)
         self.x_lim = [self.df[INDEX].min()[()], self.df[INDEX].max()[()] + 1]
         self.y_lim = [self.df[ADDRESS].min()[()], self.df[ADDRESS].max()[()]+1]
 
+    def get_tag_names(self):
+        return [t.name for t in self.tags]
+    
     def get_tag(self, name):
         for tag in self.tags:
             if tag.name == name:

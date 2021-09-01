@@ -18,9 +18,14 @@ def select_trace(zoom_access=None, zoom_address=None):
     file_chooser.register_callback(handle_load_trace)
     display(file_chooser)
     
-def show_trace(trace_path, zoom_access=None, zoom_address=None):
+def show_trace(trace_path, zoom_access=None, zoom_address=None, show_tag=None):
+    if show_tag is not None:
+        zoom_access = show_tag
+        zoom_address = show_tag
+        
     model = Moneta()
     err_message = model.load_trace(*os.path.split(trace_path))
+
 
     if err_message:
         print(err_message)

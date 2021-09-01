@@ -36,7 +36,7 @@ s3transfer==0.3.3
 tabulate==0.8.7
 toml==0.10.1
 traittypes==0.2.1
-urllib3==1.25.8
+urllib3
 vaex-arrow==0.4.2
 vaex-astro==0.6.1
 vaex-core==1.5.0
@@ -48,3 +48,4 @@ vaex-viz==0.3.8
 whichcraft==0.6.1
 widgetsnbextension==3.5.1
 xarray==0.15.1
+pandas==1.3.1

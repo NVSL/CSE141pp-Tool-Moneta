@@ -28,6 +28,9 @@ def parse_zoom_args(model, zoom_access, zoom_address):
 
         if not tag:
             print(f'{WARNING_LABEL} Tag for zoom_access not found...using default zoom_access')
+            print(f'Avaliable tags are: ')
+            print("\n".join(model.curr_trace.get_tag_names()))
+            
             bound_access = initial_zoom[0]
         else:
             bound_access = [int(i) for i in tag.access]

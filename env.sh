@@ -4,5 +4,5 @@ if ! ( [ -e env.sh ] && [ -d moneta ] && [ -d moneta/moneta ] && [ -d moneta/mon
 else
     export MONETA_ROOT=$PWD
     export LD_LIBRARY_PATH=$MONETA_ROOT/moneta/src:$LD_LIBRARY_PATH
-    PIN_ROOT=/pin/
+    PATH=$PATH:$MONETA_ROOT/bin
 fi

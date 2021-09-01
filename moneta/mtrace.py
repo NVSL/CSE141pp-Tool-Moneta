@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import logging as log
 import argparse
@@ -7,31 +6,42 @@ import sys
 import subprocess
 import platform
 import os
+import click
 
-def main() :
-    parser = argparse.ArgumentParser(description=textwrap.dedent("""Gather a trace for Moneta"""))
-
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help="Be verbose")
-    parser.add_argument('--trace', default="trace", help="Trace name")
-    parser.add_argument('--cache-line-size', default=64, help="Cache line size")
-    parser.add_argument('--cache-line-count', default=512, help="Cache line count")
-    parser.add_argument('cmd', nargs=argparse.REMAINDER,  help="Command to run")
-    parser.add_argument('--main', default="main", help="Function to start tracing at")
-    parser.add_argument('--memops', default=10000000, help="how many accesses to trace")
-    parser.add_argument('--file-count', default=1, help="How many trace files to create, if needed.")
-    parser.add_argument('--skip', default=1000000000000, help="How many memops to skip")
-    parser.add_argument('--debug', default=False, action='store_true', help="Pause pin so you can connect with gdb")
-    parser.add_argument('--flush-cache-on-new-file', default=False, action='store_true', help="Flush the cache when you open a new file?");
-
-
-    args = parser.parse_args(sys.argv[1:])
-
-    if not args.verbose:
+@click.command()
+@click.option("--verbose", "-v", is_flag=True, default=False, help="Be verbose")
+@click.option("--trace", type=str, default="trace", help="trace name")
+@click.option("--cache-line-size", type=int, default=64, help="Cache line size")
+@click.option("--cache-line-count", type=int, default=512, help="cache line count")
+@click.option("--main", type=str, default="main", help="Function to trace")
+@click.option("--memops", default=10000000, help="How many memory operations to trace")
+@click.option("--file-count", default=1, type=int, help="How many trace files to collect")
+@click.option("--skip", default=10000000000, type=int, help="How many memops to skip")
+@click.option("--debug", is_flag=True, default=False, help="Pause so you can attach a debugger")
+@click.option("--flush-cache-on-new-file", is_flag=True, default=False, help="Flush cache when you open a new file")
+@click.argument("cmd", nargs=-1)
+def mtrace(*argc, **kwargs) :
+    do_mtrace(*argc, **kwargs)
+    
+def do_mtrace(*argc, **args):
+    verbose = args.pop("verbose", False)
+    trace =  args.pop("trace", "trace")
+    cache_line_count = args.pop("cache_line_count", 512)
+    cache_line_size = args.pop("cache_line_size", 64)
+    main = args.pop("main", "main")
+    memops = args.pop("memops", 10000000)
+    file_count = args.pop("file_count", 1)
+    skip = args.pop("skip", 1000000000)
+    debug = args.pop("debug", False)
+    flush_cache_on_new_file = args.pop("flush_cache_on_new_file", False)
+    cmd = args.pop("cmd")
+    jupyter = args.pop("jupyter", True)
+    
+    if not verbose:
         log.basicConfig(format="%(levelname)-8s %(message)s", level=log.WARN)
     else:
-        log.basicConfig(format="{} %(levelname)-8s [%(filename)s:%(lineno)d]  %(message)s".format(platform.node()) if args.verbose else "%(levelname)-8s %(message)s",
-                        level=log.DEBUG if args.verbose else log.WARN)
-
+        log.basicConfig(format="{} %(levelname)-8s [%(filename)s:%(lineno)d]  %(message)s".format(platform.node()) if verbose else "%(levelname)-8s %(message)s",
+                        level=log.DEBUG if verbose else log.WARN)
 
     if os.environ.get("OMP_NUM_THREADS"):
         log.warn("-------------")
@@ -39,27 +49,28 @@ def main() :
         log.warn("-------------")
         os.environ["OMP_NUM_THREADS"] = "1"
 
-    pin_cmd =f"/pin/pin.sh -ifeellucky -injection child "
-    tool_cmd=f"-t /pin/source/tools/ManualExamples/obj-intel64/trace_tool.so -name {args.trace} -file_count {args.file_count} -cache_lines {args.cache_line_count} -block {args.cache_line_size} -start {args.main} -ol {args.memops} -stack_size {int(1e12)} -skip {args.skip}"
-    if args.debug:
+    pin_cmd =f"{os.environ['PIN_ROOT']}pin.sh -ifeellucky -injection child "
+    tool_cmd=f"-t {os.environ['PIN_ROOT']}source/tools/ManualExamples/obj-intel64/trace_tool.so -name {trace} -file_count {file_count} -cache_lines {cache_line_count} -block {cache_line_size} -start {main} -ol {memops} -stack_size {int(1e12)} -skip {skip}"
+    if debug:
         pin_cmd += " -pause_tool 30"
-    if args.flush_cache_on_new_file:
+    if flush_cache_on_new_file:
         tool_cmd += " -flush-cache-on-new-file"
-    app_cmd = ' '.join(args.cmd[1:])
+    app_cmd = ' '.join(cmd)
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
-    files = [f"{args.trace}.meta",
-             f"{args.trace}.tags",
-             f"{args.trace}.hdf5"]
+    files = [f"{trace}.meta",
+             f"{trace}.tags",
+             f"{trace}.hdf5"]
 
     for f in files:
         try:
-            print(f"Removing {f}")
+            if not jupyter:
+                log.info(f"Removing {f}")
             os.unlink(f)
         except:
             pass
 
-    log.info(f"Cache size: {args.cache_line_count} lines * {int(args.cache_line_size)} bytes/Line = {int(args.cache_line_count) * int(args.cache_line_size)} KB")
-        
-    print(f"Running: {run_cmd}")
+    if not jupyter:
+        log.info(f"Cache size: {cache_line_count} lines * {int(cache_line_size)} bytes/Line = {int(cache_line_count) * int(cache_line_size)} KB")
+        print(f"Running: {run_cmd}")
     subprocess.run(run_cmd.split())

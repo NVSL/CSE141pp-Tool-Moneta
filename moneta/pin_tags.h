@@ -3,11 +3,17 @@
 #include<cstdio>
 
 extern "C" {
-	
-	__attribute__ ((optimize("O0"))) void DUMP_START(const char* tag, const void* begin, const void* end, bool create_new) {}
+
+#define DUMP_START(tag, begin, end, create_new) TAG_START(tag, begin,end, create_new)
+#define DUMP_STOP(tag) TAG_STOP(tag)
+#define DUMP_START_ALL(tag, create_new) TAG_START_ALL(tag, create_new)
+#define START_TRACE ENABLE_TRACING
+#define STOP_TRACE DISABLE_TRACING
+
+	__attribute__ ((optimize("O0"))) void TAG_START(const char* tag, const void* begin, const void* end, bool create_new) {}
+	__attribute__ ((optimize("O0"))) void TAG_STOP(const char* tag) {}
+ 	__attribute__ ((optimize("O0"))) void TAG_START_ALL(const char* tag, bool create_new) {TAG_START(tag, 0, (void*)-1, create_new);}
 	__attribute__ ((optimize("O0"))) void M_NEW_TRACE(const char* name) {}
-	__attribute__ ((optimize("O0"))) void DUMP_START_ALL(const char* tag, bool create_new) {DUMP_START(tag, 0, (void*)-1, create_new);}
-	__attribute__ ((optimize("O0"))) void DUMP_STOP(const char* tag) {}
 	__attribute__ ((optimize("O0"))) int GET_THREAD_ID() { return 0;}
 	
 	__attribute__ ((optimize("O0"))) void M_START_TRACE(bool one, bool two) {}

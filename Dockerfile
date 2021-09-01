@@ -8,8 +8,6 @@ RUN apt-get install -y curl
 RUN apt-get install -y libhdf5-dev
 RUN apt-get install -y screen
 
-ARG DIR_MONETA=/home/jovyan/work/moneta
-ARG DIR_SETUP=/home/jovyan/work/setup
 
 WORKDIR /
 
@@ -29,10 +27,10 @@ COPY setup/bashrc_aliases ${DIR_SETUP}/
 COPY moneta/setup.py ${DIR_MONETA}/
 
 # Fix Windows to Linux file endings
-RUN sed -i 's/\r$//' bashrc_aliases 
-RUN cat bashrc_aliases >> ~/.bashrc
+#RUN sed -i 's/\r$//' bashrc_aliases 
+#RUN cat bashrc_aliases >> ~/.bashrc
 
-RUN echo ".container{width: 90%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
+RUN echo ".container{width: 100%;}" >> /opt/conda/lib/python3.7/site-packages/notebook/static/custom/custom.css
 
 COPY setup/compile_pin.py ${DIR_SETUP}/
 COPY setup/trace_tool.cpp ${DIR_SETUP}/

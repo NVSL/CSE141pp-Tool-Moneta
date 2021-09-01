@@ -7,7 +7,7 @@ setup(name='Moneta',
       package_dir={'': 'moneta'},
       entry_points={
           'console_scripts' :[
-              'mtrace=mtrace:main',
+              'mtrace=mtrace:mtrace',
               'mtool=mtool:main'
               ]
       }

@@ -72,9 +72,9 @@ static std::string full_output_trace_path;
 //static std::string output_metadata_path;
 
 // Macros to track
-const std::string DUMP_START {"DUMP_START"};
+const std::string DUMP_START {"TAG_START"};
 const std::string NEW_TRACE {"M_NEW_TRACE"};
-const std::string DUMP_STOP  {"DUMP_STOP"};
+const std::string DUMP_STOP  {"TAG_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
 const std::string GET_THREAD_ID  {"GET_THREAD_ID"};
@@ -232,6 +232,7 @@ std::unordered_map<THREADID, TagData *> thread_ids;
  */
 
 // Output Columns
+const std::string IndexColumn {"index"};
 const std::string AccessColumn  {"Access"};
 const std::string AddressColumn {"Address"};
 const std::string ThreadIDColumn {"ThreadID"};
@@ -245,15 +246,18 @@ class HandleHdf5 {
   unsigned long long addrs[chunk_size]; // Chunk local vars
   uint8_t accs[chunk_size];
   uint8_t threadids[chunk_size];
+  ulong indexes[chunk_size];
 
   //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
   // Current access
   size_t mem_ind = 0;
   //size_t cache_ind = 0;
+  size_t index = 0; // increment index of each access
 
   // Memory accesses
   H5::H5File mem_file;
-	//  H5::DataSet tag_d;
+  //  H5::DataSet tag_d;
+  H5::DataSet index_d;
   H5::DataSet acc_d;
   H5::DataSet addr_d;
   H5::DataSet threadid_d;
@@ -283,6 +287,7 @@ class HandleHdf5 {
     hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
     H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
     // Create and write datasets to file
+    index_d = mem_file.createDataSet(IndexColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
     acc_d =      mem_file.createDataSet(AccessColumn.c_str(),   H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
     addr_d =     mem_file.createDataSet(AddressColumn.c_str(),  H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
@@ -299,19 +304,24 @@ class HandleHdf5 {
     acc_d.extend( total_ds_dims ); // Extend size of dataset
     addr_d.extend( total_ds_dims );
     threadid_d.extend( total_ds_dims );
+    index_d.extend(total_ds_dims);
 
     H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
     H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset); // Select slab in extended dataset
     acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace); // Write to extended part
 
-    old_dataspace = addr_d.getSpace(); // Rinse and repeat
+    old_dataspace = addr_d.getSpace(); // Rinse and repeat for address
     old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
     addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
 
-    old_dataspace = threadid_d.getSpace(); // Rinse and repeat
+    old_dataspace = threadid_d.getSpace(); // Rinse and repeat for threads
     old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
     threadid_d.write(threadids, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
+
+    old_dataspace = index_d.getSpace(); // Rinse and repeat for index
+    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+    index_d.write(indexes, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
   }
 
   // Extends dataset and writes stored chunk
@@ -374,6 +384,9 @@ public:
     addrs[mem_ind] = address; // Write to memory first
     threadids[mem_ind] = (unsigned char)(threadid & 0xff);
     accs[mem_ind++] = access;
+    index++;
+    indexes[mem_ind] = index;
+
     if (mem_ind < chunk_size) { // Unless we have reached chunk size
       return 0;
     }
@@ -599,7 +612,7 @@ void open_trace_files() {
 
 	for (auto thread: thread_ids) {
 		std::stringstream name;
-		name << "_THREAD_" << thread.first;
+		name << "thread-" << thread.first;
 		if (all_tags.find(name.str()) == all_tags.end()) {
 			auto t =  new TagData(name.str(), (ADDRINT)-1,0, true, thread.first);
 			all_tags[name.str()] = t;
@@ -669,6 +682,13 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack, THREADID thread
   hdf_handler->write_data_mem(addr, acc_type, threadid);
   curr_traced_lines++; // Afterward, for 0-based indexing
   total_traced_lines++;
+
+  // print a progress status message every DefaultMaximumLines
+  if (total_traced_lines >= DefaultMaximumLines && total_traced_lines % DefaultMaximumLines == 0)
+  {
+    std::cout << " ------ PROGRESS Compeleted Number of Accesses: " << total_traced_lines << "\n";
+  }
+
   if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
 	  if (file_count >= KnobFileCount.Value()) {
 		  std::cerr << "Exiting application early\n";
@@ -1139,7 +1159,7 @@ VOID Trace(TRACE trace, VOID *v)
 VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 {
 	std::stringstream name;
-	name << "_THREAD_" << threadid;
+	name << "thread-" << threadid;
 		
 	BE_THREAD_SAFE();
 	TagData *r = do_dump_start((VOID*)name.str().c_str(), (ADDRINT)-1, 0, false, true, threadid);
@@ -1150,7 +1170,7 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
 {
 	std::stringstream name;
-	name << "_THREAD_" << threadid;
+	name << "thread-" << threadid;
 		
 	BE_THREAD_SAFE();
 	do_dump_stop((VOID *)name.str().c_str());
