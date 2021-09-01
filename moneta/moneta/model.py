@@ -37,12 +37,21 @@ class Moneta():
     def create_plot(self):
         self.legend = Legend(self)
         self.plot = self.curr_trace.df.plot_widget(
-                    self.curr_trace.df[INDEX], self.curr_trace.df[ADDRESS], 
-                    what='max(Access)', colormap=CUSTOM_CMAP, 
-                    selection=[True], limits=self.curr_trace.get_initial_zoom(),
-                    backend='moneta_backend', type='vaextended', model=self,
-                    x_col=INDEX, y_col=ADDRESS, x_label=INDEX_LABEL, y_label=ADDRESS_LABEL, 
-                    update_stats=self.legend.stats.update,
-                    show=False
-                 )
+            self.curr_trace.df[INDEX],
+            self.curr_trace.df[ADDRESS], 
+            what='max(Access)',
+            colormap=CUSTOM_CMAP, 
+            selection=[True],
+            limits=self.curr_trace.get_initial_zoom(),
+            backend='moneta_backend',
+            #backend='simple_backend',
+            type='vaextended',
+            model=self,
+            x_col=INDEX,
+            y_col=ADDRESS,
+            x_label=INDEX_LABEL,
+            y_label=ADDRESS_LABEL, 
+            update_stats=self.legend.stats.update,
+            show=False
+        )
 

@@ -72,9 +72,9 @@ static std::string full_output_trace_path;
 //static std::string output_metadata_path;
 
 // Macros to track
-const std::string DUMP_START {"DUMP_START"};
+const std::string DUMP_START {"TAG_START"};
 const std::string NEW_TRACE {"M_NEW_TRACE"};
-const std::string DUMP_STOP  {"DUMP_STOP"};
+const std::string DUMP_STOP  {"TAG_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
 const std::string M_START_TRACE  {"M_START_TRACE"};
 const std::string GET_THREAD_ID  {"GET_THREAD_ID"};
@@ -612,7 +612,7 @@ void open_trace_files() {
 
 	for (auto thread: thread_ids) {
 		std::stringstream name;
-		name << "_THREAD_" << thread.first;
+		name << "thread-" << thread.first;
 		if (all_tags.find(name.str()) == all_tags.end()) {
 			auto t =  new TagData(name.str(), (ADDRINT)-1,0, true, thread.first);
 			all_tags[name.str()] = t;
@@ -1159,7 +1159,7 @@ VOID Trace(TRACE trace, VOID *v)
 VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 {
 	std::stringstream name;
-	name << "_THREAD_" << threadid;
+	name << "thread-" << threadid;
 		
 	BE_THREAD_SAFE();
 	TagData *r = do_dump_start((VOID*)name.str().c_str(), (ADDRINT)-1, 0, false, true, threadid);
@@ -1170,7 +1170,7 @@ VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v)
 VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
 {
 	std::stringstream name;
-	name << "_THREAD_" << threadid;
+	name << "thread-" << threadid;
 		
 	BE_THREAD_SAFE();
 	do_dump_stop((VOID *)name.str().c_str());
