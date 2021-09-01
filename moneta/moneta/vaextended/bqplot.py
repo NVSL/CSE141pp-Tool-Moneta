@@ -18,6 +18,8 @@ import ipywidgets as widgets
 import ipyvuetify as v
 import copy
 from IPython.display import Image as IPyImage
+from IPython.display import clear_output
+
 from moneta.settings import TextStyle, WARNING_LABEL
 from PIL import Image
 
@@ -280,6 +282,8 @@ class BqplotBackend(BackendBase):
                 #self.figure.save_png("test.png")
                 #display(IPyImage("test.png"))
                 #display(self.core.image)
+                clear_output(wait=True)
+                self.plot.model.plot.show()
                 display(IPyImage(self.core_image.value))
                 
             self.screenshot_btn.on_event('click', lambda *ignore: screenshot())
