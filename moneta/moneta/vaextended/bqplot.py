@@ -17,6 +17,7 @@ import bqplot.pyplot as plt
 import ipywidgets as widgets
 import ipyvuetify as v
 import copy
+from IPython.display import Image as IPyImage
 from moneta.settings import TextStyle, WARNING_LABEL
 from PIL import Image
 
@@ -268,11 +269,19 @@ class BqplotBackend(BackendBase):
                                 }], children=[SCREENSHOT])
             @debounced(0.5)
             def screenshot():
+                def peer(a):
+                    print(type(a).__name__)
+                    print(type(a).__module__)
+                    print(dir(a))
+                    
                 #display(self.pil_image_test)
                 # print(self.core_image.value)
-                # self.figure.save_svg("test.svg")
+                #peer(self.figure)
                 #self.figure.save_png("test.png")
-                display(self.core.image)
+                #display(IPyImage("test.png"))
+                #display(self.core.image)
+                display(IPyImage(self.core_image.value))
+                
             self.screenshot_btn.on_event('click', lambda *ignore: screenshot())
             self.reset_btn = v.Btn(v_on='tooltip.on', icon=True, children=[
                                     v.Icon(children=['refresh'])
