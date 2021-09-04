@@ -49,7 +49,6 @@ constexpr int SkipRate  {10000};
 constexpr ADDRINT DefaultMaximumLines   {100000000};
 constexpr ADDRINT NumberCacheEntries    {4096};
 constexpr ADDRINT DefaultCacheLineSize  {64};
-constexpr ADDRINT DefaultStackSize      {1024*32}; // 32 MB
 const std::string DefaultOutputPath     {"."};
 const std::string DefaultStartFunction  {"__libc_start_main"};
 constexpr ADDRINT LIMIT {0};
@@ -64,7 +63,6 @@ const std::string MetaFileSuffix {".meta"}; //txt
 static UINT64 max_lines  {DefaultMaximumLines};
 static UINT64 cache_size {NumberCacheEntries};
 static UINT64 cache_line {DefaultCacheLineSize};
-static UINT64 stack_size {DefaultStackSize};
 static std::string start_function;
 static std::string output_trace_path;
 static std::string output_tagfile_path;
@@ -82,9 +80,6 @@ const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
 UINT64 SkipMemOps = 10000000000000000ull;
 
-// Stack/Heap
-const std::string STACK {"Stack"};
-const std::string HEAP {"Heap"};
 
 // Access type
 enum { 
@@ -486,7 +481,7 @@ KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
     "name", "", "specify name of output trace");
 
 KNOB<UINT64> KnobSkipMemOps(KNOB_MODE_WRITEONCE, "pintool",
-			   "skip", "1000000000000000000", "How many memops to skip");
+			   "skip", "0", "How many memops to skip");
 
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
     "n", "default", "specify name of output trace");
@@ -494,8 +489,6 @@ KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<UINT64> KnobMaxOutputLong(KNOB_MODE_WRITEONCE, "pintool",
     "output_lines", "", "specify max lines of output");
 
-KNOB<UINT64> KnobStackSize(KNOB_MODE_WRITEONCE, "pintool",
-			       "stack_size", "", "How big do you think your stack might be in KB?");
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
     "ol", "10000000", "specify max lines of output");
@@ -603,13 +596,6 @@ void open_trace_files() {
 	unlink(output_hdf5_trace_path.c_str());
 	hdf_handler = new HandleHdf5(output_hdf5_trace_path);
 
-	if (all_tags.find(STACK) == all_tags.end()) {
-		all_tags[STACK] = new TagData(STACK, LIMIT, LIMIT, false);
-	}
-	if (all_tags.find(HEAP) == all_tags.end()) {
-		all_tags[HEAP] = new TagData(HEAP, LIMIT, LIMIT,false);
-	}
-
 	for (auto thread: thread_ids) {
 		std::stringstream name;
 		name << "thread-" << thread.first;
@@ -673,12 +659,8 @@ void close_trace_files(bool clear_tags) {
 	delete hdf_handler;
 }
 
-VOID write_to_memfile(ADDRINT addr, int acc_type, bool is_stack, THREADID threadid) {
-  if (is_stack) {
-    all_tags[STACK]->update(addr, curr_traced_lines);
-  } else {
-    all_tags[HEAP]->update(addr, curr_traced_lines);
-  }
+VOID write_to_memfile(ADDRINT addr, int acc_type, THREADID threadid) {
+
   hdf_handler->write_data_mem(addr, acc_type, threadid);
   curr_traced_lines++; // Afterward, for 0-based indexing
   total_traced_lines++;
@@ -718,11 +700,7 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
     std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
   }
 
-  if (str_tag == HEAP || str_tag == STACK) {
-    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
-              "Exiting Trace Early...\n";
-      exit_early(0);
-  }
+
   if (all_tags.find(str_tag) == all_tags.end()) { // New tag
     if (DEBUG) {
       std::cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
@@ -766,11 +744,6 @@ VOID do_dump_stop(VOID * tag_name) {
   std::cerr << "Tag stopped: " << str_tag <<"\n";
   if (DEBUG) {
     std::cerr << "End TAG: " << str_tag << "\n";
-  }
-  if (str_tag == HEAP || str_tag == STACK) {
-    std::cerr << "Error: Can't use 'Stack' or 'Heap' for tag name\n"
-              "Exiting Trace Early...\n";
-      exit_early(0);
   }
 
   std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
@@ -917,6 +890,8 @@ void record(ADDRINT addr, int acc_type, THREADID thread) {
   prev_acc.thread_id = thread;
 }
 
+bool skipping = true;
+
 VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
 	BE_THREAD_SAFE();
 	if (DEBUG) {
@@ -926,19 +901,17 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp
   min_rsp = std::min(rsp, min_rsp);
   if (is_prev_acc) {
     is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
+    write_to_memfile(prev_acc.addr, prev_acc.type,  prev_acc.thread_id);
   }
-  if (all_lines>= SkipMemOps) {
+  if (skipping && all_lines>= SkipMemOps) {
 	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
-	  SkipMemOps = 1000000000000000ull;
-	  signal_start();
-  }
-  if (!reached_start) return;
+	  skipping = false;
+  } 
+  if (!reached_start || skipping) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
   bool recorded {0};
   for (auto& tag_iter : all_tags) {
     TagData* td = tag_iter.second;
-    if (td->tag_name == STACK || td->tag_name == HEAP) continue;
 
     bool is_match;
     if (td->is_thread) {
@@ -1002,7 +975,7 @@ VOID Fini(INT32 code, VOID *v) {
 
   if (is_prev_acc) {
     is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type, prev_acc.addr >= (min_rsp - stack_size), prev_acc.thread_id);
+    write_to_memfile(prev_acc.addr, prev_acc.type,  prev_acc.thread_id);
     is_prev_acc = false;
   }
 
@@ -1239,10 +1212,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  stack_size = KnobStackSize.Value();
-  if (stack_size == 0) {
-	  stack_size = DefaultStackSize;
-  }
 
   SkipMemOps = KnobSkipMemOps.Value();
 

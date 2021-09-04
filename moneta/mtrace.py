@@ -16,7 +16,7 @@ import click
 @click.option("--main", type=str, default="main", help="Function to trace")
 @click.option("--memops", default=10000000, help="How many memory operations to trace")
 @click.option("--file-count", default=1, type=int, help="How many trace files to collect")
-@click.option("--skip", default=10000000000, type=int, help="How many memops to skip")
+@click.option("--skip", default=0, type=int, help="How many memops to skip")
 @click.option("--debug", is_flag=True, default=False, help="Pause so you can attach a debugger")
 @click.option("--flush-cache-on-new-file", is_flag=True, default=False, help="Flush cache when you open a new file")
 @click.argument("cmd", nargs=-1)
@@ -24,6 +24,7 @@ def mtrace(*argc, **kwargs) :
     do_mtrace(*argc, **kwargs)
     
 def do_mtrace(*argc, **args):
+
     verbose = args.pop("verbose", False)
     trace =  args.pop("trace", "trace")
     cache_line_count = args.pop("cache_line_count", 512)
@@ -31,7 +32,7 @@ def do_mtrace(*argc, **args):
     main = args.pop("main", "main")
     memops = args.pop("memops", 10000000)
     file_count = args.pop("file_count", 1)
-    skip = args.pop("skip", 1000000000)
+    skip = args.pop("skip", 0)
     debug = args.pop("debug", False)
     flush_cache_on_new_file = args.pop("flush_cache_on_new_file", False)
     cmd = args.pop("cmd")
@@ -50,7 +51,7 @@ def do_mtrace(*argc, **args):
         os.environ["OMP_NUM_THREADS"] = "1"
 
     pin_cmd =f"{os.environ['PIN_ROOT']}pin.sh -ifeellucky -injection child "
-    tool_cmd=f"-t {os.environ['PIN_ROOT']}source/tools/ManualExamples/obj-intel64/trace_tool.so -name {trace} -file_count {file_count} -cache_lines {cache_line_count} -block {cache_line_size} -start {main} -ol {memops} -stack_size {int(1e12)} -skip {skip}"
+    tool_cmd=f"-t {os.environ['PIN_ROOT']}source/tools/ManualExamples/obj-intel64/trace_tool.so -name {trace} -file_count {file_count} -cache_lines {cache_line_count} -block {cache_line_size} -start {main} -ol {memops}  -skip {skip}"
     if debug:
         pin_cmd += " -pause_tool 30"
     if flush_cache_on_new_file:
