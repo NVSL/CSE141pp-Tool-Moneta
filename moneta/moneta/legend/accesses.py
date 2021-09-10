@@ -1,17 +1,19 @@
-from ipywidgets import VBox, HBox, Layout, Label, ColorPicker, GridBox, Dropdown
+from ipywidgets import VBox, HBox, Layout, Label, ColorPicker, GridBox, Dropdown, Button
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-from moneta.settings import (
-        vdiv, lvdiv, Whdiv, hdiv, lhdiv,
-        READ_HIT, WRITE_HIT, READ_MISS,
-        WRITE_MISS, COMP_R_MISS, COMP_W_MISS,
-        newc, READS_CLR, WRITES_CLR, HIT_CLR,
-        MISS_CAP_CLR, MISS_COM_CLR, TOP_COM_MISS,
-        TOP_CAP_MISS, TOP_HIT, TOP_WRITE, TOP_READ,
-        COLOR_VIEW, C_VIEW_OPTIONS
-)
+# from moneta.settings import (
+#         vdiv, lvdiv, Whdiv, hdiv, lhdiv,
+#         READ_HIT, WRITE_HIT, READ_MISS,
+#         WRITE_MISS, COMP_R_MISS, COMP_W_MISS,
+#         newc, THREAD_ID,
+#         COLOR_VIEW, C_VIEW_OPTIONS
+# )
+from moneta.settings import *
 import numpy as np
 import os
+from vaex.jupyter.utils import debounced
+from moneta.trace import ThreadTag, SpaceTimeTag
+
 
 class Accesses():
     def __init__(self, model, update_selection):
@@ -23,13 +25,14 @@ class Accesses():
         
         self.all_tags =  self.model.curr_trace.tags # includes spacetime and thread
         self.layer_options = [
-            ('NONE', 0), ('ReadHit', 1),  ('WriteHit', 2),  ('ReadMiss', [4,6]),
-            ('WriteMiss', [5,8])
+            ('None', [0]), ('ReadHit', [READ_HIT]),  ('WriteHit', [WRITE_HIT]),  ('ReadMiss', [READ_MISS,COMP_R_MISS]),
+            ('WriteMiss', [WRITE_MISS,COMP_W_MISS])
          ]
 
+        print("Layer Vals", self.model.curr_trace.df.unique(LAYER))
         i_val = 9
         for tag in self.all_tags:
-           i_layer = (tag.display_name(), i_val)
+           i_layer = (tag.display_name(), tag)
            i_val += 1
            self.layer_options.append(i_layer)
 
@@ -41,18 +44,19 @@ class Accesses():
             Helper functions to help with wrapping widgets in layouts and initializing UI
             elements
         '''
-        def clr_picker(clr, cache=False, miss_acc=False):
+        def clr_picker(enum_color, cache=False, miss_acc=False):
             '''
 
             '''
             def handle_color_picker(change):
-                self.colormap[clr] = to_rgba(change.new, 1)
+                print(enum_color, change)
+                self.colormap[enum_color] = to_rgba(change.new, 1)
                 self.model.plot.colormap = ListedColormap(self.colormap)
                 self.model.plot.backend.plot.update_image()
             
             def handle_color_picker_multiple(change):
-                print(clr)
-                for acceses_type in clr:
+                print(enum_color)
+                for acceses_type in enum_color:
                     print(acceses_type)
                     self.colormap[acceses_type] = to_rgba(change.new, 1)
                 self.model.plot.colormap = ListedColormap(self.colormap)
@@ -60,43 +64,31 @@ class Accesses():
             
             if miss_acc:
                 clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[3][0:3]), 
-                        disabled=False, layout=Layout(width="25px", margin="0 0 0 4px"))
+                        disabled=False, layout=Layout(width="25px", margin="0 4px 0 4px"))
       
                 clr_picker.observe(handle_color_picker_multiple, names='value')
                 
             else:
                 if cache:
-                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), 
+                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
                             disabled=False, layout=Layout(width="30px"))
                 else:
-                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[clr][0:3]), 
-                            disabled=False, layout=Layout(width="25px", margin="0 0 0 4px"))
+                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
+                            disabled=False, layout=Layout(width="25px", margin="0 4px 0 4px"))
                
                 clr_picker.observe(handle_color_picker, names='value')
-                self.colorpickers[clr] = clr_picker
+                self.colorpickers[enum_color] = clr_picker
 
             clr_picker.observing = True
             return clr_picker
 
-        def init_dropdown(init_layer_val):
-            dropdown_widget = Dropdown(options=self.layer_options ,
-                    value=init_layer_val,
-                    disabled=False,
-                    layout={'width': '90px'}
-                    )
-            # dropdown_widget.observe(handle_color_picker, names='value')
-            # self.colorpickers[clr] = dropdown_widget
-            # dropdown_widget.observing = True
-            return dropdown_widget
 
-        def parentbox(check, clr, init_layer_val, miss_acc=False):
-            return HBox([clr_picker(clr=clr, miss_acc=miss_acc),check.widget , init_dropdown(init_layer_val=init_layer_val)], 
+
+        def ParentBox(parent_widgets, miss_acc=False):
+            return HBox([clr_picker(enum_color=parent_widgets.enum_color, miss_acc=miss_acc), parent_widgets.check_widget , parent_widgets.dropdown_widget], 
                         layout=Layout(align_items="center", overflow="hidden", justify_content="flex-start"))
 
 
-        def childbox(check):
-            return HBox([check.widget, init_dropdown(check.clr)],
-                        layout=Layout(justify_content="center",align_items="center",overflow="hidden"))
         #######################################################################
         # drop down menue for color view selection
         dropdown = Dropdown(options=C_VIEW_OPTIONS,
@@ -104,143 +96,60 @@ class Accesses():
                             disabled=False,
                             layout={'width': 'min-content'}
                             )
-        dropdown.observe(self.update_colormenue, names='value')
-        
+        dropdown.observe(self.update_presets, names='value')
+        dropdown.observing = True
         dropdown_row = HBox([GridBox([Label(value='Layer Preset:'), dropdown],
                             layout=Layout(grid_template_rows="30px", grid_template_columns="120px 200px"))], 
                             layout=Layout( padding="0px 0px 14px 100px"))
         
         #######################################################################
-        
-        # Primary checkboxes
-       
-        # if CURR_C_VIEW == C_VIEW_OPTIONS[0]: 
-        # read_hit = ChildCheckbox(self.compute_all, READ_HIT, 1)
-        # write_hit = ChildCheckbox(self.compute_all, WRITE_HIT, 2)
 
-        # # read_miss = ChildCheckbox(self.compute_all, READ_MISS, 4)
-        # # write_miss = ChildCheckbox(self.compute_all, WRITE_MISS, 5)
-       
-        # read_capmiss = ChildCheckbox(self.compute_all, READ_MISS, 4)
-        # write_capmiss = ChildCheckbox(self.compute_all, WRITE_MISS, 5)
-        # read_compmiss = ChildCheckbox(self.compute_all, COMP_R_MISS, 6)
-        # write_compmiss = ChildCheckbox(self.compute_all, COMP_W_MISS, 8)
-
-        # self.childcheckboxes = [read_hit, write_hit, read_miss, write_miss]
-
-        # Parent checkbox container which hold child checkboxes
-        # Only init neccessary color contol options based on CURR_C_VIEW
-        
-        # self.all_check = ParentCheckbox([read_hit, write_hit, read_miss, write_miss], self.compute_all, 
-        #                                 label = 'All', tooltip="Show All", is_all_chk=True)
-        # self.read_check = ParentCheckbox([read_hit, read_miss], self.compute_hit_miss_group, 
-        #                                 label='Reads', tooltip="Reads", clr=TOP_READ, clr_val=READS_CLR)
-        # self.write_check = ParentCheckbox([write_hit, write_miss], self.compute_hit_miss_group, 
-        #                                 label='Writes', tooltip="Writes", clr=TOP_WRITE, clr_val=WRITES_CLR)
-        # self.hit_check = ParentCheckbox([read_hit, write_hit], self.compute_read_write_group, 
-        #                                 label='Hits', tooltip="Hits", clr=TOP_HIT, clr_val=HIT_CLR)
-        # self.miss_check = ParentCheckbox([read_miss, write_miss], self.compute_read_write_group, 
-        #                             label='Miss', tooltip="Misses", clr=TOP_CAP_MISS, clr_val=MISS_CAP_CLR)
-
-
-
-        # self.capmiss_check = ParentCheckbox([read_capmiss, write_capmiss], self.compute_read_write_group, 
-        #                                     label='Cap Miss', tooltip="Capacity Misses", clr=TOP_CAP_MISS, clr_val=MISS_CAP_CLR)
-        # self.compmiss_check = ParentCheckbox([read_compmiss, write_compmiss], self.compute_read_write_group, 
-        #                                     label='Com Miss', tooltip="Compulsory Misses", clr=TOP_COM_MISS, clr_val=MISS_COM_CLR)
-        # top level checkbox groups
-        # self.parentcheckboxes = [self.all_check, self.read_check, self.write_check, 
-        #         self.hit_check, self.capmiss_check, self.compmiss_check]
-        # self.read_write_group = [self.all_check, self.read_check, self.write_check]
-        # self.hit_miss_group = [self.all_check, self.hit_check, self.capmiss_check, self.compmiss_check]
-
-        self.layer1_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer1', tooltip="Reads", clr=1, clr_val=READS_CLR)
-        self.layer2_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer2', tooltip="Reads", clr=2, clr_val=READS_CLR)
-        self.layer3_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer3', tooltip="Reads", clr=4, clr_val=READS_CLR)
-        self.layer4_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer4', tooltip="Reads", clr=5, clr_val=READS_CLR)
-        self.layer5_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer5', tooltip="Reads", clr=6, clr_val=READS_CLR)
-        self.layer6_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer6', tooltip="Reads", clr=8, clr_val=READS_CLR)
-        self.layer7_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer7', tooltip="Reads", clr=7, clr_val=READS_CLR)
-        self.layer8_check = ParentCheckbox([], self.compute_hit_miss_group, 
-                                        label='Layer8', tooltip="Reads", clr=3, clr_val=READS_CLR)
+        # Primary layers
+        self.layer1_widgets = ParentWidgets(label='1', tooltip="Layer1", enum_color=9, clr=6.1, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer2_widgets = ParentWidgets(label='2', tooltip="Layer2", enum_color=8, clr=5.5, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer3_widgets = ParentWidgets(label='3', tooltip="Layer3", enum_color=7, clr=5.1,
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer4_widgets = ParentWidgets(label='4', tooltip="Layer4", enum_color=6, clr=4.4, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer5_widgets = ParentWidgets(label='5', tooltip="Layer5", enum_color=5, clr=3.5, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer6_widgets = ParentWidgets(label='6', tooltip="Layer6", enum_color=4, clr=3.1, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer7_widgets = ParentWidgets(label='7', tooltip="Layer7", enum_color=3, clr=2.4, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
+        self.layer8_widgets = ParentWidgets(label='8', tooltip="Layer8", enum_color=2, clr=1.4, 
+                                            init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
     
 
-
-
-
-        # Wrap parent boxes in ipywidget
-        # alls = parentbox(self.all_check, has_clrpicker=False)
-        # read = parentbox(self.read_check, has_clrpicker=True, clr=READS_CLR, top_level_color=TOP_READ)
-        # write = parentbox(self.write_check, has_clrpicker=True, clr=WRITES_CLR, top_level_color=TOP_WRITE)
-        # hits = parentbox(self.hit_check, has_clrpicker=True, clr=HIT_CLR, top_level_color=TOP_HIT)
-        # # capmisses = parentbox(self.capmiss_check, has_clrpicker=True, clr=MISS_CAP_CLR, top_level_color=TOP_CAP_MISS)
-        # # compmisses = parentbox(self.compmiss_check,has_clrpicker=True, clr=MISS_COM_CLR, top_level_color=TOP_COM_MISS)
-        # misses = parentbox(self.miss_check,has_clrpicker=True, clr=MISS_COM_CLR, top_level_color=TOP_COM_MISS)
+        self.layers = [self.layer1_widgets, self.layer2_widgets, self.layer3_widgets, self.layer4_widgets,
+                       self.layer5_widgets, self.layer6_widgets, self.layer7_widgets, self.layer8_widgets]
 
         
-        layer1 = parentbox(self.layer1_check, clr=self.layer1_check.clr, init_layer_val=1)
-        layer2 = parentbox(self.layer2_check, clr=self.layer2_check.clr, init_layer_val=2)
-        layer3 = parentbox(self.layer3_check, clr=[4,6], init_layer_val=[4,6], miss_acc=True)
-        layer4 = parentbox(self.layer4_check, clr=[5,8], init_layer_val=[5,8], miss_acc=True)
-        layer5 = parentbox(self.layer5_check, clr=self.layer5_check.clr, init_layer_val=9)
-        layer6 = parentbox(self.layer6_check, clr=self.layer6_check.clr, init_layer_val=10)
-        layer7 = parentbox(self.layer7_check, clr=self.layer7_check.clr, init_layer_val=11)
-        layer8 = parentbox(self.layer8_check, clr=self.layer8_check.clr, init_layer_val=12)
+        # Wrap parent widgets in a layout with a color picker
+        layer1 = ParentBox(self.layer1_widgets)
+        layer2 = ParentBox(self.layer2_widgets)
+        layer3 = ParentBox(self.layer3_widgets)
+        layer4 = ParentBox(self.layer4_widgets)
+        layer5 = ParentBox(self.layer5_widgets)
+        layer6 = ParentBox(self.layer6_widgets)
+        layer7 = ParentBox(self.layer7_widgets)
+        layer8 = ParentBox(self.layer8_widgets)
 
 
 
-
-
-
-        # replace with forloop
-        if self._CURR_C_VIEW == C_VIEW_OPTIONS[0]:
-            grid_elements = [layer1, vdiv, layer2, 
-                             Whdiv, hdiv, Whdiv,
-                             layer3, vdiv, layer4,
-                             Whdiv, hdiv, Whdiv,
-                             layer5, vdiv, layer6,
-                             Whdiv, hdiv, Whdiv,
-                             layer7, vdiv, layer8,
-                             Whdiv, hdiv, Whdiv,
-                            ]
-            row_template = "50px 2px 50px 2px 50px 2px 50px 2px 50px 2px"
-            column_template = "180px 2px 180px"
-
-        elif self._CURR_C_VIEW == C_VIEW_OPTIONS[1]:
-            grid_elements = [layer1, vdiv, layer2, 
-                             Whdiv, hdiv, Whdiv,
-                             layer3, vdiv, layer4,
-                             Whdiv, hdiv, Whdiv
-                            ]
-            row_template = "50px 2px 50px 2px"
-            column_template = "180px 2px 180px"
-
-        elif self._CURR_C_VIEW == C_VIEW_OPTIONS[2]:
-            grid_elements = [layer1, vdiv, layer2, 
-                             Whdiv, hdiv, Whdiv,
-                             layer3, vdiv, layer4,
-                             Whdiv, hdiv, Whdiv
-                            ]
-            row_template = "50px 2px 50px 2px"
-            column_template = "180px 2px 180px"
-
-        elif self._CURR_C_VIEW == C_VIEW_OPTIONS[3]:
-            grid_elements = [Label(value="Access Colors are by TAGs")]
-            row_template = "30px"
-            column_template = "300px"
-        elif self._CURR_C_VIEW == C_VIEW_OPTIONS[4]:
-            grid_elements = [Label(value="Access Colors are by THREADs")]
-            row_template = "30px"
-            column_template = "300px"
-
-
+        grid_elements = [layer1, vdiv, layer2, 
+                            Whdiv, hdiv, Whdiv,
+                            layer3, vdiv, layer4,
+                            Whdiv, hdiv, Whdiv,
+                            layer5, vdiv, layer6,
+                            Whdiv, hdiv, Whdiv,
+                            layer7, vdiv, layer8,
+                            Whdiv, hdiv, Whdiv,
+                        ]
+        row_template = "50px 2px 50px 2px 50px 2px 50px 2px 50px 2px"
+        column_template = "180px 2px 180px"
 
 
         # Add pseudo grid and wrap primary boxes in ipywidget
@@ -248,165 +157,175 @@ class Accesses():
                                 layout=Layout(grid_template_rows=row_template, grid_template_columns=column_template))], 
                                 layout=Layout( padding="0 0 0 14px"))
 
-        cache_icon = v.Icon(children=['fa-database'], v_on='tooltip.on')
-        cache_icon_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': cache_icon}], children=["Cache"])
+        # cache_icon = v.Icon(children=['fa-database'], v_on='tooltip.on')
+        # cache_icon_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': cache_icon}], children=["Cache"])
 
-        cache_clrpkr = clr_picker(3, cache=True)
+        # cache_clrpkr = clr_picker(3, cache=True)
 
-        reset_clrs = v.Btn(v_on='tooltip.on', icon=True, children=[v.Icon(children=['refresh'])])
-        reset_clrs.on_event('click', self.reset_colormap)
-        reset_clrs_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': reset_clrs}], children=["Reset all colors"])
-        cache_row = HBox([cache_icon_tp, cache_clrpkr, reset_clrs_tp],
-                        layout=Layout(padding="0 20px 20px 20px", align_items="center", justify_content="space-between"))
-        return VBox([dropdown_row, gridbox, cache_row])
+        # reset_clrs = v.Btn(v_on='tooltip.on', icon=True, children=[v.Icon(children=['refresh'])])
+        # reset_clrs.on_event('click', self.reset_colormap)
+        # reset_clrs_tp = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': reset_clrs}], children=["Reset all colors"])
+        # cache_row = HBox([cache_icon_tp, cache_clrpkr, reset_clrs_tp],
+        #                 layout=Layout(padding="0 20px 20px 20px", align_items="center", justify_content="space-between"))  ## , cache_row
+        return VBox([dropdown_row, gridbox])
 
-
-    def update_colormenue(self, new):
-        print(new)
-
-
-    def compute_colors(self, parent):
-        '''
-            Call this function to force update of colors based of state of checkboxes.
-
-            parent: the top level ParentCheckbox that has recently changed state
-        '''
-        for acceses_type in parent.clr_val[4:]:
-            self.colormap[acceses_type] = to_rgba(self.colorpickers[parent.clr].value, 1)
+    # @debounced(0.2)
+    def compute_layers(self, change):
         
-        for child in self.childcheckboxes:
-            if child.widget.v_model == True and child.widget.disabled == False:
-                self.colormap[child.clr] = to_rgba(self.colorpickers[child.clr].value, 1)
+        # reset the layer value of old selections
+        # tags threads and accesses use seperate queries
+        if type(change['old']) is SpaceTimeTag :
+            addr_low = float(change['old'].address[0])
+            addr_high = float(change['old'].address[1]) + 1
+            indx_low = float(change['old'].access[0])
+            indx_high = float(change['old'].access[1]) + 1
+
+            # !See Explantion Below
+            self.model.curr_trace.df.Temp1 = self.model.curr_trace.df.func.where(
+                (addr_low <= self.model.curr_trace.df.Address), 1.0 , 2.0)
+
+            self.model.curr_trace.df.Temp2 = self.model.curr_trace.df.func.where(
+                (addr_high >= self.model.curr_trace.df.Address), 1.0 , 3.0)
+
+            self.model.curr_trace.df.TempA = self.model.curr_trace.df.func.where(
+                (self.model.curr_trace.df.Temp1 == self.model.curr_trace.df.Temp2), 1.0 , 6.0)
+
+            self.model.curr_trace.df.Temp3 = self.model.curr_trace.df.func.where(
+                ( indx_low <= self.model.curr_trace.df.index ), 1.0 , 4.0)
+            self.model.curr_trace.df.Temp4 = self.model.curr_trace.df.func.where(
+                ( indx_high >= self.model.curr_trace.df.index ), 1.0, 5.0)
+            self.model.curr_trace.df.TempB = self.model.curr_trace.df.func.where(
+                (self.model.curr_trace.df.Temp3 == self.model.curr_trace.df.Temp4), 1.0 , 7.0)
+            
+            self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(
+                (self.model.curr_trace.df.TempA == self.model.curr_trace.df.TempB), 
+                0.4 , self.model.curr_trace.df.Layer)
+           
+
+        elif type(change['old']) is ThreadTag:
+            t_id = change['old'].thread_id
+            self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(self.model.curr_trace.df.ThreadID == t_id, 1, self.model.curr_trace.df.Layer)
+        else:
+            for atype in change['old']:
+                self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(self.model.curr_trace.df.Access == atype, 1 , self.model.curr_trace.df.Layer)
         
+
+        for layer in reversed(self.layers):
+            # check if the layer checkbox is enabled first
+            if layer.check.v_model == True:
+                # do not update none layers and layer.dropdown_widget.value == change['new'] 
+                if layer.dropdown_widget.value != [0] :
+                    # tags threads and accesses use seperate queries
+                    if type(layer.dropdown_widget.value) is SpaceTimeTag :
+                        addr_low = float(layer.dropdown_widget.value.address[0])
+                        addr_high = float(layer.dropdown_widget.value.address[1]) + 1
+                        indx_low = float(layer.dropdown_widget.value.access[0])
+                        indx_high = float(layer.dropdown_widget.value.access[1]) + 1
+
+                        # df.func.where has a bug where it can only evaluate single boolean value expressions
+                        #   EX. self.model.curr_trace.df.Address >= addr_low and self.model.curr_trace.df.Address <= addr_high
+                        #   results in only the first comparison being evaluated.
+                        # Thus we must seperate the upper and lower bound calculations, this is not efficient but has minimal
+                        # impact on perfomance.
+                       
+                        # create temp layer to find which accesses belong to tag.
+                        self.model.curr_trace.df.Temp1 = self.model.curr_trace.df.func.where(
+                            (addr_low <= self.model.curr_trace.df.Address), 1.0 , 2.0)
+
+                        self.model.curr_trace.df.Temp2 = self.model.curr_trace.df.func.where(
+                            (addr_high >= self.model.curr_trace.df.Address), 1.0 , 3.0)
+
+                        self.model.curr_trace.df.TempA = self.model.curr_trace.df.func.where(
+                            (self.model.curr_trace.df.Temp1 == self.model.curr_trace.df.Temp2), 1.0 , 6.0)
+
+                        self.model.curr_trace.df.Temp3 = self.model.curr_trace.df.func.where(
+                            ( indx_low <= self.model.curr_trace.df.index ), 1.0 , 4.0)
+                        self.model.curr_trace.df.Temp4 = self.model.curr_trace.df.func.where(
+                            ( indx_high >= self.model.curr_trace.df.index ), 1.0, 5.0)
+                        self.model.curr_trace.df.TempB = self.model.curr_trace.df.func.where(
+                            (self.model.curr_trace.df.Temp3 == self.model.curr_trace.df.Temp4), 1.0 , 7.0)
+                        
+                        self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(
+                            self.model.curr_trace.df.TempA == self.model.curr_trace.df.TempB, 
+                            layer.clr , self.model.curr_trace.df.Layer)
+
+                    elif type(layer.dropdown_widget.value) is ThreadTag:
+                        t_id = layer.dropdown_widget.value.thread_id
+                        self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(
+                            self.model.curr_trace.df.ThreadID == t_id, layer.clr , self.model.curr_trace.df.Layer)
+                    else:
+                        for atype in layer.dropdown_widget.value:
+                            self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(
+                                self.model.curr_trace.df.Access == atype, layer.clr , self.model.curr_trace.df.Layer)
+                    
+            else:
+                for atype in layer.dropdown_widget.value:
+                    self.model.curr_trace.df[LAYER] = self.model.curr_trace.df.func.where(
+                        self.model.curr_trace.df.Access == atype, 1, self.model.curr_trace.df.Layer)
+
         self.model.plot.colormap = ListedColormap(self.colormap)
-        self.model.plot.backend.plot._update_image()
+        self.model.plot.backend.plot.update_grid()
 
+    def update_presets(self, change):
+        new_preset = change.new
+        
+        if new_preset == 'None':
+            for layer in self.layers:
+                layer.update_selection([0])
+        elif new_preset == 'AccessType':
+            self.layers[0].update_selection([WRITE_MISS,COMP_W_MISS])
+            self.layers[1].update_selection([READ_MISS,COMP_R_MISS])
+            self.layers[2].update_selection([WRITE_HIT])
+            self.layers[3].update_selection([READ_HIT])
+     
+        elif new_preset == 'TAG':
+            layer_index = 0
+            for layer_option in reversed(self.layer_options):
+            
+                if type(layer_option[1]) is SpaceTimeTag and layer_index < len(self.layers):
+                    if layer_option[0] != 'Stack' and layer_option[0] != 'Heap':
+                        self.layers[layer_index].update_selection(layer_option[1])
+                        layer_index += 1
+        elif new_preset == 'THREAD':
+            layer_index = 0
+            for layer_option in reversed(self.layer_options):
+                if type(layer_option[1]) is ThreadTag and layer_index < len(self.layers):
+                    self.layers[layer_index].update_selection(layer_option[1])
+                    layer_index += 1
 
-    def compute_all(self, *kwargs):
-        '''
-            Update the graph with new acceses selections, triggered by checkbox event handler. 
-            update_selection implemented in Legend.py.
-        '''
-        self.all_check.update()
-        self.update_selection()
-
-    def compute_read_write_group(self, self_parentbox=None):
-        state = self.hit_check._widget.v_model or self.capmiss_check._widget.v_model or self.compmiss_check._widget.v_model
-        for parent in self.read_write_group:
-            parent.update(disabled=state)
-            # disable colorpickers of children
-            for child in parent.children:
-                self.colorpickers[child.clr].disabled = state
-
-            # disable top level group color picker as well
-            if not parent.is_all_chk:
-                self.colorpickers[parent.clr].disabled = state
-
-        self.update_selection()
-        self.compute_colors(self_parentbox)
-
-    def compute_hit_miss_group(self, self_parentbox=None):
-        state = self.read_check._widget.v_model or self.write_check._widget.v_model
-        for parent in self.hit_miss_group:
-            parent.update(disabled=state)
-            # disable colorpickers of children
-            for child in parent.children:
-                self.colorpickers[child.clr].disabled = state
-
-            # disable top level group color picker as well to_hex([29/255, 135/255, 23/255, 1])
-            if not parent.is_all_chk:
-                self.colorpickers[parent.clr].disabled = state
-                
-        self.update_selection()
-        self.compute_colors(self_parentbox)
 
     def reset_colormap(self, *_):
         self.colormap = np.copy(newc)
         for clr, clr_picker in self.colorpickers.items():
             if clr < TOP_READ:
                 clr_picker.observing = False
-                clr_picker.value = to_hex(self.colormap[clr][0:3])
+                clr_picker.value = to_hex(self.colormap[enum_color][0:3])
                 clr_picker.observing = True
         self.model.plot.colormap = ListedColormap(self.colormap)
         self.model.plot.backend.plot._update_image()
 
-class ParentCheckbox:
-    def __init__(self, children, compute_all, label="", append_icon=None, prepend_icon=None, tooltip="", is_all_chk=False, clr=None, clr_val=None):
-        # _widget for v_model, widget for display
-        # if append_icon:  
-        #     self._widget = v.Checkbox(
-        #         v_on='tooltip.on', append_icon=append_icon, v_model=False, color='primary')
-        # elif prepend_icon:
-        #     self._widget = v.Checkbox(
-        #         v_on='tooltip.on', prepend_icon=prepend_icon, v_model=False, color='primary')
-        # elif is_all_chk:
-        #     self._widget = v.Checkbox(
-        #         v_on='tooltip.on', label=label, v_model=True , color='primary')
-        # else:
-        # self._widget = v.Checkbox(
-        #         v_on='tooltip.on', label=label, v_model=True , color='primary')
-        self._widget = Label(value=label)
+class ParentWidgets:
+    def __init__(self, label, tooltip, enum_color, clr, init_layer_val, layer_options, compute):
 
-        self.widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self._widget}],
+        self.check = v.Checkbox(v_on='tooltip.on', label=label, v_model=True , color='primary')
+        self.check_widget = v.Tooltip(bottom=True, v_slots=[{'name': 'activator', 'variable': 'tooltip', 'children': self.check}],
                 children=[tooltip])
-        # self._widget.on_event('change', self.handler)
-        self.children = children
-        self.compute_all = compute_all
-        self.is_all_chk = is_all_chk
+       
+        self.compute = compute
+        self.enum_color = enum_color
+        self.init_layer_val = init_layer_val
+        self.layer_options = layer_options
+        self.dropdown_widget = Dropdown(options=self.layer_options ,
+                                        value=init_layer_val,
+                                        disabled=False,
+                                        layout={'width': '90px'}
+                                        )
+        self.dropdown_widget.observe(self.compute, names='value')
+        self.dropdown_widget.observing = True
         self.clr = clr
-        self.clr_val = clr_val
-
-    def handler(self, checkbox, _, new):
-        ''' 
-            Syncs all the children of this parent checkbox to the state of the parent.
-            Example: If the parent checkbox is checked all children are also checked.
-
-            checkbox: the parent checkbox
-            new [True, False]: the new changed state 
-        '''
-        
-        self._widget.indeterminate = False # disable intermediate icon, since the state has been user updated
-
-        if self.is_all_chk:
-            child_val = not new
-            child_indt = False
-            child_disabled = False
-        else:
-            child_val = new
-            child_indt = new 
-            child_disabled = new
-
-        for child in self.children:
-            if self.is_all_chk:
-                child.widget.v_model = not child_val
-            
-            child.widget.indeterminate = child_indt
-            child.widget.disabled = child_disabled
-
-        self.compute_all(self) # update selection
-
-    def update(self, disabled=None):
-        '''
 
 
-        '''
-        if disabled is not None:
-            self._widget.disabled = disabled
-
-        if self.is_all_chk:
-            on = 0
-            off = 0
-            for child in self.children:
-                if child.widget.v_model:
-                    on+=1
-                else:
-                    off+=1
-            self._widget.v_model = on == len(self.children)
-
-
-class ChildCheckbox:
-    def __init__(self, handler, acc_type, clr):
-        self.widget = v.Checkbox(ripple=True, v_model=True, color='primary')
-        self.widget.on_event('change', handler)
-        self.acc_type=acc_type
-        self.clr = clr
+    def update_selection(self, new_preset):
+        self.dropdown_widget.observing = False
+        self.dropdown_widget.value = new_preset
+        self.dropdown_widget.observing = True

@@ -14,42 +14,24 @@ META_FILE_END = ".meta"
 
 # Enviroment Variables
 COLOR_VIEW = 'COLOR_VIEW'
-C_VIEW_OPTIONS = ['All', 'AccessType', 'TAG', 'THREAD', 'Custom2', 'Custom4', 'Custom8']
-
-# Colormap
-# newc = np.ones((11, 4)) # why 11 I dont know eithier
-# newc[1] = [0, 0, 1, 1] # read_hits - 1, .125
-# newc[2] = [0, 153/255, 204/255, 1] # write_hits - 2, .25
-# newc[3] = [0.047, 1, 0, 1] # cache_size
-# newc[4] = [1, .5, 0, 1] # read_misses - 3, .375
-# newc[5] = [1, 0, 0, 1] # write_misses - 4, .5
-# newc[6] = [0.5, 0.3, 0.1, 1] # compulsory read misses - 5, .625
-# newc[8] = [0.745, 0.309, 0.235, 1] # compulsory write misses - 6, .75
-# CUSTOM_CMAP = ListedColormap(newc)
+C_VIEW_OPTIONS = ['None', 'AccessType', 'TAG', 'THREAD', 'Custom']
 
 
-newc = np.ones((11, 4)) # why 11 I dont know eithier
-newc[1] = [0, 0, 0, 1] # layer 0 black
-newc[2] = [0, 153/255, 204/255, 1] # layer 1 light blue
-newc[3] = [0.047, 1, 0, 1] # cache_size
-newc[4] = [1, .5, 0, 1] # layer 2  red
-newc[5] = [1, 0, 0, 1] # layer 3
-newc[6] = [0.5, 0.3, 0.1, 1] # layer 4
-newc[8] = [0.745, 0.309, 0.235, 1] # layer 5
+# Colormap can be extended to any size, however the first and last 2 indexes must be white
+newc = np.ones((12, 4))
+# 0 index must be white
+newc[1] = [95/255, 95/255, 95/255, 1] # layer 1 grey
+newc[2] = [0, 153/255, 204/255, 1] # baby blue
+newc[3] = [128/255, 76/255, 26/255, 1] # brown 
+newc[4] = [255/255, 128/255, 0/255, 1] # orange
+newc[5] = [12/255, 255/255, 0/255, 1] #  2 green
+newc[6] = [1, 0, 0, 1] # red
+newc[7] = [187/255, 0/255, 255/255, 1] # magenta
+newc[8] = [0, 255/255, 255/255, 1] # cyan
+newc[9] = [215/255, 230/255, 10/255, 1] # yellow
+newc[10] = [255/255, 0/255, 225/255, 1] # purple
 CUSTOM_CMAP = ListedColormap(newc)
 
-
-
-
-
-# Colors of top level choices. This is handled differenly since these colors
-# control many access types.
-# [r g b a accesstype1 accesstype2 ...]
-# READS_CLR = [187/255, 0/255, 255/255, 1, 1, 4, 6]
-# WRITES_CLR = [0, 255/255, 255/255, 1, 2, 5, 8]
-# HIT_CLR = [215/255, 230/255, 10/255, 1, 1, 2] 
-# MISS_CAP_CLR = [0/255, 0/255, 0/255, 1, 4, 5]
-# MISS_COM_CLR = [0/255, 0/255, 0/255, 1, 6, 8]
 
 
 # print() Text Colors
@@ -86,18 +68,13 @@ ADDRESS = "Address"
 ACCESS = "Access"
 TAG = "Tag"
 THREAD_ID = "ThreadID"
+LAYER = "Layer"
 
 ### Axis Labels
 INDEX_LABEL = "Access Number"
 ADDRESS_LABEL = "Address Offset (Bytes)"
 
 # Access Type Identifiers
-# Not part of pin tool but still used to identify accesses 
-TOP_COM_MISS = 20
-TOP_CAP_MISS = 21
-TOP_HIT = 22
-TOP_WRITE = 23
-TOP_READ = 24
 # Pintool Enumerations
 COMP_W_MISS = 6
 COMP_R_MISS = 5
