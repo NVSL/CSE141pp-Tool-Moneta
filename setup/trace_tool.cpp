@@ -71,6 +71,7 @@ static std::string full_output_trace_path;
 
 // Macros to track
 const std::string DUMP_START {"TAG_START"};
+const std::string TAG_GROW {"TAG_GROW"};
 const std::string NEW_TRACE {"M_NEW_TRACE"};
 const std::string DUMP_STOP  {"TAG_STOP"};
 const std::string FLUSH_CACHE  {"FLUSH_CACHE"};
@@ -79,6 +80,7 @@ const std::string GET_THREAD_ID  {"GET_THREAD_ID"};
 const std::string M_STOP_TRACE  {"M_STOP_TRACE"};
 
 UINT64 SkipMemOps = 10000000000000000ull;
+bool TaggedOnly = false;
 
 
 // Access type
@@ -128,26 +130,30 @@ struct Tag {
   const TagData* parent;
   const int id;
   bool active {true};
-  std::pair<int, int> x_range {-1, -1};
+  std::pair<UINT64, UINT64> x_range;
   std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
   bool is_thread;
   THREADID thread_id;
   UINT64 access_count;
 	
-  Tag(TagData* td, int id, bool is_thread, THREADID thread_id) : parent {td}, id {id}, is_thread(is_thread), thread_id(thread_id), access_count(0) {}
+	Tag(TagData* td, int id, bool is_thread, THREADID thread_id, int access ) :
+		parent {td},
+		id {id},
+		x_range {access, access},
+		is_thread(is_thread),
+		thread_id(thread_id),
+		access_count(0)
+		{}
 
   void reset_for_new_file() { // for a new file, everything remains the same except the access number.
-	  x_range.first = -1;
-	  x_range.second = -1;
+	  x_range.first = 0;
+	  x_range.second = 0;
   }
 	
   void update(ADDRINT addr, int access) {
     access_count++;
     addr_range.first = std::min(addr_range.first, addr);
     addr_range.second = std::max(addr_range.second, addr);
-    if (x_range.first == -1) {
-      x_range.first = access;
-    }
     x_range.second = access;
   }
 };
@@ -155,7 +161,7 @@ struct Tag {
 struct TagData {
   const int id;
   const std::string tag_name;
-  const std::pair<ADDRINT, ADDRINT> addr_range;
+  std::pair<ADDRINT, ADDRINT> addr_range;
   bool is_thread;
   THREADID thread_id;
   std::vector<Tag*> tags;
@@ -167,11 +173,11 @@ struct TagData {
 	  is_thread(is_thread),
 	  thread_id(thread_id)
   {
-    this->create_new_tag();
+	  this->create_new_tag();
   }
 
   void create_new_tag() {
-	  tags.push_back(new Tag(this, tags.size(), is_thread, thread_id));
+	  tags.push_back(new Tag(this, tags.size(), is_thread, thread_id, curr_traced_lines));
   }
 
   void  reset_for_new_file() {
@@ -203,17 +209,6 @@ typedef std::pair<ADDRINT, ADDRINT> AddressRange;
 
 pintool::unordered_map<std::string, TagData*> all_tags;
 
-
-struct Access {
-  TagData* tag;
-  int type;
-  ADDRINT addr;
-	THREADID thread_id;
-} prev_acc;
-
-bool is_prev_acc {0};
-ADDRINT min_rsp {ULLONG_MAX};
-bool is_last_acc {0};
 
 bool reached_start {0};
 
@@ -512,6 +507,9 @@ KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
 KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
 
+KNOB<bool> KnobOnlyTaggedAccesses(KNOB_MODE_WRITEONCE, "pintool",
+				  "tagged-only", "false", "Only record tagged accesses");
+
 void exit_early(int v) {
 	PIN_MutexUnlock(&the_big_lock);
 	PIN_ExitApplication(v);
@@ -554,16 +552,14 @@ void write_tags_and_clear(bool clear_tags) {
 	std::ofstream tag_file (output_tagfile_path);
 	tag_file << "Tag_Name,Tag_Type,Thread_ID,Low_Address,High_Address,First_Access,Last_Access,Access_Count\n"; // Header row
 	for (Tag* t : tags) {
-		if (t->x_range.first != -1) {
-			tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
-				 << (t->is_thread ? "thread" :"space-time") << ","
-				 << t->thread_id << ","
-				 << t->addr_range.first << ","
-				 << t->addr_range.second << ","
-				 << t->x_range.first << ","
-				 << t->x_range.second << ","
-				 << t->access_count << "\n";
-		}
+		tag_file << t->parent->tag_name << (t->parent->tags.size() == 1 ? "" : std::to_string(t->id)) << ","
+			 << (t->is_thread ? "thread" :"space-time") << ","
+			 << t->thread_id << ","
+			 << t->addr_range.first << ","
+			 << t->addr_range.second << ","
+			 << t->x_range.first << ","
+			 << t->x_range.second << ","
+			 << t->access_count << "\n";
 	}
 
 	// Close files
@@ -671,7 +667,7 @@ VOID write_to_memfile(ADDRINT addr, int acc_type, THREADID threadid) {
     std::cout << " ------ PROGRESS Compeleted Number of Accesses: " << total_traced_lines << "\n";
   }
 
-  if(!is_last_acc && curr_traced_lines >= max_lines) { // If reached file size limit, exit
+  if(curr_traced_lines >= max_lines) { // If reached file size limit, exit
 	  if (file_count >= KnobFileCount.Value()) {
 		  std::cerr << "Exiting application early\n";
 		  exit_early(0);
@@ -717,12 +713,17 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
 
     // Exit program if redefining tag
     r = all_tags[str_tag];
+#if(0)
     if (r->addr_range.first != low || // Must be same range
-      r->addr_range.second != hi) {
+	r->addr_range.second != hi) {
 	    std::cerr << "Error: Tag '" << str_tag << "' redefined - Tag can't map to different ranges\n"
               "Exiting Trace Early...\n";
       exit_early(0);
     }
+#endif
+
+    r->addr_range =  std::pair<ADDRINT, ADDRINT>(low, hi);
+    
     if (create_new) {
       r->create_new_tag();
     } else {
@@ -735,6 +736,20 @@ TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_ne
 VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
 	BE_THREAD_SAFE();
 	do_dump_start(tag_name, low, hi, create_new, false, 0);
+}
+
+VOID tag_grow(VOID * tag_name, ADDRINT low, ADDRINT hi) {
+	BE_THREAD_SAFE();
+	auto tag = all_tags.find((char*)tag_name);
+	if (tag == all_tags.end()) {
+		std::cerr << "Tried to grow non-existant tag: " << (char*)tag_name << "\n";
+		exit_early(0);
+	}
+
+	tag->second->addr_range.second = std::max(hi, tag->second->addr_range.second);
+	tag->second->addr_range.second = std::max(low, tag->second->addr_range.second);
+	tag->second->addr_range.first = std::min(hi, tag->second->addr_range.first);
+	tag->second->addr_range.first = std::min(low, tag->second->addr_range.first);
 }
 
 VOID do_dump_stop(VOID * tag_name) {
@@ -753,13 +768,11 @@ VOID do_dump_stop(VOID * tag_name) {
     exit_early(0);
   }
   for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
-		  i != iter->second->tags.rend(); ++i) {
-    if ((*i)->active) {
-      (*i)->active = false;
-      break;
-    }
+       i != iter->second->tags.rend(); ++i) {
+	  (*i)->active = false;
   }
 }
+
 
 VOID dump_stop_called(VOID * tag_name) {
 	BE_THREAD_SAFE();
@@ -883,57 +896,49 @@ int translate_cache(int access_type, bool read) {
   return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
-void record(ADDRINT addr, int acc_type, THREADID thread) {
-  is_prev_acc = true;
-  prev_acc.addr = addr;
-  prev_acc.type = acc_type;
-  prev_acc.thread_id = thread;
-}
 
 bool skipping = true;
 
-VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read, ADDRINT rsp) {
+VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read) {
 	BE_THREAD_SAFE();
 	if (DEBUG) {
     read_insts++;
   }
   all_lines++;
-  min_rsp = std::min(rsp, min_rsp);
-  if (is_prev_acc) {
-    is_prev_acc = false;
-    write_to_memfile(prev_acc.addr, prev_acc.type,  prev_acc.thread_id);
-  }
+
   if (skipping && all_lines>= SkipMemOps) {
 	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
 	  skipping = false;
   } 
   if (!reached_start || skipping) return;
   int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
-  bool recorded {0};
+
+
+  bool is_tag_match = false;
+  bool updated = false;
+  // We do three things as we iterater through the tags:
+  // 1.  we need to called `update` on tags to keep track of their address ranges.
+  // 2.  we need to record the access (but only if update returned true for some tag.
+  // 3.  We also need to ensure that we only trace memops outside of a  tag if !TaggedOnly. 
   for (auto& tag_iter : all_tags) {
     TagData* td = tag_iter.second;
-
-    bool is_match;
     if (td->is_thread) {
-	    is_match = (td->thread_id == thread_id);
+	    if(td->thread_id == thread_id){ 
+		    updated =  td->update(addr, curr_traced_lines) || updated;
+	    }
     } else {
-	    is_match = ((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
-			(td->addr_range.second == LIMIT || addr <= td->addr_range.second));
+	    if (((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
+		 (td->addr_range.second == LIMIT || addr <= td->addr_range.second))) {
+		    is_tag_match = true;
+		    updated = td->update(addr, curr_traced_lines) || updated;
+	    }
     }
 
-    if (is_match) {
-      bool updated = td->update(addr, curr_traced_lines);
-      //std::cerr << "Tag " << td->tag_name << ": " << addr << "\n" ;
-      if (!recorded && updated) {
-	      record(addr, access_type, thread_id);
-        recorded = true;
-      }
-    }
-  }
-  
-  
-  if (!recorded) {
-	  record(addr, access_type, thread_id);
+  }  
+  if ((TaggedOnly && is_tag_match) || !TaggedOnly) {
+	  if (updated) {
+		  write_to_memfile(addr, access_type, thread_id);
+	  }
   }
 }
 
@@ -973,11 +978,6 @@ VOID Fini(INT32 code, VOID *v) {
     hdf_handler->write_data_cache(correct_val);
   }*/
 
-  if (is_prev_acc) {
-    is_last_acc = true;
-    write_to_memfile(prev_acc.addr, prev_acc.type,  prev_acc.thread_id);
-    is_prev_acc = false;
-  }
 
   close_trace_files(true);
   
@@ -1005,7 +1005,6 @@ VOID Instruction(INS ins, VOID *v)
 		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, true,
-                IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
         // Note that in some architectures a single memory operand can be 
@@ -1017,7 +1016,6 @@ VOID Instruction(INS ins, VOID *v)
 		IARG_THREAD_ID,
                 IARG_MEMORYOP_EA, memOp,
                 IARG_BOOL, false,
-                IARG_REG_VALUE, REG_RSP,
                 IARG_END);
         }
     }
@@ -1045,6 +1043,16 @@ VOID FindFunc(IMG img, VOID *v) {
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
 				IARG_END);
+		RTN_Close(rtn);
+	}
+	rtn = RTN_FindByName(img, TAG_GROW.c_str());
+	if(RTN_Valid(rtn)){
+		RTN_Open(rtn);
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)tag_grow,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, NEW_TRACE.c_str());
@@ -1215,6 +1223,9 @@ int main(int argc, char *argv[]) {
 
   SkipMemOps = KnobSkipMemOps.Value();
 
+  TaggedOnly = KnobOnlyTaggedAccesses.Value();
+
+  std::cerr << "TaggedOnly =  " << TaggedOnly << "\n";
   
   if (INPUT_DEBUG) {
 	  std::cerr << "Max lines of trace: "   << max_lines <<

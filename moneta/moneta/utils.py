@@ -19,44 +19,37 @@ def valid_bounds(bound):
 
     return True
 
+def calculate_bounds(model, bounds, dim):
+    
+    if isinstance(bounds, str):
+        bounds = [bounds]
+
+    if all(map(lambda x: isinstance(x,str), bounds)):  # we handle lists of strings.
+        tags = []
+        for tag in bounds:
+            t = model.curr_trace.get_tag(tag)
+            if t is None:
+                print(f'{WARNING_LABEL} Tag for zoom_access not found...using default')
+                print(f'Avaliable tags are: ')
+                print("\n".join(model.curr_trace.get_tag_names()))
+                return None
+            
+            tags.append(t)
+
+        lb = min(map(lambda x:int(getattr(x, dim)[0]), tags))
+        ub = max(map(lambda x:int(getattr(x, dim)[1]), tags))
+        return (lb, ub)
+    else: # everything else will fail elsewhere if it's not valid.
+        return bounds
+        
 def parse_zoom_args(model, zoom_access, zoom_address):
 
-    initial_zoom = model.curr_trace.get_initial_zoom()
+    zoom_access = calculate_bounds(model, zoom_access, "access")
+    if not valid_bounds(zoom_access):
+        return None
+    
+    zoom_address = calculate_bounds(model, zoom_address, "address")
+    if not valid_bounds(zoom_address):
+        return None
 
-    if isinstance(zoom_access, str):
-        tag = model.curr_trace.get_tag(zoom_access)
-
-        if not tag:
-            print(f'{WARNING_LABEL} Tag for zoom_access not found...using default zoom_access')
-            print(f'Avaliable tags are: ')
-            print("\n".join(model.curr_trace.get_tag_names()))
-            
-            bound_access = initial_zoom[0]
-        else:
-            bound_access = [int(i) for i in tag.access]
-
-    else:
-        if not valid_bounds(zoom_access):
-            return None
-            
-        bound_access = zoom_access
-
-
-
-    if isinstance(zoom_address, str):
-        tag = model.curr_trace.get_tag(zoom_address)
-
-        if not tag:
-            print(f'{WARNING_LABEL} Tag for zoom_address not found...using default zoom_address')    
-            bound_address = initial_zoom[1]
-        else:
-            bound_address = [int(i) for i in tag.address]
-
-    else:
-        if not valid_bounds(zoom_address):
-            return None
-            
-        bound_address = zoom_address
-
-
-    return [tuple(bound_access), tuple(bound_address)]
+    return [tuple(zoom_access), tuple(zoom_address)]

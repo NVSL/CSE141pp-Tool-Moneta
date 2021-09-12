@@ -18,6 +18,7 @@ import click
 @click.option("--file-count", default=1, type=int, help="How many trace files to collect")
 @click.option("--skip", default=0, type=int, help="How many memops to skip")
 @click.option("--debug", is_flag=True, default=False, help="Pause so you can attach a debugger")
+@click.option("--tagged-only", is_flag=True, default=False, help="Only record tagged accesses.")
 @click.option("--flush-cache-on-new-file", is_flag=True, default=False, help="Flush cache when you open a new file")
 @click.argument("cmd", nargs=-1)
 def mtrace(*argc, **kwargs) :
@@ -37,7 +38,7 @@ def do_mtrace(*argc, **args):
     flush_cache_on_new_file = args.pop("flush_cache_on_new_file", False)
     cmd = args.pop("cmd")
     jupyter = args.pop("jupyter", True)
-    
+    tagged_only = args.pop("tagged_only", False)
     if not verbose:
         log.basicConfig(format="%(levelname)-8s %(message)s", level=log.WARN)
     else:
@@ -51,7 +52,7 @@ def do_mtrace(*argc, **args):
         os.environ["OMP_NUM_THREADS"] = "1"
 
     pin_cmd =f"{os.environ['PIN_ROOT']}pin.sh -ifeellucky -injection child "
-    tool_cmd=f"-t {os.environ['PIN_ROOT']}source/tools/ManualExamples/obj-intel64/trace_tool.so -name {trace} -file_count {file_count} -cache_lines {cache_line_count} -block {cache_line_size} -start {main} -ol {memops}  -skip {skip}"
+    tool_cmd=f"-t {os.environ['PIN_ROOT']}source/tools/ManualExamples/obj-intel64/trace_tool.so -name {trace} -file_count {file_count} -cache_lines {cache_line_count} -block {cache_line_size} -start {main} -ol {memops}  -skip {skip}" + (" -tagged-only" if tagged_only else "")
     if debug:
         pin_cmd += " -pause_tool 30"
     if flush_cache_on_new_file:
@@ -71,7 +72,7 @@ def do_mtrace(*argc, **args):
         except:
             pass
 
+    print(f"Running: {run_cmd}")
     if not jupyter:
         log.info(f"Cache size: {cache_line_count} lines * {int(cache_line_size)} bytes/Line = {int(cache_line_count) * int(cache_line_size)} KB")
-        print(f"Running: {run_cmd}")
     subprocess.run(run_cmd.split())
