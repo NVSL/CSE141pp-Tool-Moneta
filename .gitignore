@@ -31,3 +31,8 @@ moneta/output/*
 \#*
 core
 .cwd_history
+*.meta
+*.stats
+*.tags
+venv
+
