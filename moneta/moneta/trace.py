@@ -9,6 +9,8 @@ log = logging.getLogger(__name__)
 
 TAG_TYPE_SPACETIME = "space-time"
 TAG_TYPE_THREAD = "thread"
+
+
 class Tag():
     def __init__(self, tag_dict):
         self.address = (tag_dict[LO_ADDR], tag_dict[HI_ADDR])

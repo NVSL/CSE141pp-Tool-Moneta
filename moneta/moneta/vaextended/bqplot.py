@@ -319,6 +319,7 @@ class BqplotBackend(BackendBase):
                                     'variable': 'tooltip',
                                     'children': self.undo_btn
                                 }], children=[UNDO])
+                                
             self.redo_btn = v.Btn(v_on='tooltip.on', icon=True, disabled=True, children=[
                                     v.Icon(children=['redo'])
                                 ])
@@ -561,7 +562,7 @@ class BqplotBackend(BackendBase):
         y2 = y + (0.5 * scale * y_diff)
 
         self.zoom_sel(float(x1), float(x2), float(y1), float(y2),
-                      smart_zoom=use_smart_zoom, padding=use_padding)
+                      smart_zoom=use_smart_zoom, padding=use_padding)            
 
     def zoom_args_string(self):
         to_int = [tuple( map(int,i) ) for i in self.limits]

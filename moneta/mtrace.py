@@ -57,6 +57,7 @@ def do_mtrace(*argc, **args):
         pin_cmd += " -pause_tool 30"
     if flush_cache_on_new_file:
         tool_cmd += " -flush-cache-on-new-file"
+
     app_cmd = ' '.join(cmd)
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
@@ -76,3 +77,4 @@ def do_mtrace(*argc, **args):
     if not jupyter:
         log.info(f"Cache size: {cache_line_count} lines * {int(cache_line_size)} bytes/Line = {int(cache_line_count) * int(cache_line_size)} KB")
     subprocess.run(run_cmd.split())
+

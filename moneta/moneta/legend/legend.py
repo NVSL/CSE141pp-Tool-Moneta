@@ -58,6 +58,10 @@ class Legend():
             n
             ])
 
+        # give accesses nformation about tags and threads for layers
+
+
+
         def update_legend_icon(_panels, _, selected):
             if len(selected) == len(self.panels.children):
                 legend_icon.children = [up]
@@ -80,9 +84,9 @@ class Legend():
 
     def get_select_string(self): # TODO - move constants out
         selections = set()
-        for checkbox in self.accesses.checkboxes:
-            if checkbox.widget.v_model == False:
-                selections.add(f'(Access != {checkbox.acc_type})')
+        # for checkbox in self.accesses.childcheckboxes:
+        #     if checkbox.widget.v_model == False:
+        #         selections.add(f'(Access != {checkbox.acc_type})')
 
         for checkbox in self.tags.checkboxes + self.threads.checkboxes:
             if checkbox.widget.v_model == False:

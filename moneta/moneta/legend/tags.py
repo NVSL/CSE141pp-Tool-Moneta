@@ -1,10 +1,10 @@
-from ipywidgets import VBox, HBox, Layout, Button
+from ipywidgets import VBox, HBox, Layout, Button, ToggleButton, ColorPicker, Dropdown
 import ipyvuetify as v
 from moneta.settings import ADDRESS, THREAD_ID
-
-
+from matplotlib.colors import to_hex, to_rgba, ListedColormap
+import random
 from moneta.utils import percent_string
-from moneta.settings import ADDRESS
+from moneta.settings import ADDRESS, C_VIEW_OPTIONS
 import logging
 log = logging.getLogger(__name__)
 
@@ -15,6 +15,7 @@ class Tags():
         self.tag_type = tag_type
         self.update_selection = update_selection
         self.checkboxes = []
+        self.tag_colors = {}
         self.widgets = self.init_widgets(tag_type)
 
     def init_widgets(self, tag_type):
@@ -52,6 +53,7 @@ class Tags():
                 btn, tooltip = self.create_zoom_button(tag, stats=stats)
                 statss = self.tag_tooltip(tag, stats).splitlines()
 
+
                 tag_row = v.Row(children=[
                     btn,
                     chk.widget
@@ -67,7 +69,7 @@ class Tags():
                         v.Col(cols=12, children=[tag_row], class_="pt-0 pb-0")
                         ]))
         tag_rows.append(v.Container(row=False, children=[treenodelabel]))
-        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="200px")])
+        return VBox([v.List(children=(all_row + tag_rows), dense=True, nav=True, max_height="300px", max_width="300px")])
 
     def create_zoom_button(self, tag, stats=None): #TODO move constants out
         if stats is None:
@@ -84,6 +86,36 @@ class Tags():
                                     float(tag.address[0]), float(tag.address[1])+1)
         btn.on_click(zoom_to_selection)
         return btn, tooltip
+
+    def create_highlight_toggle(self, tag, stats=None): #TODO move constants out
+        if stats is None:
+            stats = self.get_stats(tag)
+
+        tooltip = self.tag_tooltip(tag, stats)
+        toggle_btn = ToggleButton(
+                value=False,
+                description='',
+                disabled=False,
+                button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                tooltip='Press to toggle highlighting of the tag region.',
+                icon='binoculars', # (FontAwesome names without the `fa-` prefix)
+                layout=Layout(height='35px', width='35px',
+                    borders='none', align_items='center'
+                )
+            )
+        
+        def highlight(toggle_value):
+            self.model.plot.backend.highlight_selection(float(tag.access[0]), float(tag.access[1])+1,
+                                                        float(tag.address[0]), float(tag.address[1])+1, 
+                                                        toggle_value, tag)
+
+        toggle_btn.observe(highlight, 'value')
+
+
+
+        return toggle_btn, tooltip
+
+    
 
     def get_stats(self, tag):
         df = self.model.curr_trace.df

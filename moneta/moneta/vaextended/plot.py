@@ -295,7 +295,7 @@ class PlotBase(widgets.Widget):
             cache_fraction = min(1, self.cache_size/diffy)
             lim = cache_fraction*fgrid.shape[1]
             for i in range(int(lim)):
-                fgrid[0][0][i] = 2.4
+                fgrid[0][0][i] = 0.4   # why 2.4
 
             ngrid, fmin, fmax = self.normalise(fgrid)
             if self.backend.wants_colors():

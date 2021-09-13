@@ -39,7 +39,7 @@ class Moneta():
         self.plot = self.curr_trace.df.plot_widget(
             self.curr_trace.df[INDEX],
             self.curr_trace.df[ADDRESS], 
-            what='max(Access)',
+            what='max(Layer)',
             colormap=CUSTOM_CMAP, 
             selection=[True],
             limits=self.curr_trace.get_initial_zoom(),
@@ -54,4 +54,3 @@ class Moneta():
             update_stats=self.legend.stats.update,
             show=False
         )
-
