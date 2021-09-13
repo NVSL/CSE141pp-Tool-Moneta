@@ -59,6 +59,7 @@ def do_mtrace(*argc, **args):
         tool_cmd += " -flush-cache-on-new-file"
 
     app_cmd = ' '.join(cmd)
+
     run_cmd = f"{pin_cmd} {tool_cmd} -- {app_cmd}"
 
     files = [f"{trace}.meta",
