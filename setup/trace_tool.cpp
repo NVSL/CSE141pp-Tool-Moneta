@@ -23,11 +23,11 @@ VOID Trace(TRACE trace, VOID *v);
 
 // Pin comes with some old standard libraries.
 namespace pintool {
-template <typename V>
-using unordered_set = std::unordered_set<V>;
+	template <typename V>
+	using unordered_set = std::unordered_set<V>;
 
-template <typename K, typename V>
-using unordered_map = std::unordered_map<K, V>;
+	template <typename K, typename V>
+	using unordered_map = std::unordered_map<K, V>;
 }
 
 // Debug vars
@@ -85,14 +85,14 @@ bool TaggedOnly = false;
 
 // Access type
 enum { 
-  READ_HIT=1, WRITE_HIT,
-  READ_CAP_MISS, WRITE_CAP_MISS,
-  READ_COMP_MISS, WRITE_COMP_MISS 
+	READ_HIT=1, WRITE_HIT,
+	READ_CAP_MISS, WRITE_CAP_MISS,
+	READ_COMP_MISS, WRITE_COMP_MISS 
 };
 
 // Cache Access type
 enum {
-  HIT, CAP_MISS, COMP_MISS
+	HIT, CAP_MISS, COMP_MISS
 };
 
 static UINT64 curr_traced_lines {0}; // Increment for every write to hdf5 for memory accesses.  Reset when opening a new file.
@@ -127,14 +127,14 @@ public:
 struct TagData;
 
 struct Tag {
-  const TagData* parent;
-  const int id;
-  bool active {true};
-  std::pair<UINT64, UINT64> x_range;
-  std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
-  bool is_thread;
-  THREADID thread_id;
-  UINT64 access_count;
+	const TagData* parent;
+	const int id;
+	bool active {true};
+	std::pair<UINT64, UINT64> x_range;
+	std::pair<ADDRINT, ADDRINT> addr_range {ULLONG_MAX, 0};
+	bool is_thread;
+	THREADID thread_id;
+	UINT64 access_count;
 	
 	Tag(TagData* td, int id, bool is_thread, THREADID thread_id, int access ) :
 		parent {td},
@@ -145,63 +145,63 @@ struct Tag {
 		access_count(0)
 		{}
 
-  void reset_for_new_file() { // for a new file, everything remains the same except the access number.
-	  x_range.first = 0;
-	  x_range.second = 0;
-  }
+	void reset_for_new_file() { // for a new file, everything remains the same except the access number.
+		x_range.first = 0;
+		x_range.second = 0;
+	}
 	
-  void update(ADDRINT addr, int access) {
-    access_count++;
-    addr_range.first = std::min(addr_range.first, addr);
-    addr_range.second = std::max(addr_range.second, addr);
-    x_range.second = access;
-  }
+	void update(ADDRINT addr, int access) {
+		access_count++;
+		addr_range.first = std::min(addr_range.first, addr);
+		addr_range.second = std::max(addr_range.second, addr);
+		x_range.second = access;
+	}
 };
 
 struct TagData {
-  const int id;
-  const std::string tag_name;
-  std::pair<ADDRINT, ADDRINT> addr_range;
-  bool is_thread;
-  THREADID thread_id;
-  std::vector<Tag*> tags;
+	const int id;
+	const std::string tag_name;
+	std::pair<ADDRINT, ADDRINT> addr_range;
+	bool is_thread;
+	THREADID thread_id;
+	std::vector<Tag*> tags;
   
-  TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool is_thread, THREADID thread_id = 0) : 
-	  id(curr_id++),
-	  tag_name {tag_name},
-	  addr_range({low, hi}),
-	  is_thread(is_thread),
-	  thread_id(thread_id)
-  {
-	  this->create_new_tag();
-  }
+	TagData(std::string tag_name, ADDRINT low, ADDRINT hi, bool is_thread, THREADID thread_id = 0) : 
+		id(curr_id++),
+		tag_name {tag_name},
+		addr_range({low, hi}),
+		is_thread(is_thread),
+		thread_id(thread_id)
+		{
+			this->create_new_tag();
+		}
 
-  void create_new_tag() {
-	  tags.push_back(new Tag(this, tags.size(), is_thread, thread_id, curr_traced_lines));
-  }
+	void create_new_tag() {
+		tags.push_back(new Tag(this, tags.size(), is_thread, thread_id, curr_traced_lines));
+	}
 
-  void  reset_for_new_file() {
-	  for (Tag* t : tags) {
-		  t->reset_for_new_file();
-	  }
-  }
+	void  reset_for_new_file() {
+		for (Tag* t : tags) {
+			t->reset_for_new_file();
+		}
+	}
 	
-  bool update(ADDRINT addr, int access) {
-    bool updated {0};
-    for (Tag* t : tags) {
-      if (t->active) {
-        t->update(addr, access);
-	updated = true;
-      }
-    }
-    return updated;
-  }
-  // Default destructor
-  ~TagData() {
-    for (Tag* t : tags) {
-      delete t;
-    }
-  }
+	bool update(ADDRINT addr, int access) {
+		bool updated {0};
+		for (Tag* t : tags) {
+			if (t->active) {
+				t->update(addr, access);
+				updated = true;
+			}
+		}
+		return updated;
+	}
+	// Default destructor
+	~TagData() {
+		for (Tag* t : tags) {
+			delete t;
+		}
+	}
 };
 
 // Only the id is output to out_file.
@@ -233,230 +233,230 @@ const std::string LayerColumn{"Layer"};
  * Use this to handle hdf with write_data_mem and write_data_cache
  */
 class HandleHdf5 {
-  static const unsigned long long int chunk_size = 200000; // Private vars
-  unsigned long long addrs[chunk_size]; // Chunk local vars
-  uint8_t accs[chunk_size];
-  uint8_t threadids[chunk_size];
-  ulong indexes[chunk_size];
-  uint8_t layer[chunk_size];
+	static const unsigned long long int chunk_size = 200000; // Private vars
+	unsigned long long addrs[chunk_size]; // Chunk local vars
+	uint8_t accs[chunk_size];
+	uint8_t threadids[chunk_size];
+	ulong indexes[chunk_size];
+	uint8_t layer[chunk_size];
 
-  //unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
-  // Current access
-  size_t mem_ind = 0;
-  //size_t cache_ind = 0;
-  size_t index = 0; // increment index of each access
-  size_t layer_default = 1;
-  // Memory accesses
-  H5::H5File mem_file;
-  //  H5::DataSet tag_d;
-  H5::DataSet index_d;
-  H5::DataSet acc_d;
-  H5::DataSet addr_d;
-  H5::DataSet threadid_d;
-  H5::DataSet layer_d;
-  // State vars
-  hsize_t curr_chunk_dims [1] = {chunk_size};
-  hsize_t total_ds_dims [1] = {chunk_size};
-  hsize_t offset [1] = {0};
+	//unsigned long long cache_addrs[chunk_size]; // Chunk local vars - cache
+	// Current access
+	size_t mem_ind = 0;
+	//size_t cache_ind = 0;
+	size_t index = 0; // increment index of each access
+	size_t layer_default = 1;
+	// Memory accesses
+	H5::H5File mem_file;
+	//  H5::DataSet tag_d;
+	H5::DataSet index_d;
+	H5::DataSet acc_d;
+	H5::DataSet addr_d;
+	H5::DataSet threadid_d;
+	H5::DataSet layer_d;
+	// State vars
+	hsize_t curr_chunk_dims [1] = {chunk_size};
+	hsize_t total_ds_dims [1] = {chunk_size};
+	hsize_t offset [1] = {0};
 
-  // Cache accesses
-  /*H5::H5File cache_file;
-  H5::DataSet cache_d;
-    // State vars
-  hsize_t curr_chunk_dims_c [1] = {chunk_size};
-  hsize_t total_ds_dims_c [1] = {chunk_size};
-  hsize_t offset_c [1] = {0};*/
+	// Cache accesses
+	/*H5::H5File cache_file;
+	  H5::DataSet cache_d;
+	  // State vars
+	  hsize_t curr_chunk_dims_c [1] = {chunk_size};
+	  hsize_t total_ds_dims_c [1] = {chunk_size};
+	  hsize_t offset_c [1] = {0};*/
 
-  // Open files, dataspace, and datasets
-  void setup_files() {
-    if (HDF_DEBUG) {
-      std::cerr << "Setting up hdf5 files\n";
-    }
-    // Try catch block here highly recommended!!!
-    //H5::Exception::dontPrint(); // Don't print exceptions - Let catch block do it
-    hsize_t idims_t[1] = {1};   // Initial dims
-    H5::DSetCreatPropList plist; // Set chunk size with property list
-    plist.setChunk(1, curr_chunk_dims);
-    hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
-    H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
-    // Create and write datasets to file
-    index_d = mem_file.createDataSet(IndexColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
-    acc_d =      mem_file.createDataSet(AccessColumn.c_str(),   H5::PredType::NATIVE_UINT8, m_dataspace, plist);
-    threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
-    addr_d =     mem_file.createDataSet(AddressColumn.c_str(),  H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
-    layer_d = mem_file.createDataSet(LayerColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+	// Open files, dataspace, and datasets
+	void setup_files() {
+		if (HDF_DEBUG) {
+			std::cerr << "Setting up hdf5 files\n";
+		}
+		// Try catch block here highly recommended!!!
+		//H5::Exception::dontPrint(); // Don't print exceptions - Let catch block do it
+		hsize_t idims_t[1] = {1};   // Initial dims
+		H5::DSetCreatPropList plist; // Set chunk size with property list
+		plist.setChunk(1, curr_chunk_dims);
+		hsize_t max_dims[1] = {H5S_UNLIMITED}; // For extendable dataset
+		H5::DataSpace m_dataspace {1, idims_t, max_dims}; // Initial dataspace
+		// Create and write datasets to file
+		index_d = mem_file.createDataSet(IndexColumn.c_str(), H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+		acc_d =      mem_file.createDataSet(AccessColumn.c_str(),   H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+		threadid_d = mem_file.createDataSet(ThreadIDColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
+		addr_d =     mem_file.createDataSet(AddressColumn.c_str(),  H5::PredType::NATIVE_ULLONG, m_dataspace, plist);
+		layer_d = mem_file.createDataSet(LayerColumn.c_str(), H5::PredType::NATIVE_UINT8, m_dataspace, plist);
 
-    //H5::DataSpace c_dataspace {1, idims_t, max_dims};
-    //cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
-  }
+		//H5::DataSpace c_dataspace {1, idims_t, max_dims};
+		//cache_d = cache_file.createDataSet(CacheAccessColumn.c_str(), H5::PredType::NATIVE_ULLONG, c_dataspace, plist);
+	}
 
-  // Extends dataset and writes stored chunk
-  void extend_write_mem() {
-    if (HDF_DEBUG) {
-      std::cerr << "Extending and writing dataset for memory accesses\n";
-    }
-    acc_d.extend( total_ds_dims ); // Extend size of dataset
-    addr_d.extend( total_ds_dims );
-    threadid_d.extend( total_ds_dims );
-    index_d.extend(total_ds_dims);
-    layer_d.extend(total_ds_dims);
+	// Extends dataset and writes stored chunk
+	void extend_write_mem() {
+		if (HDF_DEBUG) {
+			std::cerr << "Extending and writing dataset for memory accesses\n";
+		}
+		acc_d.extend( total_ds_dims ); // Extend size of dataset
+		addr_d.extend( total_ds_dims );
+		threadid_d.extend( total_ds_dims );
+		index_d.extend(total_ds_dims);
+		layer_d.extend(total_ds_dims);
 
-    H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
-    H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset); // Select slab in extended dataset
-    acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace); // Write to extended part
+		H5::DataSpace old_dataspace = acc_d.getSpace(); // Get old dataspace
+		H5::DataSpace new_dataspace = {1, curr_chunk_dims}; // Get new dataspace
+		old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset); // Select slab in extended dataset
+		acc_d.write( accs, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace); // Write to extended part
 
-    old_dataspace = addr_d.getSpace(); // Rinse and repeat for address
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
-    addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+		old_dataspace = addr_d.getSpace(); // Rinse and repeat for address
+		old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims, offset);
+		addr_d.write( addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
 
-    old_dataspace = threadid_d.getSpace(); // Rinse and repeat for threads
-    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
-    threadid_d.write(threadids, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
+		old_dataspace = threadid_d.getSpace(); // Rinse and repeat for threads
+		old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+		threadid_d.write(threadids, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
 
-    old_dataspace = index_d.getSpace(); // Rinse and repeat for index
-    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
-    index_d.write(indexes, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
+		old_dataspace = index_d.getSpace(); // Rinse and repeat for index
+		old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+		index_d.write(indexes, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace);
 
-    old_dataspace = layer_d.getSpace(); // Rinse and repeat for layer
-    old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
-    layer_d.write(layer, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
-  }
+		old_dataspace = layer_d.getSpace(); // Rinse and repeat for layer
+		old_dataspace.selectHyperslab(H5S_SELECT_SET, curr_chunk_dims, offset);
+		layer_d.write(layer, H5::PredType::NATIVE_UINT8, new_dataspace, old_dataspace);
+	}
 
-  // Extends dataset and writes stored chunk
-  /*void extend_write_cache() {
-    if (HDF_DEBUG) {
-      std::cerr << "Extending and writing dataset for cache\n";
-    }
-    cache_d.extend( total_ds_dims_c ); // Extend
-    H5::DataSpace old_dataspace = cache_d.getSpace(); // Get old dataspace
-    H5::DataSpace new_dataspace = {1, curr_chunk_dims_c}; // Get new dataspace
-    old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims_c, offset_c); // Select slab in extended dataset
-    cache_d.write( cache_addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace); // Write to the extended part
-  }*/
+	// Extends dataset and writes stored chunk
+	/*void extend_write_cache() {
+	  if (HDF_DEBUG) {
+	  std::cerr << "Extending and writing dataset for cache\n";
+	  }
+	  cache_d.extend( total_ds_dims_c ); // Extend
+	  H5::DataSpace old_dataspace = cache_d.getSpace(); // Get old dataspace
+	  H5::DataSpace new_dataspace = {1, curr_chunk_dims_c}; // Get new dataspace
+	  old_dataspace.selectHyperslab( H5S_SELECT_SET, curr_chunk_dims_c, offset_c); // Select slab in extended dataset
+	  cache_d.write( cache_addrs, H5::PredType::NATIVE_ULLONG, new_dataspace, old_dataspace); // Write to the extended part
+	  }*/
 
 public:
-  // Default constructor
-  HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}) { setup_files(); }
+	// Default constructor
+	HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}) { setup_files(); }
 
-  /*// Default constructor - Cache
-  HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}),
-                 cache_file({"cache.hdf5", H5F_ACC_TRUNC}) { setup_files(); }*/
+	/*// Default constructor - Cache
+	  HandleHdf5() : mem_file({"trace.hdf5", H5F_ACC_TRUNC}),
+	  cache_file({"cache.hdf5", H5F_ACC_TRUNC}) { setup_files(); }*/
 
-  // With names
-  HandleHdf5(std::string h) : mem_file({h.c_str(), H5F_ACC_TRUNC}) { setup_files(); }
+	// With names
+	HandleHdf5(std::string h) : mem_file({h.c_str(), H5F_ACC_TRUNC}) { setup_files(); }
 
-  // With names - Cache
-  /*HandleHdf5(std::string h, std::string c) : 
-	         mem_file({h.c_str(), H5F_ACC_TRUNC}),
-                 cache_file({c.c_str(), H5F_ACC_TRUNC}) { setup_files(); }*/
-  // Destructor
-  ~HandleHdf5() {
-    if (HDF_DEBUG) {
-      std::cerr << "Hdf5 Destructor\n";
-    }
-    if (mem_ind != 0) { // New data to write
-      curr_chunk_dims[0] = mem_ind; // Not full chunk size
-      total_ds_dims[0]  -= chunk_size - mem_ind;
+	// With names - Cache
+	/*HandleHdf5(std::string h, std::string c) : 
+	  mem_file({h.c_str(), H5F_ACC_TRUNC}),
+	  cache_file({c.c_str(), H5F_ACC_TRUNC}) { setup_files(); }*/
+	// Destructor
+	~HandleHdf5() {
+		if (HDF_DEBUG) {
+			std::cerr << "Hdf5 Destructor\n";
+		}
+		if (mem_ind != 0) { // New data to write
+			curr_chunk_dims[0] = mem_ind; // Not full chunk size
+			total_ds_dims[0]  -= chunk_size - mem_ind;
 
-      extend_write_mem();
-    }
+			extend_write_mem();
+		}
 
-    /*if (cache_ind != 0) { // Same for cache
-      curr_chunk_dims_c[0] = cache_ind;
-      total_ds_dims_c[0] -= chunk_size - cache_ind;
+		/*if (cache_ind != 0) { // Same for cache
+		  curr_chunk_dims_c[0] = cache_ind;
+		  total_ds_dims_c[0] -= chunk_size - cache_ind;
 
-      extend_write_cache();
-    }*/
+		  extend_write_cache();
+		  }*/
 
-    // Close files
-    mem_file.close();
-    //cache_file.close();
+		// Close files
+		mem_file.close();
+		//cache_file.close();
 
-  }
+	}
 
-  // Write data for memory access to file
-  int write_data_mem(ADDRINT address, int access, THREADID threadid) {
-    if (HDF_DEBUG) {
-      std::cerr << "Write to Hdf5 - memory\n";
-    }
-    addrs[mem_ind] = address; // Write to memory first
-    threadids[mem_ind] = (unsigned char)(threadid & 0xff);
-    accs[mem_ind++] = access;
-    index++;
-    indexes[mem_ind] = index;
-    layer[mem_ind] = layer_default;
+	// Write data for memory access to file
+	int write_data_mem(ADDRINT address, int access, THREADID threadid) {
+		if (HDF_DEBUG) {
+			std::cerr << "Write to Hdf5 - memory\n";
+		}
+		addrs[mem_ind] = address; // Write to memory first
+		threadids[mem_ind] = (unsigned char)(threadid & 0xff);
+		accs[mem_ind++] = access;
+		index++;
+		indexes[mem_ind] = index;
+		layer[mem_ind] = layer_default;
 
-    if (mem_ind < chunk_size) { // Unless we have reached chunk size
-      return 0;
-    }
-    mem_ind = 0;
+		if (mem_ind < chunk_size) { // Unless we have reached chunk size
+			return 0;
+		}
+		mem_ind = 0;
 
-    extend_write_mem(); // Then, write to hdf5 file
+		extend_write_mem(); // Then, write to hdf5 file
       
-    total_ds_dims[0] += chunk_size; // Update size and offset
-    offset[0] += chunk_size;
-    /*try { // Should add this error checking somewhere
-    } catch( H5::FileIException error ) {
-      error.printError(); // Add custom messages here?
-      return -1; // Exit program?
-    } catch( H5::DataSetIException error ) {// catch failure caused by the DataSet operations
-      error.printError();
-      return -1;
-    } catch( H5::DataSpaceIException error ) {// catch failure caused by the DataSpace operations
-      error.printError();
-      return -1;
-    } catch( H5::DataTypeIException error ) {// catch failure caused by the DataType operations
-      error.printError();
-      return -1;
-    }*/
-    return 0;
-  }
+		total_ds_dims[0] += chunk_size; // Update size and offset
+		offset[0] += chunk_size;
+		/*try { // Should add this error checking somewhere
+		  } catch( H5::FileIException error ) {
+		  error.printError(); // Add custom messages here?
+		  return -1; // Exit program?
+		  } catch( H5::DataSetIException error ) {// catch failure caused by the DataSet operations
+		  error.printError();
+		  return -1;
+		  } catch( H5::DataSpaceIException error ) {// catch failure caused by the DataSpace operations
+		  error.printError();
+		  return -1;
+		  } catch( H5::DataTypeIException error ) {// catch failure caused by the DataType operations
+		  error.printError();
+		  return -1;
+		  }*/
+		return 0;
+	}
 
-  // Write data for cache access to file
-  /*int write_data_cache(ADDRINT address) {
-    if (HDF_DEBUG) {
-      std::cerr << "Write to Hdf5 - cache\n";
-    }
-    cache_addrs[cache_ind++] = address;
-    if (cache_ind < chunk_size) { 
-      return 0;
-    }
-    cache_ind = 0;
+	// Write data for cache access to file
+	/*int write_data_cache(ADDRINT address) {
+	  if (HDF_DEBUG) {
+	  std::cerr << "Write to Hdf5 - cache\n";
+	  }
+	  cache_addrs[cache_ind++] = address;
+	  if (cache_ind < chunk_size) { 
+	  return 0;
+	  }
+	  cache_ind = 0;
 
-    extend_write_cache();
-    total_ds_dims_c[0] += chunk_size;
-    offset_c[0] += chunk_size;
-    return 0;
-  }*/
+	  extend_write_cache();
+	  total_ds_dims_c[0] += chunk_size;
+	  offset_c[0] += chunk_size;
+	  return 0;
+	  }*/
 
 };
 
 HandleHdf5 *hdf_handler; // One for this pintool
 
 struct cache_hash { // Could improve on this hash function
-  inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
-    return (uint64_t)k.first;
-  }
+	inline std::size_t operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k) const {
+		return (uint64_t)k.first;
+	}
 };
 
 struct cache_equal {
 public:
-  inline bool operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
+	inline bool operator()(const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
  
-    if (k1.first == k2.first) {
-      return true;
-    }
-    return false;
-  }
+		if (k1.first == k2.first) {
+			return true;
+		}
+		return false;
+	}
 };
 
 
 /*struct cache_compare { // Need this to use set
-    inline bool operator() (const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
-        return k1.first < k2.first;
-    }
-};*/
+  inline bool operator() (const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k1, const std::pair<ADDRINT, std::list<ADDRINT>::iterator> & k2) const {
+  return k1.first < k2.first;
+  }
+  };*/
 
 
 // Stores all info for cache with pointers to where it is in list
@@ -477,42 +477,42 @@ static char * buffer3 = new char[BUF_SIZE];
 
 // Command line options for pintool
 KNOB<std::string> KnobStartFunctionLong(KNOB_MODE_WRITEONCE, "pintool",
-    "start", "", "specify name of function to start tracing at");
+					"start", "", "specify name of function to start tracing at");
 
 KNOB<std::string> KnobStartFunction(KNOB_MODE_WRITEONCE, "pintool",
-    "s", "", "specify name of function to start tracing at");
+				    "s", "", "specify name of function to start tracing at");
 
 KNOB<std::string> KnobOutputFileLong(KNOB_MODE_WRITEONCE, "pintool",
-    "name", "", "specify name of output trace");
+				     "name", "", "specify name of output trace");
 
 KNOB<UINT64> KnobSkipMemOps(KNOB_MODE_WRITEONCE, "pintool",
-			   "skip", "0", "How many memops to skip");
+			    "skip", "0", "How many memops to skip");
 
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
-    "n", "default", "specify name of output trace");
+				 "n", "default", "specify name of output trace");
 
 KNOB<UINT64> KnobMaxOutputLong(KNOB_MODE_WRITEONCE, "pintool",
-    "output_lines", "", "specify max lines of output");
+			       "output_lines", "", "specify max lines of output");
 
 
 KNOB<UINT64> KnobMaxOutput(KNOB_MODE_WRITEONCE, "pintool",
-    "ol", "10000000", "specify max lines of output");
+			   "ol", "10000000", "specify max lines of output");
 
 UINT64 file_count = 0;
 KNOB<UINT64> KnobFileCount(KNOB_MODE_WRITEONCE, "pintool",
 			   "file_count", "1", "How many trace files to generate");
 
 KNOB<UINT64> KnobCacheSizeLong(KNOB_MODE_WRITEONCE, "pintool",
-    "cache_lines", "", "specify # of lines in L1 cache");
+			       "cache_lines", "", "specify # of lines in L1 cache");
 
 KNOB<UINT64> KnobCacheSize(KNOB_MODE_WRITEONCE, "pintool",
-    "c", "4096", "specify # of lines in L1 cache");
+			   "c", "4096", "specify # of lines in L1 cache");
 
 KNOB<UINT64> KnobCacheLineSizeLong(KNOB_MODE_WRITEONCE, "pintool",
-    "block", "", "specify block size in bytes");
+				   "block", "", "specify block size in bytes");
 
 KNOB<UINT64> KnobCacheLineSize(KNOB_MODE_WRITEONCE, "pintool",
-    "b", "64", "specify block size in bytes");
+			       "b", "64", "specify block size in bytes");
 
 KNOB<bool> KnobFlushCacheOnNewFile(KNOB_MODE_WRITEONCE, "pintool",
 				   "flush-cache-on-new-file", "false", "Flush the cache when you open a new file?");
@@ -634,7 +634,7 @@ void write_stats_file() {
 		inst_count << "," <<
 		hit_rate<< "," <<
 		miss_per_inst << "\n";
-					 stats_file.close();
+	stats_file.close();
 					 
 }
 
@@ -667,26 +667,26 @@ void close_trace_files(bool clear_tags) {
 
 VOID write_to_memfile(ADDRINT addr, int acc_type, THREADID threadid) {
 
-  hdf_handler->write_data_mem(addr, acc_type, threadid);
-  curr_traced_lines++; // Afterward, for 0-based indexing
-  total_traced_lines++;
+	hdf_handler->write_data_mem(addr, acc_type, threadid);
+	curr_traced_lines++; // Afterward, for 0-based indexing
+	total_traced_lines++;
 
-  // print a progress status message every DefaultMaximumLines
-  if (total_traced_lines >= DefaultMaximumLines && total_traced_lines % DefaultMaximumLines == 0)
-  {
-    std::cout << " ------ PROGRESS Compeleted Number of Accesses: " << total_traced_lines << "\n";
-  }
+	// print a progress status message every DefaultMaximumLines
+	if (total_traced_lines >= DefaultMaximumLines && total_traced_lines % DefaultMaximumLines == 0)
+	{
+		std::cout << " ------ PROGRESS Compeleted Number of Accesses: " << total_traced_lines << "\n";
+	}
 
-  if(curr_traced_lines >= max_lines) { // If reached file size limit, exit
-	  if (file_count >= KnobFileCount.Value()) {
-		  std::cerr << "Exiting application early\n";
-		  exit_early(0);
-	  } else {
-		  std::cerr << "Creating new trace file\n";
-		  close_trace_files(false);// false preserves the tags
-		  open_trace_files();
-	  }
-  }
+	if(curr_traced_lines >= max_lines) { // If reached file size limit, exit
+		if (file_count >= KnobFileCount.Value()) {
+			std::cerr << "Exiting application early\n";
+			exit_early(0);
+		} else {
+			std::cerr << "Creating new trace file\n";
+			close_trace_files(false);// false preserves the tags
+			open_trace_files();
+		}
+	}
 }
 
 VOID new_trace_called(VOID * trace_name) {
@@ -698,49 +698,49 @@ VOID new_trace_called(VOID * trace_name) {
 }
 
 TagData * do_dump_start(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new, bool is_thread, THREADID thread_id) {
-  char* s = (char *)tag_name;
-  std::string str_tag (s);
-  TagData * r;
-  std::cerr << "Tag Started: " << str_tag <<"\n";
-  if (DEBUG) {
-    std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
-  }
+	char* s = (char *)tag_name;
+	std::string str_tag (s);
+	TagData * r;
+	std::cerr << "Tag Started: " << str_tag <<"\n";
+	if (DEBUG) {
+		std::cerr << "Dump define called - " << low << ", " << hi << " TAG: " << str_tag << "\n";
+	}
 
 
-  if (all_tags.find(str_tag) == all_tags.end()) { // New tag
-    if (DEBUG) {
-      std::cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
-      std::cerr << "Range: " << low << ", " << hi << "\n";
-    }
+	if (all_tags.find(str_tag) == all_tags.end()) { // New tag
+		if (DEBUG) {
+			std::cerr << "Dump begin called - New tag Tag: " << str_tag << "\n";
+			std::cerr << "Range: " << low << ", " << hi << "\n";
+		}
 
-    r = new TagData(str_tag, low, hi, is_thread, thread_id);
-    all_tags[str_tag] = r;
+		r = new TagData(str_tag, low, hi, is_thread, thread_id);
+		all_tags[str_tag] = r;
     
-  } else { // Reuse tag
-    if (DEBUG) {
-      std::cerr << "Dump define called - Old tag\n";
-    }
+	} else { // Reuse tag
+		if (DEBUG) {
+			std::cerr << "Dump define called - Old tag\n";
+		}
 
-    // Exit program if redefining tag
-    r = all_tags[str_tag];
+		// Exit program if redefining tag
+		r = all_tags[str_tag];
 #if(0)
-    if (r->addr_range.first != low || // Must be same range
-	r->addr_range.second != hi) {
-	    std::cerr << "Error: Tag '" << str_tag << "' redefined - Tag can't map to different ranges\n"
-              "Exiting Trace Early...\n";
-      exit_early(0);
-    }
+		if (r->addr_range.first != low || // Must be same range
+		    r->addr_range.second != hi) {
+			std::cerr << "Error: Tag '" << str_tag << "' redefined - Tag can't map to different ranges\n"
+				"Exiting Trace Early...\n";
+			exit_early(0);
+		}
 #endif
 
-    r->addr_range =  std::pair<ADDRINT, ADDRINT>(low, hi);
+		r->addr_range =  std::pair<ADDRINT, ADDRINT>(low, hi);
     
-    if (create_new) {
-      r->create_new_tag();
-    } else {
-      r->tags.back()->active = true;
-    }
-  }
-  return r;
+		if (create_new) {
+			r->create_new_tag();
+		} else {
+			r->tags.back()->active = true;
+		}
+	}
+	return r;
 }
 
 VOID dump_start_called(VOID * tag_name, ADDRINT low, ADDRINT hi, bool create_new) {
@@ -764,23 +764,23 @@ VOID tag_grow(VOID * tag_name, ADDRINT low, ADDRINT hi) {
 
 VOID do_dump_stop(VOID * tag_name) {
 	
-  char *s = (char *)tag_name;
-  std::string str_tag (s);
-  std::cerr << "Tag stopped: " << str_tag <<"\n";
-  if (DEBUG) {
-    std::cerr << "End TAG: " << str_tag << "\n";
-  }
+	char *s = (char *)tag_name;
+	std::string str_tag (s);
+	std::cerr << "Tag stopped: " << str_tag <<"\n";
+	if (DEBUG) {
+		std::cerr << "End TAG: " << str_tag << "\n";
+	}
 
-  std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
-  if (iter == all_tags.end()) {
-    std::cerr << "Error: Stopping a tag that was never started: " << str_tag << "\n"
-	    "Exiting Trace Early...\n";
-    exit_early(0);
-  }
-  for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
-       i != iter->second->tags.rend(); ++i) {
-	  (*i)->active = false;
-  }
+	std::unordered_map<std::string, TagData*>::const_iterator iter = all_tags.find(str_tag);
+	if (iter == all_tags.end()) {
+		std::cerr << "Error: Stopping a tag that was never started: " << str_tag << "\n"
+			"Exiting Trace Early...\n";
+		exit_early(0);
+	}
+	for (std::vector<Tag*>::reverse_iterator i = iter->second->tags.rbegin();
+	     i != iter->second->tags.rend(); ++i) {
+		(*i)->active = false;
+	}
 }
 
 
@@ -825,12 +825,12 @@ int get_thread_id() {
 	return PIN_ThreadId();
 }
 #if (0)
-#define cache_assert(exp)				\
-	do {						\
-		if(!(exp)) {				\
-			dump_cache(std::cerr);		\
-			assert(exp);			\
-		}					\
+#define cache_assert(exp)			\
+	do {					\
+		if(!(exp)) {			\
+			dump_cache(std::cerr);	\
+			assert(exp);		\
+		}				\
 	} while(0)
 #else
 #define cache_assert(exp)
@@ -898,12 +898,12 @@ int add_to_simulated_cache(ADDRINT addr) {
 }
 
 int translate_cache(int access_type, bool read) {
-  if (access_type == HIT) {
-    return read ? READ_HIT : WRITE_HIT;
-  } else if(access_type == CAP_MISS) {
-    return read ? READ_CAP_MISS : WRITE_CAP_MISS;
-  }
-  return read ? READ_COMP_MISS : WRITE_COMP_MISS;
+	if (access_type == HIT) {
+		return read ? READ_HIT : WRITE_HIT;
+	} else if(access_type == CAP_MISS) {
+		return read ? READ_CAP_MISS : WRITE_CAP_MISS;
+	}
+	return read ? READ_COMP_MISS : WRITE_COMP_MISS;
 }
 
 
@@ -912,44 +912,44 @@ bool skipping = true;
 VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read) {
 	BE_THREAD_SAFE();
 	if (DEBUG) {
-    read_insts++;
-  }
-  all_lines++;
+		read_insts++;
+	}
+	all_lines++;
 
-  if (skipping && all_lines>= SkipMemOps) {
-	  std::cerr << "Done skipping " << SkipMemOps << " ops\n";
-	  skipping = false;
-  } 
-  if (!reached_start || skipping) return;
-  int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
+	if (skipping && all_lines>= SkipMemOps) {
+		std::cerr << "Done skipping " << SkipMemOps << " ops\n";
+		skipping = false;
+	} 
+	if (!reached_start || skipping) return;
+	int access_type = translate_cache(add_to_simulated_cache(addr), is_read);
 
 
-  bool is_tag_match = false;
-  bool updated = false;
-  // We do three things as we iterater through the tags:
-  // 1.  we need to called `update` on tags to keep track of their address ranges.
-  // 2.  we need to record the access (but only if update returned true for some tag.
-  // 3.  We also need to ensure that we only trace memops outside of a  tag if !TaggedOnly. 
-  for (auto& tag_iter : all_tags) {
-    TagData* td = tag_iter.second;
-    if (td->is_thread) {
-	    if(td->thread_id == thread_id){ 
-		    updated =  td->update(addr, curr_traced_lines) || updated;
-	    }
-    } else {
-	    if (((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
-		 (td->addr_range.second == LIMIT || addr <= td->addr_range.second))) {
-		    is_tag_match = true;
-		    updated = td->update(addr, curr_traced_lines) || updated;
-	    }
-    }
+	bool is_tag_match = false;
+	bool updated = false;
+	// We do three things as we iterater through the tags:
+	// 1.  we need to called `update` on tags to keep track of their address ranges.
+	// 2.  we need to record the access (but only if update returned true for some tag.
+	// 3.  We also need to ensure that we only trace memops outside of a  tag if !TaggedOnly. 
+	for (auto& tag_iter : all_tags) {
+		TagData* td = tag_iter.second;
+		if (td->is_thread) {
+			if(td->thread_id == thread_id){ 
+				updated =  td->update(addr, curr_traced_lines) || updated;
+			}
+		} else {
+			if (((td->addr_range.first == LIMIT || td->addr_range.first <= addr) &&
+			     (td->addr_range.second == LIMIT || addr <= td->addr_range.second))) {
+				is_tag_match = true;
+				updated = td->update(addr, curr_traced_lines) || updated;
+			}
+		}
 
-  }  
-  if ((TaggedOnly && is_tag_match) || !TaggedOnly) {
-	  if (updated) {
-		  write_to_memfile(addr, access_type, thread_id);
-	  }
-  }
+	}  
+	if ((TaggedOnly && is_tag_match) || !TaggedOnly) {
+		if (updated) {
+			write_to_memfile(addr, access_type, thread_id);
+		}
+	}
 }
 
 
@@ -959,86 +959,86 @@ VOID RecordMemAccess(THREADID thread_id, ADDRINT addr, bool is_read) {
  */
 VOID Fini(INT32 code, VOID *v) {
 
-  if (DEBUG) {
-    std::cerr << "Number of read insts: " << read_insts << "\n";
-  }
-  if (CACHE_DEBUG) {
-    std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
-    std::cerr << "Number of capacity misses: " << cap_misses << "\n";
-  }
+	if (DEBUG) {
+		std::cerr << "Number of read insts: " << read_insts << "\n";
+	}
+	if (CACHE_DEBUG) {
+		std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
+		std::cerr << "Number of capacity misses: " << cap_misses << "\n";
+	}
 
-  // Updated cache write - Must check if it's in any of the tagged ranges
-  // Write cache values from least recently used to most recently used
-  /*for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
-    // Check if it's part of any of the ranges
-    ADDRINT correct_val = *rit;
-    bool tagged = false;
-    for (auto& x : all_tags) {
-      TagData* t = x.second;
-      if (t->addr_range.first <= *rit && *rit <= t->addr_range.second) {
+	// Updated cache write - Must check if it's in any of the tagged ranges
+	// Write cache values from least recently used to most recently used
+	/*for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
+	// Check if it's part of any of the ranges
+	ADDRINT correct_val = *rit;
+	bool tagged = false;
+	for (auto& x : all_tags) {
+	TagData* t = x.second;
+	if (t->addr_range.first <= *rit && *rit <= t->addr_range.second) {
         correct_val -= t->range_offset; // Normalize
         tagged = true;
         break;
-      }
-    }
-    if (!tagged) {
-      correct_val = max_range; // Just move the cache value that's not tagged to somewhere above all tagged accesses
-      max_range+= cache_line;
-    }
-    hdf_handler->write_data_cache(correct_val);
-  }*/
+	}
+	}
+	if (!tagged) {
+	correct_val = max_range; // Just move the cache value that's not tagged to somewhere above all tagged accesses
+	max_range+= cache_line;
+	}
+	hdf_handler->write_data_cache(correct_val);
+	}*/
 
 
-  close_trace_files(true);
+	close_trace_files(true);
   
-  std::cerr << "Collected " << total_traced_lines << " memory requests\n";
+	std::cerr << "Collected " << total_traced_lines << " memory requests\n";
 }
 
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
 
-    // Instruments memory accesses using a predicated call, i.e.
-    // the instrumentation is called iff the instruction will actually be executed.
-    //
-    // On the IA-32 and Intel(R) 64 architectures conditional moves and REP 
-    // prefixed instructions appear as predicated instructions in Pin.
-    UINT32 memOperands = INS_MemoryOperandCount(ins);
-    // Iterate over each memory operand of the instruction.
-    for (UINT32 memOp = 0; memOp < memOperands; memOp++)
-    {
-        const bool isRead = INS_MemoryOperandIsRead(ins, memOp);
-        const bool isWrite = INS_MemoryOperandIsWritten(ins, memOp);
-        if (isRead) {
-            INS_InsertPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
-		IARG_THREAD_ID,
-                IARG_MEMORYOP_EA, memOp,
-                IARG_BOOL, true,
-                IARG_END);
-        }
-        // Note that in some architectures a single memory operand can be 
-        // both read and written (for instance incl (%eax) on IA-32)
-        // In that case we instrument it once for read and once for write.
-        if (isWrite) {
-            INS_InsertPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
-		IARG_THREAD_ID,
-                IARG_MEMORYOP_EA, memOp,
-                IARG_BOOL, false,
-                IARG_END);
-        }
-    }
+	// Instruments memory accesses using a predicated call, i.e.
+	// the instrumentation is called iff the instruction will actually be executed.
+	//
+	// On the IA-32 and Intel(R) 64 architectures conditional moves and REP 
+	// prefixed instructions appear as predicated instructions in Pin.
+	UINT32 memOperands = INS_MemoryOperandCount(ins);
+	// Iterate over each memory operand of the instruction.
+	for (UINT32 memOp = 0; memOp < memOperands; memOp++)
+	{
+		const bool isRead = INS_MemoryOperandIsRead(ins, memOp);
+		const bool isWrite = INS_MemoryOperandIsWritten(ins, memOp);
+		if (isRead) {
+			INS_InsertPredicatedCall(
+				ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+				IARG_THREAD_ID,
+				IARG_MEMORYOP_EA, memOp,
+				IARG_BOOL, true,
+				IARG_END);
+		}
+		// Note that in some architectures a single memory operand can be 
+		// both read and written (for instance incl (%eax) on IA-32)
+		// In that case we instrument it once for read and once for write.
+		if (isWrite) {
+			INS_InsertPredicatedCall(
+				ins, IPOINT_BEFORE, (AFUNPTR)RecordMemAccess,
+				IARG_THREAD_ID,
+				IARG_MEMORYOP_EA, memOp,
+				IARG_BOOL, false,
+				IARG_END);
+		}
+	}
 }
 
 VOID FindStartFunc(RTN rtn, VOID *v) {
-  if (!RTN_Valid(rtn)) return;
-  RTN_Open(rtn);
-  const std::string function_name = PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY);
-  if (function_name == start_function) {
-    RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start, IARG_END);
-  }
-  RTN_Close(rtn);
+	if (!RTN_Valid(rtn)) return;
+	RTN_Open(rtn);
+	const std::string function_name = PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY);
+	if (function_name == start_function) {
+		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start, IARG_END);
+	}
+	RTN_Close(rtn);
 }
 
 // Find the macro routines in the current image and insert a call
@@ -1048,11 +1048,11 @@ VOID FindFunc(IMG img, VOID *v) {
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_start_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
-				IARG_END);
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 2,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 3,
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, TAG_GROW.c_str());
@@ -1078,33 +1078,33 @@ VOID FindFunc(IMG img, VOID *v) {
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)dump_stop_called,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_END);
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, FLUSH_CACHE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)flush_cache_user,
-				IARG_END);
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, M_START_TRACE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_start,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_END);
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, M_STOP_TRACE.c_str());
 	if(RTN_Valid(rtn)){
 		RTN_Open(rtn);
 		RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)signal_stop,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-				IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
-				IARG_END);
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+			       IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+			       IARG_END);
 		RTN_Close(rtn);
 	}
 	rtn = RTN_FindByName(img, GET_THREAD_ID.c_str());
@@ -1115,18 +1115,18 @@ VOID FindFunc(IMG img, VOID *v) {
 }
 
 INT32 Usage() {
-  std::cerr << "Tracks memory accesses and instruction pointers between dump accesses\n";
-  std::cerr << "\n" << KNOB_BASE::StringKnobSummary() << "\n";
-  return -1;
+	std::cerr << "Tracks memory accesses and instruction pointers between dump accesses\n";
+	std::cerr << "\n" << KNOB_BASE::StringKnobSummary() << "\n";
+	return -1;
 }
 
 bool check_alnum(const std::string& str) {
-  for (char c : str) {
-    if (!std::isalnum(c) && c != '_') {
-      return false;
-    }
-  }
-  return true;
+	for (char c : str) {
+		if (!std::isalnum(c) && c != '_') {
+			return false;
+		}
+	}
+	return true;
 };
 
 VOID PIN_FAST_ANALYSIS_CALL count_insts(ADDRINT c) {
@@ -1136,14 +1136,14 @@ VOID PIN_FAST_ANALYSIS_CALL count_insts(ADDRINT c) {
 
 VOID Trace(TRACE trace, VOID *v)
 {
-    // Visit every basic block  in the trace
-    for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
-    {
-        // Insert a call to docount for every bbl, passing the number of instructions.
-        // IPOINT_ANYWHERE allows Pin to schedule the call anywhere in the bbl to obtain best performance.
-        // Use a fast linkage for the call.
-        BBL_InsertCall(bbl, IPOINT_ANYWHERE, AFUNPTR(count_insts), IARG_FAST_ANALYSIS_CALL, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
-    }
+	// Visit every basic block  in the trace
+	for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
+	{
+		// Insert a call to docount for every bbl, passing the number of instructions.
+		// IPOINT_ANYWHERE allows Pin to schedule the call anywhere in the bbl to obtain best performance.
+		// Use a fast linkage for the call.
+		BBL_InsertCall(bbl, IPOINT_ANYWHERE, AFUNPTR(count_insts), IARG_FAST_ANALYSIS_CALL, IARG_UINT32, BBL_NumIns(bbl), IARG_END);
+	}
 }
 
 
@@ -1169,99 +1169,99 @@ VOID ThreadStop(THREADID threadid, const CONTEXT *ctxt, INT32 flags, VOID *v)
 }
 
 int main(int argc, char *argv[]) {
-  //Initialize pin & symbol manager
-  PIN_InitSymbols();
-  if (PIN_Init(argc, argv)) return Usage();
+	//Initialize pin & symbol manager
+	PIN_InitSymbols();
+	if (PIN_Init(argc, argv)) return Usage();
 
-  if (!PIN_MutexInit(&the_big_lock)) {
-	  std::cerr << "the_big_lock init has failed\n";
-	  return 1;
-  }
+	if (!PIN_MutexInit(&the_big_lock)) {
+		std::cerr << "the_big_lock init has failed\n";
+		return 1;
+	}
   
-  if (DEBUG) {
-    std::cerr << "Debugging mode\n";
-  }
+	if (DEBUG) {
+		std::cerr << "Debugging mode\n";
+	}
 
-  // User input
-  output_trace_path = KnobOutputFileLong.Value();
-  if (output_trace_path == "") {
-    output_trace_path = KnobOutputFile.Value();
-    if (output_trace_path == "") {
-      output_trace_path = "default";
-    }
-  }
-  if (!check_alnum(output_trace_path)) {
-    std::cerr << "Output name (" << output_trace_path << ") can only contain alphanumeric characters or _\n";
-    return -1;
-  }
+	// User input
+	output_trace_path = KnobOutputFileLong.Value();
+	if (output_trace_path == "") {
+		output_trace_path = KnobOutputFile.Value();
+		if (output_trace_path == "") {
+			output_trace_path = "default";
+		}
+	}
+	if (!check_alnum(output_trace_path)) {
+		std::cerr << "Output name (" << output_trace_path << ") can only contain alphanumeric characters or _\n";
+		return -1;
+	}
 
-  start_function = KnobStartFunctionLong.Value();
-  if (start_function == "") {
-    start_function = KnobStartFunction.Value();
-    if (start_function == "") {
-      start_function = DefaultStartFunction;
-    }
-  }
-  if (start_function == "main") { // Replace main with function that calls main
-    start_function = DefaultStartFunction;
-  }
+	start_function = KnobStartFunctionLong.Value();
+	if (start_function == "") {
+		start_function = KnobStartFunction.Value();
+		if (start_function == "") {
+			start_function = DefaultStartFunction;
+		}
+	}
+	if (start_function == "main") { // Replace main with function that calls main
+		start_function = DefaultStartFunction;
+	}
 
-  max_lines = KnobMaxOutputLong.Value();
-  if (max_lines == 0) {
-    max_lines = KnobMaxOutput.Value();
-    if (max_lines == 0) {
-      max_lines = DefaultMaximumLines;
-    }
-  }
+	max_lines = KnobMaxOutputLong.Value();
+	if (max_lines == 0) {
+		max_lines = KnobMaxOutput.Value();
+		if (max_lines == 0) {
+			max_lines = DefaultMaximumLines;
+		}
+	}
 
-  cache_size = KnobCacheSizeLong.Value();
-  if (cache_size == 0) {
-    cache_size = KnobCacheSize.Value();
-    if (cache_size == 0) {
-      cache_size = NumberCacheEntries;
-    }
-  }
+	cache_size = KnobCacheSizeLong.Value();
+	if (cache_size == 0) {
+		cache_size = KnobCacheSize.Value();
+		if (cache_size == 0) {
+			cache_size = NumberCacheEntries;
+		}
+	}
 
-  cache_line = KnobCacheLineSizeLong.Value();
-  if (cache_line == 0) {
-    cache_line = KnobCacheLineSize.Value();
-    if (cache_line == 0) {
-      cache_line = DefaultCacheLineSize;
-    }
-  }
+	cache_line = KnobCacheLineSizeLong.Value();
+	if (cache_line == 0) {
+		cache_line = KnobCacheLineSize.Value();
+		if (cache_line == 0) {
+			cache_line = DefaultCacheLineSize;
+		}
+	}
 
 
-  SkipMemOps = KnobSkipMemOps.Value();
+	SkipMemOps = KnobSkipMemOps.Value();
 
-  TaggedOnly = KnobOnlyTaggedAccesses.Value();
+	TaggedOnly = KnobOnlyTaggedAccesses.Value();
 
-  std::cerr << "TaggedOnly =  " << TaggedOnly << "\n";
+	std::cerr << "TaggedOnly =  " << TaggedOnly << "\n";
   
-  if (INPUT_DEBUG) {
-	  std::cerr << "Max lines of trace: "   << max_lines <<
-		  "\n# of cache entries: " << cache_size <<
-		  "\nCache line size in bytes: " << cache_line << 
-		  "\nOutput trace file at: " << output_trace_path << 
-		  "\nStart function: " << start_function << "\n";
-  }
+	if (INPUT_DEBUG) {
+		std::cerr << "Max lines of trace: "   << max_lines <<
+			"\n# of cache entries: " << cache_size <<
+			"\nCache line size in bytes: " << cache_line << 
+			"\nOutput trace file at: " << output_trace_path << 
+			"\nStart function: " << start_function << "\n";
+	}
 
 
-  open_trace_files();
+	open_trace_files();
 
-  // Add instrumentation
-  IMG_AddInstrumentFunction(FindFunc, 0);
-  RTN_AddInstrumentFunction(FindStartFunc, 0);
-  //  INS_AddInstrumentFunction(Instruction, 0);
-  //  TRACE_AddInstrumentFunction(Trace, 0);
-  PIN_AddThreadStartFunction(ThreadStart, 0);
-  PIN_AddThreadFiniFunction(ThreadStop, 0);
-  PIN_AddFiniFunction(Fini, 0);
+	// Add instrumentation
+	IMG_AddInstrumentFunction(FindFunc, 0);
+	RTN_AddInstrumentFunction(FindStartFunc, 0);
+	//  INS_AddInstrumentFunction(Instruction, 0);
+	//  TRACE_AddInstrumentFunction(Trace, 0);
+	PIN_AddThreadStartFunction(ThreadStart, 0);
+	PIN_AddThreadFiniFunction(ThreadStop, 0);
+	PIN_AddFiniFunction(Fini, 0);
 
-  if (DEBUG) {
-    std::cerr << "Starting now\n";
-  }
-  PIN_StartProgram();
+	if (DEBUG) {
+		std::cerr << "Starting now\n";
+	}
+	PIN_StartProgram();
 
 
-  return 0;
+	return 0;
 }
