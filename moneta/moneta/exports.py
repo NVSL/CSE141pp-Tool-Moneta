@@ -21,7 +21,7 @@ def select_trace(zoom_access=None, zoom_address=None):
 
 
     
-def show_trace(trace_path, zoom_access=None, zoom_address=None, show_tag=None):
+def show_trace(trace_path, zoom_access=None, zoom_address=None, show_tag=None, layer_preset=None):
     if show_tag is not None:
         zoom_access = show_tag
         zoom_address = show_tag
@@ -40,6 +40,11 @@ def show_trace(trace_path, zoom_access=None, zoom_address=None, show_tag=None):
     if model.plot is None:
         print("Couldn't load plot")
         return
+
+    if layer_preset is not None:
+        if len(layer_preset) > 8:
+            print("ERROR Maximum of 8 Layers")
+        model.legend.accesses.set_custom_presets(layer_preset)
 
     if zoom_access or zoom_address:
         bounds = parse_zoom_args(model, zoom_access, zoom_address)

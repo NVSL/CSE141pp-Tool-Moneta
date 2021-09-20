@@ -25,11 +25,10 @@ class Accesses():
         
         self.all_tags =  self.model.curr_trace.tags # includes spacetime and thread
         self.layer_options = [
-            ('None', [0]), ('ReadHit', [READ_HIT]),  ('WriteHit', [WRITE_HIT]),  ('ReadMiss', [READ_MISS,COMP_R_MISS]),
-            ('WriteMiss', [WRITE_MISS,COMP_W_MISS])
+            ('None', [0]), ('RHit', [READ_HIT]),  ('WHit', [WRITE_HIT]),  ('RMissCapacity', [READ_MISS]),
+            ('RMissCompulsory', [COMP_R_MISS]), ('WMissCapacity', [WRITE_MISS]), ('WMissCompulsory', [COMP_W_MISS])
          ]
 
-        print("Layer Vals", self.model.curr_trace.df.unique(LAYER))
         i_val = 9
         for tag in self.all_tags:
            i_layer = (tag.display_name(), tag)
@@ -91,14 +90,14 @@ class Accesses():
 
         #######################################################################
         # drop down menue for color view selection
-        dropdown = Dropdown(options=C_VIEW_OPTIONS,
+        self.dropdown = Dropdown(options=C_VIEW_OPTIONS,
                             value=self._CURR_C_VIEW,
                             disabled=False,
                             layout={'width': 'min-content'}
                             )
-        dropdown.observe(self.update_presets, names='value')
-        dropdown.observing = True
-        dropdown_row = HBox([GridBox([Label(value='Layer Preset:'), dropdown],
+        self.dropdown.observe(self.update_presets, names='value')
+        self.dropdown.observing = True
+        dropdown_row = HBox([GridBox([Label(value='Layer Preset:'), self.dropdown],
                             layout=Layout(grid_template_rows="30px", grid_template_columns="120px 200px"))], 
                             layout=Layout( padding="0px 0px 14px 100px"))
         
@@ -268,20 +267,20 @@ class Accesses():
 
     def update_presets(self, change):
         new_preset = change.new
-        
         if new_preset == 'None':
             for layer in self.layers:
                 layer.update_selection([0])
         elif new_preset == 'AccessType':
-            self.layers[0].update_selection([WRITE_MISS,COMP_W_MISS])
-            self.layers[1].update_selection([READ_MISS,COMP_R_MISS])
-            self.layers[2].update_selection([WRITE_HIT])
-            self.layers[3].update_selection([READ_HIT])
+            self.layers[0].update_selection([COMP_W_MISS])
+            self.layers[1].update_selection([WRITE_MISS])
+            self.layers[2].update_selection([COMP_R_MISS])
+            self.layers[3].update_selection([COMP_R_MISS])
+            self.layers[4].update_selection([WRITE_HIT])
+            self.layers[5].update_selection([READ_HIT])
      
         elif new_preset == 'TAG':
             layer_index = 0
             for layer_option in reversed(self.layer_options):
-            
                 if type(layer_option[1]) is SpaceTimeTag and layer_index < len(self.layers):
                     if layer_option[0] != 'Stack' and layer_option[0] != 'Heap':
                         self.layers[layer_index].update_selection(layer_option[1])
@@ -292,6 +291,15 @@ class Accesses():
                 if type(layer_option[1]) is ThreadTag and layer_index < len(self.layers):
                     self.layers[layer_index].update_selection(layer_option[1])
                     layer_index += 1
+        elif new_preset == 'Custom':
+            for (index, layer_option) in enumerate(self.custom_layer_preset):
+                for option in self.layer_options:
+                    if option[0] == layer_option:
+                        self.layers[index].update_selection(option[1])
+
+    def set_custom_presets(self, layer_preset):
+        self.custom_layer_preset = layer_preset
+        self.dropdown.value = 'Custom'
 
 
     def reset_colormap(self, *_):
