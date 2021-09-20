@@ -41,7 +41,7 @@ class Legend():
         def f(): self.add_panel(LEGEND_MEM_ACCESS_TITLE, self.accesses.widgets)
         def g(): self.add_panel(LEGEND_TAGS_TITLE, self.tags.widgets)
         def h(): self.add_panel(LEGEND_THREADS_TITLE, self.threads.widgets)
-        def i(): self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
+        #def i(): self.add_panel(LEGEND_STATS_TITLE, self.stats.widgets)
         def n(): self.add_panel(LEGEND_MEASUREMENT_TITLE, self.mearsurement.widgets)
 
         self.progress_bar([
@@ -54,7 +54,7 @@ class Legend():
             f,
             g,
             h,
-            i,
+            #i,
             n
             ])
 
