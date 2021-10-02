@@ -1,13 +1,6 @@
 from ipywidgets import VBox, HBox, Layout, Label, ColorPicker, GridBox, Dropdown, Button
 import ipyvuetify as v
 from matplotlib.colors import to_hex, to_rgba, ListedColormap
-# from moneta.settings import (
-#         vdiv, lvdiv, Whdiv, hdiv, lhdiv,
-#         READ_HIT, WRITE_HIT, READ_MISS,
-#         WRITE_MISS, COMP_R_MISS, COMP_W_MISS,
-#         newc, THREAD_ID,
-#         COLOR_VIEW, C_VIEW_OPTIONS
-# )
 from moneta.settings import *
 import numpy as np
 import os
@@ -21,12 +14,15 @@ class Accesses():
         self.update_selection = update_selection
         self.colormap = np.copy(newc)
         self.colorpickers = {}
-        self._CURR_C_VIEW = os.environ.get('COLOR_VIEW') # get the color setting from enviroment
-        
+        self.custom_layer_preset = None
         self.all_tags =  self.model.curr_trace.tags # includes spacetime and thread
         self.layer_options = [
-            ('None', [0]), ('RHit', [READ_HIT]),  ('WHit', [WRITE_HIT]),  ('RMissCapacity', [READ_MISS]),
-            ('RMissCompulsory', [COMP_R_MISS]), ('WMissCapacity', [WRITE_MISS]), ('WMissCompulsory', [COMP_W_MISS])
+            ('None', [0]), ('accesses-read', [READ_HIT, READ_MISS, COMP_R_MISS]), ('accesses-write', [WRITE_HIT, WRITE_MISS, COMP_W_MISS]),
+            ('hits-all', [WRITE_HIT, READ_HIT]), ('hits-read', [READ_HIT]),  ('hits-write', [WRITE_HIT]),  
+            ('misses-all', [READ_MISS, WRITE_MISS, COMP_R_MISS, COMP_W_MISS]), ('misses-reads', [READ_MISS, COMP_R_MISS]),
+            ('misses-writes', [WRITE_MISS, COMP_W_MISS]), ('misses-capacity-all', [WRITE_MISS, READ_MISS]),
+            ('misses-capacity-reads', [READ_MISS]), ('misses-capacity-writes', [WRITE_MISS]), ('misses-compulsory-all', [WRITE_MISS, READ_MISS]),
+            ('misses-compulsory-reads', [COMP_R_MISS]), ('misses-compulsory-writes', [COMP_W_MISS])
          ]
 
         i_val = 9
@@ -53,45 +49,32 @@ class Accesses():
                 self.model.plot.colormap = ListedColormap(self.colormap)
                 self.model.plot.backend.plot.update_image()
             
-            def handle_color_picker_multiple(change):
-                print(enum_color)
-                for acceses_type in enum_color:
-                    print(acceses_type)
-                    self.colormap[acceses_type] = to_rgba(change.new, 1)
-                self.model.plot.colormap = ListedColormap(self.colormap)
-                self.model.plot.backend.plot.update_image()
-            
-            if miss_acc:
-                clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[3][0:3]), 
-                        disabled=False, layout=Layout(width="25px", margin="0 4px 0 4px"))
-      
-                clr_picker.observe(handle_color_picker_multiple, names='value')
-                
+
+            if cache:
+                clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
+                        disabled=False, layout=Layout(width="30px"))
             else:
-                if cache:
-                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
-                            disabled=False, layout=Layout(width="30px"))
-                else:
-                    clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
-                            disabled=False, layout=Layout(width="25px", margin="0 4px 0 4px"))
-               
-                clr_picker.observe(handle_color_picker, names='value')
-                self.colorpickers[enum_color] = clr_picker
+                clr_picker = ColorPicker(concise=True, value=to_hex(self.colormap[enum_color][0:3]), 
+                        disabled=False, layout=Layout(width="25px", margin="0 4px 0 4px"))
+            
+            clr_picker.observe(handle_color_picker, names='value')
+            self.colorpickers[enum_color] = clr_picker
 
             clr_picker.observing = True
             return clr_picker
 
 
 
-        def ParentBox(parent_widgets, miss_acc=False):
-            return HBox([clr_picker(enum_color=parent_widgets.enum_color, miss_acc=miss_acc), parent_widgets.check_widget , parent_widgets.dropdown_widget], 
+        def ParentBox(parent_widgets):
+            # Create wrapper to combine clrpicker checkbox and dropdown 
+            return HBox([clr_picker(enum_color=parent_widgets.enum_color), parent_widgets.check_widget , parent_widgets.dropdown_widget], 
                         layout=Layout(align_items="center", overflow="hidden", justify_content="flex-start"))
 
 
         #######################################################################
         # drop down menue for color view selection
         self.dropdown = Dropdown(options=C_VIEW_OPTIONS,
-                            value=self._CURR_C_VIEW,
+                            value='None',
                             disabled=False,
                             layout={'width': 'min-content'}
                             )
@@ -121,7 +104,6 @@ class Accesses():
         self.layer8_widgets = ParentWidgets(label='8', tooltip="Layer8", enum_color=2, clr=1.4, 
                                             init_layer_val=[0], layer_options=self.layer_options, compute=self.compute_layers)
     
-
         self.layers = [self.layer1_widgets, self.layer2_widgets, self.layer3_widgets, self.layer4_widgets,
                        self.layer5_widgets, self.layer6_widgets, self.layer7_widgets, self.layer8_widgets]
 
@@ -292,10 +274,11 @@ class Accesses():
                     self.layers[layer_index].update_selection(layer_option[1])
                     layer_index += 1
         elif new_preset == 'Custom':
-            for (index, layer_option) in enumerate(self.custom_layer_preset):
-                for option in self.layer_options:
-                    if option[0] == layer_option:
-                        self.layers[index].update_selection(option[1])
+            if self.custom_layer_preset is not None:
+                for (index, layer_option) in enumerate(self.custom_layer_preset):
+                    for option in self.layer_options:
+                        if option[0] == layer_option:
+                            self.layers[index].update_selection(option[1])
 
     def set_custom_presets(self, layer_preset):
         self.custom_layer_preset = layer_preset

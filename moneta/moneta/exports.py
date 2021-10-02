@@ -45,7 +45,9 @@ def show_trace(trace_path, zoom_access=None, zoom_address=None, show_tag=None, l
         if len(layer_preset) > 8:
             print("ERROR Maximum of 8 Layers")
         model.legend.accesses.set_custom_presets(layer_preset)
-
+    else:
+        model.legend.accesses.dropdown.value = 'TAG' #force default layer option to be tag
+    
     if zoom_access or zoom_address:
         bounds = parse_zoom_args(model, zoom_access, zoom_address)
 
