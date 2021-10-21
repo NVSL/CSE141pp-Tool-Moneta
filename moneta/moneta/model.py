@@ -28,11 +28,14 @@ class Moneta():
 
 
     def plot_title(self):
+        return ""
+        """
         return (
                 f"{self.curr_trace.name} - "
                 f"Cache: {self.curr_trace.cache_block}-byte block, "
                 f"{self.curr_trace.cache_lines} Lines "
             )
+        """
 
     def create_plot(self):
         self.legend = Legend(self)
