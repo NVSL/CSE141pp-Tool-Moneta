@@ -75,7 +75,14 @@ def do_mtrace(*argc, **args):
             pass
 
     print(f"Running: {run_cmd}")
-    if not jupyter:
-        log.info(f"Cache size: {cache_line_count} lines * {int(cache_line_size)} bytes/Line = {int(cache_line_count) * int(cache_line_size)} KB")
-    subprocess.run(run_cmd.split())
+    try:
+        if not jupyter:
+            log.info(f"Cache size: {cache_line_count} lines * {int(cache_line_size)} bytes/Line = {int(cache_line_count) * int(cache_line_size)} KB")
+            p = subprocess.run(run_cmd.split())
+        else:
+            p = subprocess.run(run_cmd.split(), check=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+            print(p.stdout.decode())
+    except subprocess.CalledProcessError as e:
+        print(e.output.decode())
+        
 
