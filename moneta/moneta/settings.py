@@ -12,8 +12,7 @@ TRACE_FILE_END = ".hdf5"
 TAG_FILE_END = ".tags"
 META_FILE_END = ".meta"
 
-# Enviroment Variables
-COLOR_VIEW = 'COLOR_VIEW'
+# layer options
 C_VIEW_OPTIONS = ['None', 'AccessType', 'TAG', 'THREAD', 'Custom']
 
 
@@ -24,12 +23,12 @@ newc[1] = [95/255, 95/255, 95/255, 1] # layer 1 grey
 newc[2] = [0, 153/255, 204/255, 1] # baby blue
 newc[3] = [128/255, 76/255, 26/255, 1] # brown 
 newc[4] = [255/255, 128/255, 0/255, 1] # orange
-newc[5] = [12/255, 255/255, 0/255, 1] #  2 green
+newc[5] = [9/255, 113/255, 63/255, 1] #  2 green
 newc[6] = [1, 0, 0, 1] # red
 newc[7] = [187/255, 0/255, 255/255, 1] # magenta
 newc[8] = [0, 255/255, 255/255, 1] # cyan
 newc[9] = [215/255, 230/255, 10/255, 1] # yellow
-newc[10] = [255/255, 0/255, 225/255, 1] # purple
+newc[10] = [0/255, 255/255, 0/255, 1] # cache green
 CUSTOM_CMAP = ListedColormap(newc)
 
 
