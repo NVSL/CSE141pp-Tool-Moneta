@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <fcntl.h>
 #include <unistd.h>
 #include <fstream>
 #include <iomanip>
@@ -33,7 +34,6 @@ namespace pintool {
 constexpr bool DEBUG {0};
 constexpr bool EXTRA_DEBUG {0};
 constexpr bool INPUT_DEBUG {1};
-constexpr bool HDF_DEBUG   {0};
 constexpr bool CACHE_DEBUG {0};
 
 static ADDRINT inst_count = 0;
@@ -82,17 +82,6 @@ UINT64 SkipMemOps = 10000000000000000ull;
 bool TaggedOnly = false;
 
 
-// Access type
-enum { 
-	READ_HIT=1, WRITE_HIT,
-	READ_CAP_MISS, WRITE_CAP_MISS,
-	READ_COMP_MISS, WRITE_COMP_MISS 
-};
-
-// Cache Access type
-enum {
-	HIT, CAP_MISS, COMP_MISS
-};
 
 static UINT64 curr_traced_lines {0}; // Increment for every write trace for memory accesses.  Reset when opening a new file.
 static UINT64 total_traced_lines {0}; // Increment for every write to trace for memory accesses
@@ -214,34 +203,22 @@ bool reached_start {0};
 
 std::unordered_map<THREADID, TagData *> thread_ids;
 
-// Crudely simulate L1 cache (first n unique accesses between DUMP_ACCESS blocks)
 
 /*
- * Hdf
- */
-
-// Output Columns
-const std::string IndexColumn {"index"};
-const std::string AccessColumn  {"Access"};
-const std::string AddressColumn {"Address"};
-const std::string ThreadIDColumn {"ThreadID"};
-const std::string LayerColumn{"Layer"};
-//const std::string CacheAccessColumn {"CacheAccess"};
-
-/*
- * Use this to handle hdf with write_data_mem and write_data_cache
+ * Write a trace 
  */
 class TraceWriter {
 
 	int mem_file;
 public:
 	TraceWriter(std::string filename) {
-		mem_file = open(filename, "w");
+		std::cerr << filename << "\n";
+		mem_file = open(filename.c_str(), O_WRONLY|O_TRUNC|O_CREAT);
 		assert(mem_file != -1);
 	}
 
 	~TraceWriter() {
-		close(memfile);
+		close(mem_file);
 	}
 
 	int write_data_mem(ADDRINT address, int access, THREADID threadid) {
@@ -485,12 +462,12 @@ void close_trace_files(bool clear_tags) {
 	}
 	
 	write_tags_and_clear(clear_tags);
-	delete hdf_handler;
+	delete trace_writer;
 }
 
 VOID write_to_memfile(ADDRINT addr, int acc_type, THREADID threadid) {
 
-	hdf_handler->write_data_mem(addr, acc_type, threadid);
+	trace_writer->write_data_mem(addr, acc_type, threadid);
 	curr_traced_lines++; // Afterward, for 0-based indexing
 	total_traced_lines++;
 
@@ -789,28 +766,6 @@ VOID Fini(INT32 code, VOID *v) {
 		std::cerr << "Number of compulsory misses: " << comp_misses << "\n";
 		std::cerr << "Number of capacity misses: " << cap_misses << "\n";
 	}
-
-	// Updated cache write - Must check if it's in any of the tagged ranges
-	// Write cache values from least recently used to most recently used
-	/*for (std::list<ADDRINT>::reverse_iterator rit= inorder_acc.rbegin(); rit != inorder_acc.rend(); ++rit) {
-	// Check if it's part of any of the ranges
-	ADDRINT correct_val = *rit;
-	bool tagged = false;
-	for (auto& x : all_tags) {
-	TagData* t = x.second;
-	if (t->addr_range.first <= *rit && *rit <= t->addr_range.second) {
-        correct_val -= t->range_offset; // Normalize
-        tagged = true;
-        break;
-	}
-	}
-	if (!tagged) {
-	correct_val = max_range; // Just move the cache value that's not tagged to somewhere above all tagged accesses
-	max_range+= cache_line;
-	}
-	hdf_handler->write_data_cache(correct_val);
-	}*/
-
 
 	close_trace_files(true);
   
