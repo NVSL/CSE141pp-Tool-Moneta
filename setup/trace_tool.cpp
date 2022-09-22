@@ -209,28 +209,34 @@ std::unordered_map<THREADID, TagData *> thread_ids;
  */
 class TraceWriter {
 
-	int mem_file;
+        int mem_file;
 public:
-	TraceWriter(std::string filename) {
-		std::cerr << filename << "\n";
-		mem_file = open(filename.c_str(), O_WRONLY|O_TRUNC|O_CREAT);
-		assert(mem_file != -1);
-	}
+        TraceWriter(std::string filename) {
+                std::cerr << filename << "\n";
+                mem_file = open(filename.c_str(), O_WRONLY|O_TRUNC|O_CREAT,  S_IRWXU);
+                assert(mem_file != -1);
+        }
 
-	~TraceWriter() {
-		close(mem_file);
-	}
+        ~TraceWriter() {
+                close(mem_file);
+        }
 
-	int write_data_mem(ADDRINT address, int access, THREADID threadid) {
+        int write_data_mem(ADDRINT address, int access, THREADID threadid) {
 
-		struct trace_entry entry;
-		entry.address = address;
-		entry.acc = access;
-		entry.threadid = threadid;
-		write(mem_file, &entry, sizeof(trace_entry));
-		return 0;
-	}
+                struct trace_entry entry;
+                entry.address = address;
+                entry.acc = access;
+                entry.threadid = threadid;
+                // r satisfies warning ignored return value
+                int r = write(mem_file, &entry, sizeof(trace_entry));
+                if(r) {// avoid problems with r being used.
+                  return 0;
+                } else {
+                  return 0;
+                }
+        }
 };
+
 
 TraceWriter * trace_writer; // One for this pintool
 
